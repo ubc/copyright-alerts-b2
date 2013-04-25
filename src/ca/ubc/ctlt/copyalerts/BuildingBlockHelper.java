@@ -1,4 +1,4 @@
-package ca.ubc.ctlt;
+package ca.ubc.ctlt.copyalerts;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -25,7 +25,7 @@ public class BuildingBlockHelper {
 	 * The vendor ID for the Building Block. This must match the building block "handle"
 	 * in the bb-manifest.xml file.
 	 */
-	public static final String HANDLE = "copyright-report";
+	public static final String HANDLE = "copyright-alerts";
 	/** The name of the building block settings file in the config directory */
 	public static final String SETTINGS_FILE_NAME = "settings.properties";
 	

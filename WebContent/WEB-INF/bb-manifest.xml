@@ -2,8 +2,8 @@
 <manifest>
   <!-- core extension information -->
     <plugin>
-        <name value="Copyright Report"/>
-        <handle value="copyright-Report"/>
+        <name value="Copyright Alerts"/>
+        <handle value="copyright-alerts"/>
         <description value= ""/>
         <version value= "1.0.0"/>
         <requires>
@@ -15,7 +15,9 @@
             <url value="http://www.ubc.ca/" />
             <description value="" />
         </vendor>
-
+		<http-actions>
+			<config value="settings" />
+		</http-actions>
 <!--    These two JSPs are displayed when the "remove" and "properties" buttons -->
 <!--	are pressed on the Building Blocks administration page. 				-->
 <!--    <http-actions>
@@ -24,15 +26,15 @@
         </http-actions>
  -->    
         <application-defs>
-            <application handle="copyright-report" type="shared" use-ssl="false" 
-            	name="Copyright Report" can-allow-guest="false">
-                <description lang="en_US">Generate copyright status report on files in Content Collections.</description>
+            <application handle="copyright-alerts" type="shared" use-ssl="false" 
+            	name="Copyright Alerts" can-allow-guest="false">
+                <description lang="en_US">Generate copyright status alerts on files in Content Collections.</description>
                 <links>
                     <link>
                         <type value="system_tool"/>
-                        <name value="Copyright Report 2"/>
-                        <url value="index.jsp" />
-                        <description value="Copyright Report 2" />
+                        <name value="Copyright Alerts"/>
+                        <url value="/settings" />
+                        <description value="Copyright Alerts" />
                     </link>
                 </links>
             </application>
@@ -50,11 +52,14 @@
             <!-- Spring need this to work -->
             <permission type="java.lang.reflect.ReflectPermission" name="suppressAccessChecks" />
             <permission type="attribute" name="user.authinfo" actions="get"/>
-<!--
             <permission type="attribute" name="user.personalinfo" actions="get,set"/>
+            <permission type="java.io.FilePermission" name="&amp;lt;&amp;lt;ALL FILES&amp;gt;&amp;gt;" actions="read,write,execute,delete"/>
+            <permission type="java.util.PropertyPermission" name="*" actions="read,write" />
+            <permission type="java.lang.RuntimePermission" name="setContextClassLoader" />
+            
+<!--
             <permission type="persist" name="Group" actions="persist"/>
             <permission type="persist" name="GroupMembership " actions="persist"/>
-            <permission type="java.io.FilePermission" name="&amp;lt;&amp;lt;ALL FILES&amp;gt;&amp;gt;" actions="read,write,execute,delete"/>
 -->
         </permissions>
 

@@ -1,0 +1,23 @@
+/* This stylesheet should only apply to the b2 config page */
+#alertsysconfig #croninput {
+  display: none; }
+#alertsysconfig input[type='text'] {
+  padding: 0.3em;
+  border: 1px solid #999;
+  border-radius: 4px;
+  margin-right: 0.8em; }
+#alertsysconfig input[type='radio'] {
+  margin: 0;
+  margin-right: 0.3em; }
+#alertsysconfig .radiolabel {
+  margin-right: 1em; }
+#alertsysconfig #hours, #alertsysconfig #minutes {
+  width: 3.5em; }
+#alertsysconfig label {
+  display: inline-block;
+  padding-right: 0.5em;
+  margin-bottom: 0.5em; }
+#alertsysconfig button.save {
+  display: block;
+  margin-top: 1em;
+  padding: 0.5em; }

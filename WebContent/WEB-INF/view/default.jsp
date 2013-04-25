@@ -2,13 +2,13 @@
 	pageEncoding="ISO-8859-1"%>
 <%@ taglib prefix="bbNG" uri="/bbNG"%>
 
-
 <bbNG:genericPage ctxId="ctx" >
 	<bbNG:pageHeader instructions="Put help information for the page here.">
 		<bbNG:breadcrumbBar>
-			<bbNG:breadcrumb>Example Page</bbNG:breadcrumb>
+			<bbNG:breadcrumb>Default Page</bbNG:breadcrumb>
 		</bbNG:breadcrumbBar>
-		<bbNG:pageTitleBar >Example Page</bbNG:pageTitleBar>
+		<bbNG:pageTitleBar >Default Page</bbNG:pageTitleBar>
 	</bbNG:pageHeader>
-	Your Content Goes Here	
+	Some Default Page
+	Insert Under Construction Logo
 </bbNG:genericPage>

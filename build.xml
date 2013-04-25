@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="ubc-copyright-report Building Block" default="deploy-b2" basedir=".">
+<project name="ubc-copyright-alerts Building Block" default="deploy" basedir=".">
 	<description>TODO Description For My Project</description>
 
 	<property name="build.dir" value="${basedir}/build/"/>
-	<property name="b2.package.name" value="${basedir}/ubc-copyright-report"/>
+	<property name="b2.package.name" value="${basedir}/ubc-copyright-alerts"/>
 
-	<target name="deploy-b2" depends="package-war">
+	<target name="deploy" depends="package-war">
 		<taskdef name="b2deploy" classpath="${basedir}/lib/b2deploy-task.jar" classname="org.oscelot.ant.B2DeployTask" />
-		<b2deploy localfilepath="${b2.package.name}.war" host="192.168.56.101" courseorgavailable="true" clean="true" />
+		<b2deploy localfilepath="${b2.package.name}.war" host="137.82.12.118" courseorgavailable="true" clean="true" />
 	</target>
 
 	<target name="package-war">
@@ -16,7 +16,6 @@
 		</war>
 	</target>
 	
-
 	<target name="check-compatibility">
         <taskdef name="fibbba" classname="com.blackboard.fibbba.CheckFibbbaTask" classpath="${basedir}/lib/fibbba-ant.jar" />
         <fibbba srcfile="${b2.package.name}.war" email="youremailaddress@gmail.com"/>
