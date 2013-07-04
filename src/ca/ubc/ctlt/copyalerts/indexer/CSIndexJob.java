@@ -1,8 +1,9 @@
 package ca.ubc.ctlt.copyalerts.indexer;
 
-import org.quartz.Job;
+import org.quartz.InterruptableJob;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.quartz.UnableToInterruptJobException;
 
 public class CSIndexJob implements InterruptableJob
 {
@@ -33,7 +34,7 @@ public class CSIndexJob implements InterruptableJob
 
 		try
 		{
-			Thread.sleep(185000);
+			Thread.sleep(10000);
 		} catch (InterruptedException e)
 		{
 			// TODO Auto-generated catch block
@@ -48,6 +49,13 @@ public class CSIndexJob implements InterruptableJob
 			executing = false;
 		}
 
+	}
+
+	@Override
+	public void interrupt() throws UnableToInterruptJobException
+	{
+		// TODO Auto-generated method stub
+		
 	}
 
 }

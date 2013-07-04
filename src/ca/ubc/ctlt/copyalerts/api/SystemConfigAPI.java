@@ -13,8 +13,10 @@ import org.quartz.JobDetail;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
-import org.quartz.helpers.TriggerUtils;
 import org.quartz.impl.StdSchedulerFactory;
+import static org.quartz.JobBuilder.*;
+import static org.quartz.TriggerBuilder.*;
+import static org.quartz.SimpleScheduleBuilder.*;
 
 import ca.ubc.ctlt.copyalerts.SavedConfiguration;
 import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
@@ -42,9 +44,6 @@ public class SystemConfigAPI extends HttpServlet
 	public void init() throws ServletException
 	{
 		System.out.println("Start scheduling");
-		// Blackboard uses a version of Quartz (1.3.3) so ancient that the official Quartz site NO LONGER HAS THE DOCUMENTATION AVAILABLE, WTF. And their 
-		// messed up classloader interferes with me trying to load the latest version?!
-		// 
 		// Need a scheduler that can
 		// * confine execution to a time period
 		// * can resume execution after that time period
@@ -54,12 +53,17 @@ public class SystemConfigAPI extends HttpServlet
 			scheduler = StdSchedulerFactory.getDefaultScheduler();
 			scheduler.start();
 			// create a job
-			JobDetail job = new JobDetail("job1", "group1", CSIndexJob.class);
+			JobDetail job = newJob(CSIndexJob.class)
+					.withIdentity("myJob", "group1")
+					.build();
 			// create a trigger that runs every 60 seconds
-			Trigger trigger = TriggerUtils.makeMinutelyTrigger(1);
-			trigger.setStartTime(new Date());
-			trigger.setName("trigger1");
-			trigger.setGroup("group1");
+			Trigger trigger = newTrigger()
+			        .withIdentity("trigger1", "group1")
+			        .startNow()
+			        .withSchedule(simpleSchedule()
+			                .withIntervalInSeconds(60)
+			                .repeatForever())            
+			        .build();
 			// combine job and trigger and run it
 			scheduler.scheduleJob(job, trigger);
 
@@ -81,7 +85,8 @@ public class SystemConfigAPI extends HttpServlet
 			System.out.println("Shutting down scheduler");
 			scheduler.shutdown(true);
 
-			// Sleep for a bit so that we don't get any errors
+			// Even though scheduler waits for threads to end, it still needs an additional second or so
+			// before it completely unloads itself
 			try
 			{
 				Thread.sleep(1000);
