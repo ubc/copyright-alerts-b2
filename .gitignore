@@ -5,5 +5,8 @@
 *.war
 *.ear
 
+# sass cache
+.sass-cache/
+
 # vim
 *.swp
