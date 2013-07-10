@@ -47,6 +47,11 @@
         <content-handlers>
         </content-handlers>
 
+<!-- /WebContent/schema/<schema-dir> is where bbl looks for the database schema configuration -->
+		<schema-dirs>
+			<schema-dir dir-name="alertsdb" />
+        </schema-dirs>
+
 <!-- code permissions required for proper operation -->
         <permissions>
             <!-- Spring need this to work -->
