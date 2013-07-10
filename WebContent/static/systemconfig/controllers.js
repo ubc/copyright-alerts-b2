@@ -2,7 +2,20 @@ var Services = angular.module('SystemConfigServices', ['ngResource']);
 Services.factory('Schedule', 
 	function($resource) 
 	{
-		return $resource('systemconfig');
+		return $resource('systemconfig/schedule');
+	}
+);
+
+Services.factory('Status', 
+	function($resource) 
+	{
+		return $resource(
+				'systemconfig/status/:action', 
+				{action: 'status'},
+				{
+					stop: {method: 'GET', params: {action: 'stop'}}
+				}
+				);
 	}
 );
 
@@ -20,6 +33,13 @@ function ScheduleCtrl($scope, Schedule)
 	};
 }
 
+function StatusCtrl($scope, Status)
+{
+	$scope.stop = function()
+	{
+		Status.stop();
+	};
+}
 
 // Convert the jqCron jQuery plugin into an angularjs directive
 SystemConfigModule.directive('jqcronui',
@@ -34,8 +54,8 @@ SystemConfigModule.directive('jqcronui',
 				    multiple_month: true,
 				    multiple_mins: true,
 				    multiple_dow: true,
-				    multiple_time_hours: true,
-				    multiple_time_minutes: true,
+				    //multiple_time_hours: true,
+				    //multiple_time_minutes: true,
 				    no_reset_button: false,
 				    default_value: scope.schedule.cron,
 				    bind_method: {
@@ -54,6 +74,7 @@ SystemConfigModule.directive('jqcronui',
 );
 
 
+// data validation, make sure we're getting an integer
 var INTEGER_REGEXP = /^\-?\d*$/;
 SystemConfigModule.directive('integer',
 	function()

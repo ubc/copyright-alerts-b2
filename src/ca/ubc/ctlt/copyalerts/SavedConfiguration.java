@@ -27,20 +27,21 @@ public class SavedConfiguration
 
 	// private fields that will be serialised
 	private String enable = "false";
-	private String cron = "0 1 * * 6";
+	private String cron = "0 1 * * 6 ?";
 	private boolean limit = false;
 	private int hours = 1;
 	private int minutes = 0;
 	
 	public SavedConfiguration()
 	{
-		load();
 	}
 	
 	/**
 	 * Load config settings from the configuration file.
+	 * @throws PlugInException 
+	 * @throws IOException 
 	 */
-	private void load()
+	public void load() throws PlugInException, IOException
 	{
 		try
 		{
@@ -48,11 +49,11 @@ public class SavedConfiguration
 		} catch (PlugInException e)
 		{
 			System.out.println("CopyrightAlert unable to find Building Block configuration file, attempting to create.");
-			e.printStackTrace();
+			throw e;
 		} catch (IOException e)
 		{
 			System.out.println("CopyrightAlert unable to open Building Block configuration, aborting.");
-			e.printStackTrace();
+			throw e;
 		}
 		
 		if (prop.getProperty(ENABLE_CONFIG) == null)
@@ -77,8 +78,10 @@ public class SavedConfiguration
 	
 	/**
 	 * Save config settings to the configuration file.
+	 * @throws PlugInException 
+	 * @throws IOException 
 	 */
-	private void save()
+	private void save() throws PlugInException, IOException
 	{
 		try
 		{
@@ -86,11 +89,11 @@ public class SavedConfiguration
 		} catch (PlugInException e)
 		{
 			System.out.println("CopyrightAlert unable to save Building Block configuration file, aborting.");
-			e.printStackTrace();
+			throw e;
 		} catch (IOException e)
 		{
 			System.out.println("CopyrightAlert unable to open Building Block configuration, aborting.");
-			e.printStackTrace();
+			throw e;
 		}
 	}
 	
@@ -106,8 +109,10 @@ public class SavedConfiguration
 	/**
 	 * Parse and store configuration values from a json string
 	 * @param json
+	 * @throws IOException 
+	 * @throws PlugInException 
 	 */
-	public void fromJson(String json)
+	public void fromJson(String json) throws PlugInException, IOException
 	{
 		prop = gson.fromJson(json, prop.getClass());
 		save();
@@ -118,26 +123,45 @@ public class SavedConfiguration
 	 * Indicates whether the scheduler is enabled.
 	 * @return the enable
 	 */
-	public boolean getEnable()
+	public boolean isEnable()
 	{
 		if (enable.equals("true")) return true;
 		return false;
 	}
 
 	/**
-	 * Indicates when the alert generation should start running
+	 * Indicates when the alert generation should start running.
+	 * Need to add a seconds field for use in Quartz since jqcron doesn't specify resolution down to seconds.
+	 * Also, support for specifying both a day-of-week and a day-of-month value is not complete in Quartz,
+	 * the '?' character must be used in one of these fields instead of *.
 	 * @return the cron
 	 */
-	public String getCron()
+	public String getQuartzCron()
 	{
-		return cron;
+		String[] parts = cron.split(" ");
+		if (parts[4].equals("*"))
+		{
+			parts[4] = "?";
+		}
+		else
+		{
+			parts[2] = "?";
+		}
+		// add the seconds field
+		String ret = "0";
+		// java has split() but no nice way to combine it back together?!
+		for (String i : parts)
+		{
+			ret += " " + i;
+		}
+		return ret;
 	}
 
 	/**
 	 * Indicates whether there is a limit to how long alerts can run for
 	 * @return the limit
 	 */
-	public boolean getLimit()
+	public boolean isLimited()
 	{
 		return limit;
 	}

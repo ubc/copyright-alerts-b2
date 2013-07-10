@@ -27,7 +27,7 @@
 	
 	<servlet-mapping>
 		<servlet-name>SystemConfigAPI</servlet-name>
-		<url-pattern>/systemconfig</url-pattern>
+		<url-pattern>/systemconfig/*</url-pattern>
 	</servlet-mapping>
 	
 </web-app>

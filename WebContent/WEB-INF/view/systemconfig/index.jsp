@@ -40,8 +40,9 @@ jQuery.noConflict();
 			<button class='save' type="button" ng-click="saveSchedule(schedule)">Save Schedule</button>
 		</form>
 	</div>
-	<div>
+	<div ng-controller="StatusCtrl">
 		<h1>Status</h1>
+		<button ng-click="stop()">Stop Current Running Job</button>
 	</div>
 </div>
 
