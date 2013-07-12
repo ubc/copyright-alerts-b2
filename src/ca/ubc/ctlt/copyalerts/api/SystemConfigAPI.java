@@ -14,6 +14,11 @@ import org.quartz.Trigger;
 import org.quartz.UnableToInterruptJobException;
 import org.quartz.impl.StdSchedulerFactory;
 
+import blackboard.cms.filesystem.CSContext;
+import blackboard.cms.filesystem.CSDirectory;
+import blackboard.cms.filesystem.CSEntry;
+import blackboard.cms.filesystem.CSEntryMetadata;
+import blackboard.cms.filesystem.CSFile;
 import blackboard.platform.plugin.PlugInException;
 import static org.quartz.JobBuilder.*;
 import static org.quartz.TriggerBuilder.*;
@@ -39,14 +44,12 @@ public class SystemConfigAPI extends HttpServlet
 	@Override
 	public void init() throws ServletException
 	{
-		
 		try
 		{
 			config.load();
 			updateScheduler();
 		} catch (SchedulerException e)
 		{
-			System.out.println("Scheduler error.");
 			throw new ServletException(e);
 		} catch (PlugInException e)
 		{
@@ -212,7 +215,7 @@ public class SystemConfigAPI extends HttpServlet
 			indexJob = newJob(CSIndexJob.class)
 					.withIdentity("myJob", "group1")
 					.build();
-			// create a trigger that runs every 60 seconds
+			// create a trigger that runs on the cron configuration
 			indexTrigger = newTrigger()
 			        .withIdentity("trigger1", "group1")
 			        .withSchedule(cronSchedule(config.getQuartzCron()))
@@ -222,7 +225,7 @@ public class SystemConfigAPI extends HttpServlet
 			scheduler.scheduleJob(indexJob, indexTrigger);
 		}
 		else 
-		{ // need to modify existing scheduler settings
+		{ // need to modify existing scheduler settings to the new settings
 			Trigger trigger = newTrigger()
 			        .withIdentity("trigger1", "group1")
 			        .withSchedule(cronSchedule(config.getQuartzCron()))

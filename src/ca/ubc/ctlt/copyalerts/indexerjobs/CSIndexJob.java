@@ -1,6 +1,8 @@
 package ca.ubc.ctlt.copyalerts.indexerjobs;
 
 import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
 
 import org.quartz.DateBuilder.IntervalUnit;
 import org.quartz.InterruptableJob;
@@ -20,12 +22,25 @@ import static org.quartz.TriggerBuilder.*;
 import static org.quartz.DateBuilder.*;
 import static org.quartz.impl.matchers.GroupMatcher.*;
 
+import blackboard.cms.filesystem.CSContext;
+import blackboard.cms.filesystem.CSDirectory;
+import blackboard.cms.filesystem.CSEntry;
+import blackboard.cms.filesystem.CSEntryMetadata;
+import blackboard.cms.filesystem.CSFile;
+import blackboard.cms.filesystem.CSFileSystemException;
+import blackboard.data.user.User;
+import blackboard.db.ConnectionNotAvailableException;
+import blackboard.platform.context.ContextManager;
+import blackboard.platform.context.ContextManagerFactory;
 import blackboard.platform.plugin.PlugInException;
 
 import ca.ubc.ctlt.copyalerts.SavedConfiguration;
+import ca.ubc.ctlt.copyalerts.db.Queue;
 
 public class CSIndexJob implements InterruptableJob, TriggerListener
 {
+	private Queue queue;
+
 	// Meant to keep two threads from running indexing at the same time, need to be static as it's shared between all instances
 	public static Boolean executing = false; // an intrinsic lock using Java's synchronized statement
 	
@@ -35,6 +50,10 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	// interrupt() will not return until it's sure execute got the stop message. We indicate that execute has received the stop message with this.
 	public Boolean interruptProcessed = false;
 	
+	public CSIndexJob() throws ConnectionNotAvailableException
+	{
+		queue = new Queue();
+	}
 
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException
@@ -97,7 +116,8 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		}
 
 		// run actual job
-		for (int i = 0; i < 240; i++)
+		generateQueue();
+		for (int i = 0; i < 10; i++)
 		{
 			try
 			{
@@ -153,6 +173,50 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		synchronized (stop)
 		{
 			stop = true;
+		}
+	}
+	
+	/**
+	 * Create the list of files needed to be indexed.
+	 */
+	private void generateQueue()
+	{
+		System.out.println("Generating Queue");
+		try
+		{
+			ArrayList<String> paths = queue.load();
+			System.out.println("Paths: " + paths.size());
+			if (!paths.isEmpty())
+			{ // no need to generate paths since there's already stuff to process
+				System.out.println("paths not empty");
+				return;
+			}
+			paths = new ArrayList<String>();
+			ContextManager cm = ContextManagerFactory.getInstance();
+		    blackboard.platform.context.Context bbCtx = cm.getContext();
+		    // create a fake admin user so we can get a CSContext that can read everything
+		    // note that creating this user is necessary cause otherwise CSContext.getContext() would return null
+		    // because as far as this Quartz job is aware, there are no users logged in
+		    User user = new User();
+		    user.setSystemRole(User.SystemRole.SYSTEM_ADMIN);
+			CSContext ctx = CSContext.getContext(user);
+			// Get a list of files to look for metadata on
+			CSEntry root = ctx.findEntry("/courses/CL.UBC.MATH.101.201.2012W2.13204");
+			CSDirectory dir = (CSDirectory) root; // we know it's a directory, so cast it
+			for (CSEntry e : dir.getDirectoryContents())
+			{
+				System.out.println("Found" + e.getFullPath());
+				if (e instanceof CSFile)
+				{
+					paths.add(e.getFullPath());
+				}
+			}
+			queue.add(paths);
+		} catch (Exception e)
+		{
+			System.out.println("Did we die here?");
+			e.printStackTrace();
+			
 		}
 	}
 
