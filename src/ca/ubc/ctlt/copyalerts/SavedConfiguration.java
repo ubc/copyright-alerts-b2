@@ -68,7 +68,6 @@ public class SavedConfiguration
 		else
 		{ // load prior configuration
 			enable = prop.getProperty(ENABLE_CONFIG);
-			enable = prop.getProperty(ENABLE_CONFIG);
 			cron = prop.getProperty(CRON_CONFIG);
 			limit = Boolean.parseBoolean(prop.getProperty(LIMIT_CONFIG));
 			hours = Integer.parseInt(prop.getProperty(HOURS_CONFIG));
@@ -183,5 +182,5 @@ public class SavedConfiguration
 	{
 		return minutes;
 	}
-
+	
 }

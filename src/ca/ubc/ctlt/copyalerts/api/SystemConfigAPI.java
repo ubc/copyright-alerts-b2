@@ -25,7 +25,7 @@ import static org.quartz.TriggerBuilder.*;
 import static org.quartz.CronScheduleBuilder.*;
 
 import ca.ubc.ctlt.copyalerts.SavedConfiguration;
-import ca.ubc.ctlt.copyalerts.indexerjobs.CSIndexJob;
+import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
 
 public class SystemConfigAPI extends HttpServlet
 {

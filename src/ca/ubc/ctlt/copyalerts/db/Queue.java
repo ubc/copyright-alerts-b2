@@ -13,52 +13,51 @@ import blackboard.db.ConnectionNotAvailableException;
 public class Queue
 {
 	private final static String TABLENAME = "ubc_ctlt_ca_queue";
-	private final static int LOADNUM = 500;
-	Connection conn;
-	
-	public Queue() throws ConnectionNotAvailableException
-	{
-		ConnectionManager m = BbDatabase.getDefaultInstance().getConnectionManager();
-        conn = m.getConnection();
-	}
+	public final static int LOADNUM = 10;
 	
 	/**
 	 * Add an array of paths of files to be processed to the queue.
 	 * @param paths
-	 * @throws SQLException 
+	 * @throws InaccessibleDbException 
 	 */
-	public void add(ArrayList<String> paths) throws SQLException
+	public void add(ArrayList<String> paths) throws InaccessibleDbException
 	{
+		// Not sure if cm can be made into a private field, but it looks like connections have to be released or Oracle
+		// will not be happy
+		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
+		Connection conn = null;
+		// WARNING:
+		// For some reason, batch operations instantly crashes the Oracle listener, so we're
+		// not going to use batch operations and hope that we don't lose too much speed over this
 		String query = "insert into ubc_ctlt_ca_queue (pk1, filepath) values (ubc_ctlt_ca_queue_seq.nextval, ?)";
-		/*
-		PreparedStatement stmt = conn.prepareStatement(query);
-		stmt.setString(1, paths.get(0));
-		stmt.executeUpdate();
-		stmt.close();
-		*/
-		
-		conn.setAutoCommit(false);
+		PreparedStatement stmt;
 		try
 		{
-			PreparedStatement insertQuery = conn.prepareStatement(query);
+			conn = cm.getConnection();
+			// convert the query string into a compiled statement for faster execution
+			stmt = conn.prepareStatement(query);
+
 			for (String path : paths)
 			{
-				insertQuery.setString(1, path);
-				insertQuery.addBatch();
+				System.out.println("Adding: " + path);
+				stmt.setString(1, path);
+				stmt.executeUpdate();
 			}
-			insertQuery.executeBatch();
-			conn.commit();
-			insertQuery.close();
+			stmt.close();
 		} catch (SQLException e)
 		{
-			e.printStackTrace();
-			conn.rollback();
-		} finally {
-			conn.setAutoCommit(true); // make sure to re-enable auto commit after failure
+			throw new InaccessibleDbException("Couldn't execute query", e);
+		} catch (ConnectionNotAvailableException e)
+		{
+			throw new InaccessibleDbException("Unable to connect to db", e);
+		}
+		finally
+		{
+			if (conn != null) cm.releaseConnection(conn); // MUST release connection or we'll exhaust connection pool
 		}
 	}
 
-	public ArrayList<String> load() throws SQLException 
+	public ArrayList<String> load() throws InaccessibleDbException 
 	{
 		return load(LOADNUM);
 	}
@@ -69,31 +68,47 @@ public class Queue
 	 * 
 	 * @param num
 	 * @return
-	 * @throws SQLException
+	 * @throws InaccessibleDbException 
 	 */
-	public ArrayList<String> load(int num) throws SQLException
+	public ArrayList<String> load(int num) throws InaccessibleDbException
 	{
-		System.out.println("Loading");
+		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
+		Connection conn = null;
+
 		ArrayList<String> ret = new ArrayList<String>();
-        String query = "SELECT filepath FROM "+ TABLENAME +" WHERE rownum <= " + num;
-        PreparedStatement queryCompiled = conn.prepareStatement(query, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-        ResultSet res = queryCompiled.executeQuery();
-
-        while(res.next())
-        {
-        	System.out.println("Found: " + res.getString(1));
-        	ret.add(res.getString(1)); // store the path for return
-        }
-
-        res.close();
-
-        queryCompiled.close();
-		System.out.println("Loading done");
+		try 
+		{
+			conn = cm.getConnection();
+			// note that there's no order guarantee from just select rownum statements, so have to use the order by subquery
+			// to impose a repeatable order on the return results
+			String query = "SELECT filepath FROM (SELECT * FROM "+ TABLENAME +" ORDER BY pk1) WHERE rownum <= " + num;
+	        PreparedStatement queryCompiled = conn.prepareStatement(query);
+	        ResultSet res = queryCompiled.executeQuery();
+	
+	        while(res.next())
+	        {
+	        	ret.add(res.getString(1)); // store the path for return
+	        }
+	
+	        res.close();
+	
+	        queryCompiled.close();
+		} catch (SQLException e)
+		{
+			throw new InaccessibleDbException("Couldn't execute query", e);
+		} catch (ConnectionNotAvailableException e)
+		{
+			throw new InaccessibleDbException("Unable to connect to db", e);
+		}
+		finally
+		{
+			if (conn != null) cm.releaseConnection(conn);
+		}
 
         return ret;
 	}
 	
-	public void pop() throws SQLException
+	public void pop() throws InaccessibleDbException
 	{
 		pop(LOADNUM);
 	}
@@ -101,14 +116,30 @@ public class Queue
 	/**
 	 * Remove num rows from the queue table.
 	 * @param num
-	 * @throws SQLException
+	 * @throws InaccessibleDbException 
 	 */
-	public void pop(int num) throws SQLException
+	public void pop(int num) throws InaccessibleDbException 
 	{
-		String query = "DELETE FROM "+ TABLENAME +" where rownum <= " + num;
-		PreparedStatement deleteQuery = conn.prepareStatement(query);
-		deleteQuery.executeUpdate();
-		deleteQuery.close();
+		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
+		Connection conn = null;
+		try
+		{
+			conn = cm.getConnection();
+			String query = "DELETE FROM "+ TABLENAME +" WHERE pk1 IN (SELECT pk1 FROM (SELECT * FROM "+ TABLENAME +" ORDER BY pk1) WHERE rownum <= "+ num +")";
+			PreparedStatement deleteQuery = conn.prepareStatement(query); // don't need prepared statement for a single query, but can't be bothered to change
+			deleteQuery.executeUpdate();
+			deleteQuery.close();
+		} catch (SQLException e)
+		{
+			throw new InaccessibleDbException("Couldn't execute query", e);
+		} catch (ConnectionNotAvailableException e)
+		{
+			throw new InaccessibleDbException("Unable to connect to db", e);
+		}
+		finally
+		{
+			if (conn != null) cm.releaseConnection(conn);
+		}
 	}
-
+	
 }

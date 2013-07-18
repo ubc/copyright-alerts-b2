@@ -1,7 +1,6 @@
-package ca.ubc.ctlt.copyalerts.indexerjobs;
+package ca.ubc.ctlt.copyalerts.indexer;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.ArrayList;
 
 import org.quartz.DateBuilder.IntervalUnit;
@@ -23,24 +22,20 @@ import static org.quartz.DateBuilder.*;
 import static org.quartz.impl.matchers.GroupMatcher.*;
 
 import blackboard.cms.filesystem.CSContext;
-import blackboard.cms.filesystem.CSDirectory;
 import blackboard.cms.filesystem.CSEntry;
 import blackboard.cms.filesystem.CSEntryMetadata;
 import blackboard.cms.filesystem.CSFile;
-import blackboard.cms.filesystem.CSFileSystemException;
 import blackboard.data.user.User;
 import blackboard.db.ConnectionNotAvailableException;
-import blackboard.platform.context.ContextManager;
-import blackboard.platform.context.ContextManagerFactory;
+import blackboard.persist.PersistenceException;
 import blackboard.platform.plugin.PlugInException;
 
 import ca.ubc.ctlt.copyalerts.SavedConfiguration;
+import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 import ca.ubc.ctlt.copyalerts.db.Queue;
 
 public class CSIndexJob implements InterruptableJob, TriggerListener
 {
-	private Queue queue;
-
 	// Meant to keep two threads from running indexing at the same time, need to be static as it's shared between all instances
 	public static Boolean executing = false; // an intrinsic lock using Java's synchronized statement
 	
@@ -52,7 +47,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	
 	public CSIndexJob() throws ConnectionNotAvailableException
 	{
-		queue = new Queue();
 	}
 
 	@Override
@@ -110,30 +104,91 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			} catch (SchedulerException e)
 			{
 				System.out.println("Unable to schedule job or add limit listener.");
-				e.printStackTrace();
 				throw new JobExecutionException(e);
 			}
 		}
 
 		// run actual job
-		generateQueue();
-		for (int i = 0; i < 10; i++)
+		// part 1, try generating the queue
+		Queue queue;
+		ArrayList<String> paths = new ArrayList<String>();
+		try
 		{
+			queue = new Queue();
+
+			paths = queue.load();
+			if (paths.isEmpty())
+			{
+				QueueGenerator generator = new QueueGenerator();
+				// put files into the queue, 500 at a time, making sure to check if we need to stop
+				while (generator.hasNext())
+				{
+					paths = generator.next();
+					queue.add(paths);
+					if (syncStop())
+					{
+						break;
+					}
+				}
+				// now we can process the paths from the start
+				paths = queue.load();
+			}
+		} catch (InaccessibleDbException e1)
+		{
+			System.out.println("Could not access database, stopping index job.");
+			throw new JobExecutionException(e1);
+		} catch (PersistenceException e)
+		{
+			System.out.println("Persistence Exception.");
+			throw new JobExecutionException(e);
+		}
+		// make sure not to execute next part if we're supposed to halt
+		if (syncStop())
+		{
+			paths.clear();
+		}
+		// part 2, go through the queue and check each file's metadata
+		while (!paths.isEmpty())
+		{
+			for (String p : paths)
+			{
+				System.out.println("Path: " + p);
+				// have to provide a fake user or getContext is not happy
+				User user = new User();
+				CSContext ctx = CSContext.getContext(user);
+				// Give ourself permission to do anything in the Content Collections.
+				// Must do this cause we don't have a real request contest that many of the CS API calls
+				// require when you're not a superuser.
+				ctx.isSuperUser(true);
+				// Get a list of files to look for metadata on
+				CSEntry entry = ctx.findEntry(p);
+				CSFile file = (CSFile) entry;
+				CSEntryMetadata meta = file.getCSEntryMetadata();
+				System.out.println("With Permission: " + meta.getStandardProperty("a_16e5ec38cbd34fd693afb019806a3901"));
+				System.out.println("Fair Dealing: " + meta.getStandardProperty("a_2c3b588ee28a4cbab06b9867c094b533"));
+				System.out.println("Public Domain: " + meta.getStandardProperty("a_24a6cd178f3d4495b3c67cf1ea805f9e"));
+				System.out.println("Other: " + meta.getStandardProperty("a_b6072bc76cbf4458b3a8da39aeb8fd81"));
+			}
 			try
 			{
-				Thread.sleep(500);
+				Thread.sleep(5000);
 			} catch (InterruptedException e)
 			{
-				System.out.println("Woken up while sleeping!");
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-			synchronized (stop)
+			try
 			{
-				if (stop)
-				{
-					System.out.println("Execute stopping");
-					stop = false;
-					break;
-				}
+				queue.pop();
+				paths = queue.load();
+			} catch (InaccessibleDbException e)
+			{
+				System.out.println("Could not access database, stopping index job.");
+				throw new JobExecutionException(e);
+			}
+			if (syncStop())
+			{
+				break;
 			}
 		}
 		
@@ -148,7 +203,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			} catch (SchedulerException e)
 			{
 				System.out.println("Unable to remove limit trigger listener.");
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -175,50 +229,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			stop = true;
 		}
 	}
-	
-	/**
-	 * Create the list of files needed to be indexed.
-	 */
-	private void generateQueue()
-	{
-		System.out.println("Generating Queue");
-		try
-		{
-			ArrayList<String> paths = queue.load();
-			System.out.println("Paths: " + paths.size());
-			if (!paths.isEmpty())
-			{ // no need to generate paths since there's already stuff to process
-				System.out.println("paths not empty");
-				return;
-			}
-			paths = new ArrayList<String>();
-			ContextManager cm = ContextManagerFactory.getInstance();
-		    blackboard.platform.context.Context bbCtx = cm.getContext();
-		    // create a fake admin user so we can get a CSContext that can read everything
-		    // note that creating this user is necessary cause otherwise CSContext.getContext() would return null
-		    // because as far as this Quartz job is aware, there are no users logged in
-		    User user = new User();
-		    user.setSystemRole(User.SystemRole.SYSTEM_ADMIN);
-			CSContext ctx = CSContext.getContext(user);
-			// Get a list of files to look for metadata on
-			CSEntry root = ctx.findEntry("/courses/CL.UBC.MATH.101.201.2012W2.13204");
-			CSDirectory dir = (CSDirectory) root; // we know it's a directory, so cast it
-			for (CSEntry e : dir.getDirectoryContents())
-			{
-				System.out.println("Found" + e.getFullPath());
-				if (e instanceof CSFile)
-				{
-					paths.add(e.getFullPath());
-				}
-			}
-			queue.add(paths);
-		} catch (Exception e)
-		{
-			System.out.println("Did we die here?");
-			e.printStackTrace();
-			
-		}
-	}
 
 	/**
 	 * For implementing execution time limits, interrupt myself when time is up.
@@ -236,6 +246,19 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			e.printStackTrace();
 		}
 		
+	}
+	
+	private boolean syncStop()
+	{
+		synchronized (stop)
+		{
+			if (stop)
+			{
+				System.out.println("Execute stopping");
+				return true;
+			}
+		}
+		return false;
 	}
 
 	// trigger required methods that I don't care about
