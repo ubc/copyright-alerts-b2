@@ -19,6 +19,13 @@ Services.factory('Status',
 	}
 );
 
+Services.factory('MetadataAttributes', 
+	function($resource) 
+	{
+		return $resource('systemconfig/metadata');
+	}
+);
+
 var SystemConfigModule = angular.module('SystemConfigModule', ['SystemConfigServices']);
 
 function ScheduleCtrl($scope, Schedule) 
@@ -38,6 +45,29 @@ function StatusCtrl($scope, Status)
 	$scope.stop = function()
 	{
 		Status.stop();
+	};
+}
+
+function MetadataIdCtrl($scope, MetadataAttributes)
+{
+	$scope.config = MetadataAttributes.get();
+
+	$scope.remove = function (attr) 
+	{
+		var i = $scope.config.attributes.indexOf(attr);
+		$scope.config.attributes.splice(i, 1);
+		$scope.config.$save();
+	};
+	
+	$scope.submit = function() 
+	{
+		if (this.newattr) 
+		{
+			$scope.config.attributes.push(this.newattr);
+			$scope.config.$save();
+			this.newattr = '';
+		}
+		return false;
 	};
 }
 

@@ -16,12 +16,6 @@ to get the raw primary key for entries. You have to manually parse the primary k
 	<!-- Not sure how long file paths are allowed to be, so going to set it high, oracle db limits nvarchar to 4000 bytes, 
 		so let's use 1024 for some safety margin  -->
 	<column name="filepath" data-type="nvarchar(1024)" nullable="false" comment="identifies a file" />
-	<column name="tagged" data-type="char(1)" nullable="false" default="'N'" comment="whether this file has been tagged or not">
-		<value-constraint name="ubc_taggedconstraintyn">
-			<accepted-value value="Y" />
-			<accepted-value value="N" />
-		</value-constraint>
-	</column>
 	<primary-key name="ubc_ctlt_ca_files_pk1" comment="Unique primary key">
 		<columnref name="pk1" />
 	</primary-key>

@@ -3,9 +3,9 @@
   display: none; }
 #alertsysconfig input[type='text'] {
   padding: 0.3em;
+  margin-right: 0.8em;
   border: 1px solid #999;
-  border-radius: 4px;
-  margin-right: 0.8em; }
+  border-radius: 4px; }
 #alertsysconfig input[type='radio'] {
   margin: 0;
   margin-right: 0.3em; }
@@ -17,7 +17,20 @@
   display: inline-block;
   padding-right: 0.5em;
   margin-bottom: 0.5em; }
-#alertsysconfig button.save {
+#alertsysconfig input.save {
   display: block;
   margin-top: 1em;
   padding: 0.5em; }
+#alertsysconfig ul.attributeIds {
+  margin: 1em; }
+  #alertsysconfig ul.attributeIds li {
+    padding: 0.5em;
+    margin-bottom: 0.2em;
+    border: 1px solid #999; }
+  #alertsysconfig ul.attributeIds a {
+    margin-right: 0.5em;
+    color: red; }
+#alertsysconfig div.section {
+  display: inline-block;
+  vertical-align: top;
+  width: 33%; }

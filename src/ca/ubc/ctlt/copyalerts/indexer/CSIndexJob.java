@@ -21,6 +21,7 @@ import static org.quartz.TriggerBuilder.*;
 import static org.quartz.DateBuilder.*;
 import static org.quartz.impl.matchers.GroupMatcher.*;
 
+import blackboard.cms.filesystem.CSAccessControlEntry;
 import blackboard.cms.filesystem.CSContext;
 import blackboard.cms.filesystem.CSEntry;
 import blackboard.cms.filesystem.CSEntryMetadata;
@@ -32,7 +33,7 @@ import blackboard.platform.plugin.PlugInException;
 
 import ca.ubc.ctlt.copyalerts.SavedConfiguration;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
-import ca.ubc.ctlt.copyalerts.db.Queue;
+import ca.ubc.ctlt.copyalerts.db.QueueTable;
 
 public class CSIndexJob implements InterruptableJob, TriggerListener
 {
@@ -110,11 +111,11 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 
 		// run actual job
 		// part 1, try generating the queue
-		Queue queue;
+		QueueTable queue;
 		ArrayList<String> paths = new ArrayList<String>();
 		try
 		{
-			queue = new Queue();
+			queue = new QueueTable();
 
 			paths = queue.load();
 			if (paths.isEmpty())
@@ -148,6 +149,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			paths.clear();
 		}
 		// part 2, go through the queue and check each file's metadata
+		IndexGenerator indexGen = new IndexGenerator(config.getAttributes());
 		while (!paths.isEmpty())
 		{
 			for (String p : paths)
@@ -160,18 +162,15 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				// Must do this cause we don't have a real request contest that many of the CS API calls
 				// require when you're not a superuser.
 				ctx.isSuperUser(true);
-				// Get a list of files to look for metadata on
+				// Retrieve file entry
 				CSEntry entry = ctx.findEntry(p);
 				CSFile file = (CSFile) entry;
-				CSEntryMetadata meta = file.getCSEntryMetadata();
-				System.out.println("With Permission: " + meta.getStandardProperty("a_16e5ec38cbd34fd693afb019806a3901"));
-				System.out.println("Fair Dealing: " + meta.getStandardProperty("a_2c3b588ee28a4cbab06b9867c094b533"));
-				System.out.println("Public Domain: " + meta.getStandardProperty("a_24a6cd178f3d4495b3c67cf1ea805f9e"));
-				System.out.println("Other: " + meta.getStandardProperty("a_b6072bc76cbf4458b3a8da39aeb8fd81"));
+				// Retrieve metadata
+				indexGen.process(file);
 			}
 			try
 			{
-				Thread.sleep(5000);
+				Thread.sleep(500);
 			} catch (InterruptedException e)
 			{
 				// TODO Auto-generated catch block
@@ -236,7 +235,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	@Override
 	public void triggerFired(Trigger arg0, JobExecutionContext arg1)
 	{
-		System.out.println("Interrupt self");
 		try
 		{
 			interrupt();

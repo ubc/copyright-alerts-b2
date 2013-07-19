@@ -9,18 +9,24 @@
 </bbNG:pageHeader>
 <link href="${ctx.request.contextPath}/static/jqcron/jqCron.css" type="text/css" rel="stylesheet" />
 <link href="${ctx.request.contextPath}/static/style.css" type="text/css" rel="stylesheet" />
+<link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
 <script>
 jQuery.noConflict();
 </script>
 <script src="${ctx.request.contextPath}/static/jqcron/jqCron.min.js"></script>
-<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.6/angular.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.6/angular.js"></script>
 <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.6/angular-resource.min.js"></script>
 <script src="${ctx.request.contextPath}/static/systemconfig/controllers.js"></script>
 
 <div id="alertsysconfig" ng-app="SystemConfigModule">
-	<div ng-controller="ScheduleCtrl">
+	<div class="section" ng-controller="StatusCtrl">
+		<h1>Status</h1>
+		<input type="button" ng-click="stop()" value="Stop Current Running Job" />
+	</div>
+
+	<div class="section" ng-controller="ScheduleCtrl">
 		<h1>Schedule Alert Generation</h1>
 		<span ng-show="loading">Loading alert preferences, please wait.</span>
 		<form name="scheduleform">
@@ -37,12 +43,24 @@ jQuery.noConflict();
 
 				<span ng-show="scheduleform.hours.$error.integer">Hours and minutes needs to be a number.</span>
 			</div>
-			<button class='save' type="button" ng-click="saveSchedule(schedule)">Save Schedule</button>
+			<input class='save' type="button" ng-click="saveSchedule(schedule)" value="Save Schedule" />
 		</form>
 	</div>
-	<div ng-controller="StatusCtrl">
-		<h1>Status</h1>
-		<button ng-click="stop()">Stop Current Running Job</button>
+
+	<div class="section" ng-controller="MetadataIdCtrl">
+		<h1>Copyright Metadata Template Attribute IDs</h1>
+		<p>If a file's metadata contains the attribute IDs listed here, then it is considered to be properly tagged.</p>
+		<ul class='attributeIds'>
+			<li ng-repeat="attr in config.attributes">
+				<a href="#" ng-click="remove(attr)"><i class="icon-remove"></i></a> {{attr}}
+			</li>
+		</ul>
+		<!-- Note that one of the blackboard js libs start complaining about you not waiting for submits to finish if you press the "Enter" key for submit too
+		many times. Shouldn't be a problem for normal use, there's only a few ids. -->
+		<form name="attributeform" ng-submit="submit()">
+			<input type="text" id="newattr" ng-model="newattr" /> 
+			<input type="button" ng-click="submit()" value="Add ID" />
+		</form>
 	</div>
 </div>
 

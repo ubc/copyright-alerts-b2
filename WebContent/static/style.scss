@@ -1,3 +1,7 @@
+@mixin light-border
+{
+	border: 1px solid #999;
+}
 /* This stylesheet should only apply to the b2 config page */
 #alertsysconfig
 {
@@ -9,9 +13,9 @@
 	input[type='text']
 	{
 		padding: 0.3em;
-		border: 1px solid #999;
-		border-radius: 4px;
 		margin-right: 0.8em;
+		@include light-border;
+		border-radius: 4px;
 	}
 
 	input[type='radio']
@@ -37,10 +41,34 @@
 		margin-bottom: 0.5em;
 	}
 
-	button.save
+	input.save
 	{
 		display: block;
 		margin-top: 1em;
 		padding: 0.5em;
 	}
+
+	ul.attributeIds
+	{
+		margin: 1em;
+		li
+		{
+			padding: 0.5em;
+			margin-bottom: 0.2em;
+			@include light-border;
+		}
+		a
+		{
+			margin-right: 0.5em;
+			color: red;
+		}
+	}
+	
+	div.section
+	{
+		display: inline-block;
+		vertical-align: top;
+		width: 33%;
+	}
 }
+

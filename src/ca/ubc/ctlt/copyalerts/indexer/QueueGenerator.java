@@ -8,7 +8,7 @@ import blackboard.cms.filesystem.CSEntry;
 import blackboard.cms.filesystem.CSFile;
 import blackboard.data.user.User;
 import blackboard.persist.PersistenceException;
-import ca.ubc.ctlt.copyalerts.db.Queue;
+import ca.ubc.ctlt.copyalerts.db.QueueTable;
 
 public class QueueGenerator
 {
@@ -70,7 +70,7 @@ public class QueueGenerator
 			}
 			// limit the number of entries to return
 			count++;
-			if (count == Queue.LOADNUM)
+			if (count == QueueTable.LOADNUM)
 			{
 				break;
 			}

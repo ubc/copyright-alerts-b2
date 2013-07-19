@@ -1,6 +1,8 @@
 package ca.ubc.ctlt.copyalerts;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Properties;
 
 import com.google.gson.Gson;
@@ -10,15 +12,20 @@ import blackboard.platform.plugin.PlugInException;
 public class SavedConfiguration
 {
 	// Cron scheduler configuration, time to start executing
-	public static String ENABLE_CONFIG = "enable"; // whether the scheduler is enabled
-	public static String CRON_CONFIG = "cron"; // when to start the alert generation
-	public static String LIMIT_CONFIG = "limit"; // whether we should limit how much time alerts generation gets to run
-	public static String HOURS_CONFIG = "hours"; // the limiting hours
-	public static String MINUTES_CONFIG = "minutes"; // the limiting minutes
+	public final static String ENABLE_CONFIG = "enable"; // whether the scheduler is enabled
+	public final static String CRON_CONFIG = "cron"; // when to start the alert generation
+	public final static String LIMIT_CONFIG = "limit"; // whether we should limit how much time alerts generation gets to run
+	public final static String HOURS_CONFIG = "hours"; // the limiting hours
+	public final static String MINUTES_CONFIG = "minutes"; // the limiting minutes
+	public final static String ATTRIBUTES_CONFIG = "metadata_template_attribute_ids";	// key to access the stored attribute ids
+
+	// cause properties are always string, we're going to have to need a delimiter for array conversion for attributes
+	public final static String DELIM = "	";
 	
 	// private fields that will not be serialized since they're not used on the client side
 	private transient Properties prop = new Properties();
 	private transient Gson gson = new Gson();
+	private transient ArrayList<String> attributes = new ArrayList<String>();
 
 	// NOTE: All configuration settings stored in Properties must be strings, so we can't just ask GSON to
 	// Serialise the Properties object, since angularjs will be expecting difference datatypes for certain
@@ -32,9 +39,6 @@ public class SavedConfiguration
 	private int hours = 1;
 	private int minutes = 0;
 	
-	public SavedConfiguration()
-	{
-	}
 	
 	/**
 	 * Load config settings from the configuration file.
@@ -63,6 +67,7 @@ public class SavedConfiguration
 			prop.setProperty(LIMIT_CONFIG, Boolean.toString(limit));
 			prop.setProperty(HOURS_CONFIG, Integer.toString(hours));
 			prop.setProperty(MINUTES_CONFIG, Integer.toString(minutes));
+			prop.setProperty(ATTRIBUTES_CONFIG, "");
 			save();
 		}
 		else
@@ -72,6 +77,18 @@ public class SavedConfiguration
 			limit = Boolean.parseBoolean(prop.getProperty(LIMIT_CONFIG));
 			hours = Integer.parseInt(prop.getProperty(HOURS_CONFIG));
 			minutes = Integer.parseInt(prop.getProperty(MINUTES_CONFIG));
+
+			String res = prop.getProperty(ATTRIBUTES_CONFIG);
+			if (!res.isEmpty())
+			{
+				String[] attrArr = res.split(DELIM);
+				attributes.clear();
+				for (String attr : attrArr)
+				{
+					attributes.add(attr);
+				}
+			}
+			
 		}
 	}
 	
@@ -82,6 +99,21 @@ public class SavedConfiguration
 	 */
 	private void save() throws PlugInException, IOException
 	{
+		String savedAttrs = "";
+		// convert array into string for saving in config file
+		for (String attr : attributes)
+		{
+			if (savedAttrs.isEmpty())
+			{
+				savedAttrs = attr;
+			}
+			else
+			{
+				savedAttrs += DELIM + attr;
+			}
+		}
+		prop.setProperty(ATTRIBUTES_CONFIG, savedAttrs);
+		
 		try
 		{
 			BuildingBlockHelper.saveBuildingBlockSettings(prop);
@@ -114,6 +146,33 @@ public class SavedConfiguration
 	public void fromJson(String json) throws PlugInException, IOException
 	{
 		prop = gson.fromJson(json, prop.getClass());
+		save();
+		load(); // need to reload the new values
+	}
+
+	/**
+	 * Convert the configuration values into a json string
+	 * @return
+	 */
+	public String toJsonAttributes()
+	{
+		// need to put it in a map as ngResource doesn't like bare arrays and prefer objects
+		HashMap<String, ArrayList<String>> list = new HashMap<String, ArrayList<String>>();
+		list.put("attributes", attributes);
+		return gson.toJson(list);
+	}
+	
+	/**
+	 * Parse and store configuration values from a json string
+	 * @param json
+	 * @throws IOException 
+	 * @throws PlugInException 
+	 */
+	public void fromJsonAttributes(String json) throws PlugInException, IOException
+	{
+		HashMap<String, ArrayList<String>> list = new HashMap<String, ArrayList<String>>();
+		list = gson.fromJson(json, list.getClass());
+		attributes = list.get("attributes");
 		save();
 		load(); // need to reload the new values
 	}
@@ -182,5 +241,12 @@ public class SavedConfiguration
 	{
 		return minutes;
 	}
-	
+
+	/**
+	 * @return the attributes
+	 */
+	public ArrayList<String> getAttributes()
+	{
+		return attributes;
+	}
 }

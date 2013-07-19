@@ -10,7 +10,7 @@ import blackboard.db.BbDatabase;
 import blackboard.db.ConnectionManager;
 import blackboard.db.ConnectionNotAvailableException;
 
-public class Queue
+public class QueueTable
 {
 	private final static String TABLENAME = "ubc_ctlt_ca_queue";
 	public final static int LOADNUM = 10;
@@ -28,8 +28,9 @@ public class Queue
 		Connection conn = null;
 		// WARNING:
 		// For some reason, batch operations instantly crashes the Oracle listener, so we're
-		// not going to use batch operations and hope that we don't lose too much speed over this
-		String query = "insert into ubc_ctlt_ca_queue (pk1, filepath) values (ubc_ctlt_ca_queue_seq.nextval, ?)";
+		// not going to use batch operations and hope that we don't lose too much speed over this.
+		// TODO: Revisit batch operations later when I have more time
+		String query = "insert into "+ TABLENAME +" (pk1, filepath) values ("+ TABLENAME +"_seq.nextval, ?)";
 		PreparedStatement stmt;
 		try
 		{

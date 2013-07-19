@@ -7,7 +7,7 @@ import java.util.HashMap;
 import blackboard.db.BbDatabase;
 import blackboard.db.ConnectionManager;
 
-public class Hosts
+public class HostsTable
 {
 	// keeps track of which nodes are running a copy of this building block so we can determine
 	// which node should run the file indexing job

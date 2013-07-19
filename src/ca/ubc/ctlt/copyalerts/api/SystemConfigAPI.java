@@ -14,11 +14,6 @@ import org.quartz.Trigger;
 import org.quartz.UnableToInterruptJobException;
 import org.quartz.impl.StdSchedulerFactory;
 
-import blackboard.cms.filesystem.CSContext;
-import blackboard.cms.filesystem.CSDirectory;
-import blackboard.cms.filesystem.CSEntry;
-import blackboard.cms.filesystem.CSEntryMetadata;
-import blackboard.cms.filesystem.CSFile;
 import blackboard.platform.plugin.PlugInException;
 import static org.quartz.JobBuilder.*;
 import static org.quartz.TriggerBuilder.*;
@@ -90,46 +85,20 @@ public class SystemConfigAPI extends HttpServlet
 
 	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
 	{
-		/*
-		System.out.println("Why not working?");
-		CSContext ctx = CSContext.getContext();
-		// Get a list of files to look for metadata on
-		CSEntry root = ctx.findEntry("/courses/CL.UBC.MATH.101.201.2012W2.13204");
-		CSDirectory dir = (CSDirectory) root; // we know it's a directory, so cast it
-		System.out.println("ls directory: " + dir.getDirectoryContents().size());
-		for (CSEntry e : dir.getDirectoryContents())
-		{
-			System.out.println(e.getFullPath());
-			if (e instanceof CSFile)
-			{
-				System.out.println("Is File");
-				CSFile f = (CSFile) e;
-				CSEntryMetadata meta = f.getCSEntryMetadata();
-				System.out.println("With Permission: " + meta.getStandardProperty("a_16e5ec38cbd34fd693afb019806a3901"));
-				System.out.println("Fair Dealing: " + meta.getStandardProperty("a_2c3b588ee28a4cbab06b9867c094b533"));
-				System.out.println("Public Domain: " + meta.getStandardProperty("a_24a6cd178f3d4495b3c67cf1ea805f9e"));
-				System.out.println("Other: " + meta.getStandardProperty("a_b6072bc76cbf4458b3a8da39aeb8fd81"));
-			}
-		}
-		  
-		// pass on request to index.jsp
-		RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/view/default.jsp");
-		if (dispatcher != null) 
-		{
-			dispatcher.forward(request, response);
-		}
-		*/
-		
 		String path = request.getPathInfo();
 		System.out.println("Path Info: " + path);
+		response.setContentType("application/json");
+		response.setCharacterEncoding("UTF-8");
 		if (path.equals("/schedule"))
 		{ // returns a json map of all the schedule configuration values
-			response.setContentType("application/json");
-			response.setCharacterEncoding("UTF-8");
 			response.getWriter().write(config.toJson());
 		}
 		else if (path.equals("/status"))
 		{ // return a json map of the current execution status
+		}
+		else if (path.equals("/metadata"))
+		{
+			response.getWriter().write(config.toJsonAttributes());
 		}
 		else if (path.equals("/status/stop"))
 		{ // tell the currently executing job to stop
@@ -153,17 +122,16 @@ public class SystemConfigAPI extends HttpServlet
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
-		System.out.println("Path Info: " + request.getPathInfo());
+		StringBuilder sb = new StringBuilder();
+	    BufferedReader br = request.getReader();
+	    String str = "";
+	    while( (str = br.readLine()) != null ){
+	        sb.append(str);
+	    } 
+		    
 		if (request.getPathInfo().equals("/schedule"))
 		{
 			// read json response body, have to read this manually cause httpservlet doesn't support json, heh
-			StringBuilder sb = new StringBuilder();
-		    BufferedReader br = request.getReader();
-		    String str = "";
-		    while( (str = br.readLine()) != null ){
-		        sb.append(str);
-		    } 
-		    
 		    try
 			{
 			    // parse the json string and save the new config
@@ -174,6 +142,20 @@ public class SystemConfigAPI extends HttpServlet
 				System.out.println("Unable to update scheduler.");
 				response.sendError(500);
 				return;
+			} catch (PlugInException e)
+			{
+				System.out.println("Unable to update configuration.");
+				response.sendError(500);
+				return;
+			}
+		    // return the new config to caller
+		    doGet(request, response);
+		}
+		else if (request.getPathInfo().equals("/metadata"))
+		{
+		    try
+			{
+				config.fromJsonAttributes(sb.toString());
 			} catch (PlugInException e)
 			{
 				System.out.println("Unable to update configuration.");
