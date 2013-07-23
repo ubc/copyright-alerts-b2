@@ -1,25 +1,27 @@
 package ca.ubc.ctlt.copyalerts.db;
 
+import blackboard.persist.Id;
+
 public class UserFilePair
 {
-	private String username;
+	private Id userid;
 	private String path;
 	/**
 	 * @param username
 	 * @param path
 	 */
-	public UserFilePair(String username, String path)
+	public UserFilePair(Id username, String path)
 	{
 		super();
-		this.username = username;
+		this.userid = username;
 		this.path = path;
 	}
 	/**
 	 * @return the username
 	 */
-	public String getUsername()
+	public Id getUserId()
 	{
-		return username;
+		return userid;
 	}
 	/**
 	 * @return the path

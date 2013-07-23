@@ -30,7 +30,7 @@ public class QueueGenerator
 			// require when you're not a superuser.
 			ctx.isSuperUser(true);
 			// Get a list of files to look for metadata on
-			CSEntry root = ctx.findEntry("/");
+			CSEntry root = ctx.findEntry("/courses"); // right now restrict indexing to only course files
 			frontier.add(root);
 		} catch (Exception e)
 		{

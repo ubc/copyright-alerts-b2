@@ -3,12 +3,14 @@ package ca.ubc.ctlt.copyalerts.indexer;
 import java.util.ArrayList;
 import java.util.List;
 
+import ca.ubc.ctlt.copyalerts.db.FilesTable;
+import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 import blackboard.cms.filesystem.CSAccessControlEntry;
 import blackboard.cms.filesystem.CSEntryMetadata;
 import blackboard.cms.filesystem.CSFile;
 import blackboard.data.course.Course;
 import blackboard.data.course.CourseMembership;
-import blackboard.persist.KeyNotFoundException;
+import blackboard.persist.Id;
 import blackboard.persist.PersistenceException;
 import blackboard.persist.course.CourseDbLoader;
 import blackboard.persist.course.CourseMembershipDbLoader;
@@ -23,10 +25,9 @@ public class IndexGenerator
 		this.attributes = attributes;
 	}
 	
-	public void process(CSFile file)
+	public void process(CSFile file) throws PersistenceException, InaccessibleDbException
 	{
 		CSEntryMetadata meta = file.getCSEntryMetadata();
-		System.out.println("Attributes: " + attributes.size());
 		for (String attr : attributes)
 		{
 			String res = meta.getStandardProperty(attr);
@@ -38,73 +39,91 @@ public class IndexGenerator
 			}
 		}
 		// the file has not been copyright tagged, store it in the database
-		try 
+		CSAccessControlEntry[] accesses = file.getAccessControlEntries();
+		ArrayList<Id> names = new ArrayList<Id>();
+		for (CSAccessControlEntry e : accesses)
 		{
-			// We only want ISS and Instructor users for now
-			// can ignore organizations for now
-			// only worry about course instructors and iss
-			System.out.println("Blah");
-			CSAccessControlEntry[] accesses = file.getAccessControlEntries();
-			System.out.println("Accesses: " + accesses.length);
-			for (CSAccessControlEntry e : accesses)
-			{
-				if (!e.canWrite())
-				{ // skip if can't write
-					continue;
-				}
-				String pid = e.getPrincipalID();
-				if (pid.startsWith("G:CR"))
-				{ // this entry describes a course role
-					if (pid.contains("(?i)instructor"))
-					{
-						ArrayList<String> names = getInstructors(pid);
-					}
-				}
-				String test = "";
-				if (e.canWrite())
-				{
-					test = " write";
-				}
-				System.out.println(e.getPrincipalID() + test);
+			if (!e.canWrite())
+			{ // skip if can't write
+				continue;
 			}
-		} catch (Exception e)
-		{
-			System.out.println("Died: ");
-			e.printStackTrace();
+			String pid = e.getPrincipalID();
+			// Some sample principal IDs:
+			// This is for course instructors, I'm assuming that CR stands for Course Role
+			// G:CR:CL.UBC.MATH.101.201.2012W2.13204:INSTRUCTOR
+			// This is for system admins, I'm assuming that SR stands for System Role
+			// G:SR:SYSTEM_ADMIN
+			// This is for a single user assigned permission to the file
+			// BB:U:_81_1
+			
+			// Since we only want Instructors and ISS role
+			if (pid.startsWith("G:CR"))
+			{
+				String[] pidArr = pid.split(":");
+				String courseName = pidArr[2];
+				Course course = CourseDbLoader.Default.getInstance().loadByCourseId(courseName);
+				// We only want ISS and Instructor users for now
+				if (pid.matches(".+(?i)instructor.*"))
+				{
+					names.addAll(getInstructors(course.getId()));
+				}
+				else if (pid.matches(".+(?i)ubc_iss.*"))
+				{
+					names.addAll(getISS(course.getId()));
+				}
+			}
 		}
+		FilesTable.add(file, names);
 	}
 	
 	/**
-	 * Get a list of usernames who are instructors in the given course.
-	 * @param pid - the principal id returned from CSAccessControlEntry, should be in a form like G:CR:CL.UBC.MATH.101.201.2012W2.13204:INSTRUCTOR
-	 * so will have to parse the course name out from it.
+	 * Get a list of userids who are instructors in the given course.
 	 * @return
 	 * @throws PersistenceException 
 	 */
-	private ArrayList<String> getInstructors(String pid) throws PersistenceException
+	private ArrayList<Id> getInstructors(Id courseId) throws PersistenceException
 	{
-		ArrayList<String> names = new ArrayList<String>();
-		String[] pidArr = pid.split(":");
-		String courseName = pidArr[2];
-		try
-		{
-			Course course = CourseDbLoader.Default.getInstance().loadByBatchUid(courseName);
-			List<CourseMembership> memberships = 
-					CourseMembershipDbLoader.Default.getInstance().loadByCourseIdAndRole(course.getId(), CourseMembership.Role.INSTRUCTOR);
-			// NOTE: CourseMembership.Role.Instructor might not work on Connect as we have custom role names
-			for (CourseMembership membership : memberships)
-			{
-				membership.getUser().getUserName();
-				System.out.println("Instructor username: " + membership.getUser().getUserName());
-			}
-		} catch (KeyNotFoundException e)
-		{ // Course not found, skip
-			System.out.println("Course not found?");
-			e.printStackTrace();
-			return names;
-		} 
-		
-		return names;
+		// TODO allow configurable role IDs
+		CourseMembership.Role role = CourseMembership.Role.fromIdentifier("UBC_Instructor");
+		if (role == null)
+		{ // for testing on local dev instance
+			role = CourseMembership.Role.INSTRUCTOR;
+		}
+		return getUserWithRoleInCourse(courseId, role);
 	}
 
+	/**
+	 * Get a list of userids who are iss in the given course.
+	 * Note that ISS is a UBC specific role.
+	 * @return
+	 * @throws PersistenceException 
+	 */
+	private ArrayList<Id> getISS(Id courseId) throws PersistenceException
+	{
+		CourseMembership.Role role = CourseMembership.Role.fromIdentifier("UBC_ISS");
+		if (role == null)
+		{
+			return new ArrayList<Id>();
+		}
+		return getUserWithRoleInCourse(courseId, role);
+	}
+	
+	/**
+	 * Get all user in the given course with the given role. Return as an array of Ids
+	 * @param courseId
+	 * @param role
+	 * @return
+	 * @throws PersistenceException
+	 */
+	private ArrayList<Id> getUserWithRoleInCourse(Id courseId, CourseMembership.Role role) throws PersistenceException
+	{
+		ArrayList<Id> names = new ArrayList<Id>();
+		List<CourseMembership> memberships = CourseMembershipDbLoader.Default.getInstance().loadByCourseIdAndRole(courseId, role);
+		for (CourseMembership membership : memberships)
+		{
+			names.add(membership.getUserId());
+		}
+		return names;
+	}
+	
 }

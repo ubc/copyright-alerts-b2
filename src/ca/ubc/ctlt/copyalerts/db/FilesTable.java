@@ -6,19 +6,21 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
+import blackboard.cms.filesystem.CSFile;
 import blackboard.db.BbDatabase;
 import blackboard.db.ConnectionManager;
 import blackboard.db.ConnectionNotAvailableException;
+import blackboard.persist.Id;
 
 public class FilesTable
 {
 	private final static String TABLENAME = "ubc_ctlt_ca_files";
 
-	public void add(ArrayList<UserFilePair> entries) throws InaccessibleDbException
+	public static void add(CSFile file, ArrayList<Id> users) throws InaccessibleDbException
 	{
 		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
-		String query = "insert into "+ TABLENAME +" (pk1, username, filepath) values ("+ TABLENAME +"_seq.nextval, ?, ?)";
+		String query = "insert into "+ TABLENAME +" (pk1, userid, filepath) values ("+ TABLENAME +"_seq.nextval, ?, ?)";
 		PreparedStatement stmt;
 		try
 		{
@@ -26,10 +28,10 @@ public class FilesTable
 			// convert the query string into a compiled statement for faster execution
 			stmt = conn.prepareStatement(query);
 
-			for (UserFilePair e : entries)
+			for (Id e : users)
 			{
-				stmt.setString(1, e.getUsername());
-				stmt.setString(2, e.getPath());
+				stmt.setString(1, e.toExternalString());
+				stmt.setString(2, file.getFullPath());
 				stmt.executeUpdate();
 			}
 			stmt.close();
@@ -46,7 +48,7 @@ public class FilesTable
 		}
 	}
 	
-	public void deleteAll() throws InaccessibleDbException
+	public static void deleteAll() throws InaccessibleDbException
 	{
 		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;

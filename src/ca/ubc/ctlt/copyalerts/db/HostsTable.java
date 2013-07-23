@@ -1,11 +1,6 @@
 package ca.ubc.ctlt.copyalerts.db;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.util.HashMap;
-
-import blackboard.db.BbDatabase;
-import blackboard.db.ConnectionManager;
 
 public class HostsTable
 {

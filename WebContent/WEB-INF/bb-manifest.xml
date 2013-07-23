@@ -15,16 +15,17 @@
             <url value="http://www.ubc.ca/" />
             <description value="" />
         </vendor>
+        
+<!-- Admin Pages -->
 		<http-actions>
 			<config value="settings" />
-		</http-actions>
-<!--    These two JSPs are displayed when the "remove" and "properties" buttons -->
-<!--	are pressed on the Building Blocks administration page. 				-->
-<!--    <http-actions>
+			<!-- These two JSPs are displayed when the "remove" and "properties" buttons are pressed on the Building Blocks administration page. -->
+<!--    
             <config value="admin/configure.jsp"/>
             <remove value="admin/remove.jsp"/>
-        </http-actions>
  -->    
+		</http-actions>
+<!-- Application Pages -->
         <application-defs>
             <application handle="copyright-alerts" type="shared" use-ssl="false" 
             	name="Copyright Alerts" can-allow-guest="false">
@@ -32,9 +33,9 @@
                 <links>
                     <link>
                         <type value="system_tool"/>
-                        <name value="Copyright Alerts"/>
+                        <name value="Copyright Alerts Configuration"/>
                         <url value="/settings" />
-                        <description value="Copyright Alerts" />
+                        <description value="Copyright Alerts Configuration" />
                     </link>
                 </links>
             </application>

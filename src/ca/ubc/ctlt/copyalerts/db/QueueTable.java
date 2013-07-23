@@ -40,7 +40,6 @@ public class QueueTable
 
 			for (String path : paths)
 			{
-				System.out.println("Adding: " + path);
 				stmt.setString(1, path);
 				stmt.executeUpdate();
 			}

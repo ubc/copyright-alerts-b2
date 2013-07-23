@@ -21,10 +21,8 @@ import static org.quartz.TriggerBuilder.*;
 import static org.quartz.DateBuilder.*;
 import static org.quartz.impl.matchers.GroupMatcher.*;
 
-import blackboard.cms.filesystem.CSAccessControlEntry;
 import blackboard.cms.filesystem.CSContext;
 import blackboard.cms.filesystem.CSEntry;
-import blackboard.cms.filesystem.CSEntryMetadata;
 import blackboard.cms.filesystem.CSFile;
 import blackboard.data.user.User;
 import blackboard.db.ConnectionNotAvailableException;
@@ -32,6 +30,7 @@ import blackboard.persist.PersistenceException;
 import blackboard.platform.plugin.PlugInException;
 
 import ca.ubc.ctlt.copyalerts.SavedConfiguration;
+import ca.ubc.ctlt.copyalerts.db.FilesTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 import ca.ubc.ctlt.copyalerts.db.QueueTable;
 
@@ -150,11 +149,19 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		}
 		// part 2, go through the queue and check each file's metadata
 		IndexGenerator indexGen = new IndexGenerator(config.getAttributes());
+		// clear the database
+		try
+		{
+			FilesTable.deleteAll();
+		} catch (InaccessibleDbException e)
+		{
+			System.out.println("Could not reset the database.");
+			throw new JobExecutionException(e);
+		}
 		while (!paths.isEmpty())
 		{
 			for (String p : paths)
 			{
-				System.out.println("Path: " + p);
 				// have to provide a fake user or getContext is not happy
 				User user = new User();
 				CSContext ctx = CSContext.getContext(user);
@@ -166,16 +173,21 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				CSEntry entry = ctx.findEntry(p);
 				CSFile file = (CSFile) entry;
 				// Retrieve metadata
-				indexGen.process(file);
+				try
+				{
+					indexGen.process(file);
+				} catch (PersistenceException e)
+				{
+					System.out.println("Could not access BB database, stopping index job.");
+					throw new JobExecutionException(e);
+				} catch (InaccessibleDbException e)
+				{
+					System.out.println("Could not access database, stopping index job.");
+					throw new JobExecutionException(e);
+				}
 			}
-			try
-			{
-				Thread.sleep(500);
-			} catch (InterruptedException e)
-			{
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+
+			// load next batch of files
 			try
 			{
 				queue.pop();
