@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.api;
+package ca.ubc.ctlt.copyalerts.systemconfig.api;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -14,13 +14,21 @@ import org.quartz.Trigger;
 import org.quartz.UnableToInterruptJobException;
 import org.quartz.impl.StdSchedulerFactory;
 
+import com.google.gson.Gson;
+
+import blackboard.persist.PersistenceException;
+import blackboard.platform.context.Context;
+import blackboard.platform.context.ContextManagerFactory;
 import blackboard.platform.plugin.PlugInException;
+import blackboard.platform.vxi.service.VirtualSystemException;
 import static org.quartz.JobBuilder.*;
 import static org.quartz.TriggerBuilder.*;
 import static org.quartz.CronScheduleBuilder.*;
 
-import ca.ubc.ctlt.copyalerts.SavedConfiguration;
-import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
+import ca.ubc.ctlt.copyalerts.systemconfig.SavedConfiguration;
+import ca.ubc.ctlt.copyalerts.systemconfig.db.HostsTable;
+import ca.ubc.ctlt.copyalerts.systemconfig.db.InaccessibleDbException;
+import ca.ubc.ctlt.copyalerts.systemconfig.indexer.CSIndexJob;
 
 public class SystemConfigAPI extends HttpServlet
 {
@@ -32,6 +40,8 @@ public class SystemConfigAPI extends HttpServlet
 	private Trigger indexTrigger;
 	private Scheduler scheduler = null;
 	private SavedConfiguration config = new SavedConfiguration();
+	private HostsTable hostTable;
+	private String hostname;
 
 	/** 
 	 * Convenience method that can be overridden to do stuff when this servlet gets placed into service.
@@ -42,6 +52,8 @@ public class SystemConfigAPI extends HttpServlet
 		try
 		{
 			config.load();
+			hostTable = new HostsTable();
+			updateHost();
 			updateScheduler();
 		} catch (SchedulerException e)
 		{
@@ -50,6 +62,9 @@ public class SystemConfigAPI extends HttpServlet
 		{
 			throw new ServletException(e);
 		} catch (IOException e)
+		{
+			throw new ServletException(e);
+		} catch (InaccessibleDbException e)
 		{
 			throw new ServletException(e);
 		}
@@ -86,15 +101,36 @@ public class SystemConfigAPI extends HttpServlet
 	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
 	{
 		String path = request.getPathInfo();
-		System.out.println("Path Info: " + path);
 		response.setContentType("application/json");
 		response.setCharacterEncoding("UTF-8");
 		if (path.equals("/schedule"))
 		{ // returns a json map of all the schedule configuration values
 			response.getWriter().write(config.toJson());
 		}
-		else if (path.equals("/status"))
+		else if (path.equals("/status/status"))
 		{ // return a json map of the current execution status
+			try
+			{
+				response.getWriter().write(hostTable.toStatusJson());
+			} catch (VirtualSystemException e)
+			{
+				throw new ServletException(e);
+			} catch (InaccessibleDbException e)
+			{
+				throw new ServletException(e);
+			}
+		}
+		else if (path.equals("/host"))
+		{
+			try
+			{
+				hostTable.load();
+			} catch (InaccessibleDbException e)
+			{
+				System.out.println("Unable to load hosts.");
+				throw new ServletException(e);
+			}
+			response.getWriter().write(hostTable.toOptionsJson());
 		}
 		else if (path.equals("/metadata"))
 		{
@@ -151,6 +187,24 @@ public class SystemConfigAPI extends HttpServlet
 		    // return the new config to caller
 		    doGet(request, response);
 		}
+		else if (request.getPathInfo().equals("/host"))
+		{
+		    // parse the json string and save the new host leader
+	    	Gson gson = new Gson();
+	    	HostOptions host = gson.fromJson(sb.toString(), HostOptions.class);
+	    	try
+			{
+				hostTable.setLeader(host.leader);
+			} catch (InaccessibleDbException e)
+			{
+				// TODO Auto-generated catch block
+				System.out.println("Unable to access the database while writing host configuration.");
+				response.sendError(500);
+				return;
+			}
+		    // return the new config to caller
+		    doGet(request, response);
+		}
 		else if (request.getPathInfo().equals("/metadata"))
 		{
 		    try
@@ -189,7 +243,6 @@ public class SystemConfigAPI extends HttpServlet
 		// create and configure scheduler according to configuration
 		// 1. we have no prior scheduler enabled, need to create it
 		// 2. we already have a prior scheduler, need to modify its settings
-		System.out.println("CRON: " + config.getQuartzCron());
 		if (scheduler == null)
 		{ // need to create new scheduler
 			scheduler = StdSchedulerFactory.getDefaultScheduler();
@@ -197,6 +250,8 @@ public class SystemConfigAPI extends HttpServlet
 			indexJob = newJob(CSIndexJob.class)
 					.withIdentity("myJob", "group1")
 					.build();
+			// pass data to the job
+			indexJob.getJobDataMap().put("hostname", hostname);
 			// create a trigger that runs on the cron configuration
 			indexTrigger = newTrigger()
 			        .withIdentity("trigger1", "group1")
@@ -226,7 +281,34 @@ public class SystemConfigAPI extends HttpServlet
 			System.out.println("Pause scheduling");
 			scheduler.standby();
 		}
+		
+	}
+	
+	/**
+	 * Add this host into the database.
+	 * @throws ServletException
+	 */
+	private void updateHost() throws ServletException
+	{
+		try
+		{
+			Context ctx = ContextManagerFactory.getInstance().getContext();
+			hostname = ctx.getVirtualHost().getHostname();
 
+			if (!hostTable.contains(hostname))
+			{
+				hostTable.add(hostname);
+			}
+		} catch (VirtualSystemException e)
+		{
+			throw new ServletException(e);
+		} catch (PersistenceException e)
+		{
+			throw new ServletException(e);
+		} catch (InaccessibleDbException e)
+		{
+			throw new ServletException(e);
+		}
 	}
 	
 }

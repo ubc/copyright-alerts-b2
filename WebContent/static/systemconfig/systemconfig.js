@@ -26,22 +26,33 @@ Services.factory('MetadataAttributes',
 	}
 );
 
+Services.factory('Host', 
+	function($resource) 
+	{
+		return $resource('systemconfig/host');
+	}
+);
+
 var SystemConfigModule = angular.module('SystemConfigModule', ['SystemConfigServices']);
 
-function ScheduleCtrl($scope, Schedule) 
+function ScheduleCtrl($scope, Schedule, Host) 
 {
 	$scope.loading = true;
 	// the schedule get callback is a hack to get the jqCron plugin to update once the saved data is loaded
 	$scope.schedule = Schedule.get(function (data) { jQuery('#croninput').val(data.cron); jQuery('#croninput').blur(); $scope.loading = false; });
+	$scope.host = Host.get();
 
-	$scope.saveSchedule = function(schedule) 
+	$scope.saveSchedule = function() 
 	{
 		$scope.schedule.$save();
+		$scope.host.$save();
 	};
 }
 
 function StatusCtrl($scope, Status)
 {
+	$scope.status = Status.get();
+
 	$scope.stop = function()
 	{
 		Status.stop();

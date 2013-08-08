@@ -9,25 +9,47 @@
 	<!-- System Config -->
 	<servlet>
 		<servlet-name>SystemConfigRouter</servlet-name>
-		<servlet-class>ca.ubc.ctlt.copyalerts.ui.SystemConfigRouter</servlet-class>
+		<servlet-class>ca.ubc.ctlt.copyalerts.systemconfig.ui.SystemConfigRouter</servlet-class>
 	</servlet>
 	
 	<servlet-mapping>
 		<servlet-name>SystemConfigRouter</servlet-name>
 		<url-pattern>/settings</url-pattern>
 	</servlet-mapping>
+	<!-- Alerts Module -->
+	<servlet>
+		<servlet-name>AlertsModuleRouter</servlet-name>
+		<servlet-class>ca.ubc.ctlt.copyalerts.alertsmodule.AlertsModuleRouter</servlet-class>
+	</servlet>
+	
+	<servlet-mapping>
+		<servlet-name>AlertsModuleRouter</servlet-name>
+		<url-pattern>/showalerts/view.jsp</url-pattern>
+	</servlet-mapping>
 	
 <!-- API -->
 	<!-- System Config -->
 	<servlet>
 		<servlet-name>SystemConfigAPI</servlet-name>
-		<servlet-class>ca.ubc.ctlt.copyalerts.api.SystemConfigAPI</servlet-class>
+		<servlet-class>ca.ubc.ctlt.copyalerts.systemconfig.api.SystemConfigAPI</servlet-class>
 		<load-on-startup>127</load-on-startup> <!-- make sure this servlet loads on startup, cause we need to start the scheduler process -->
 	</servlet>
 	
 	<servlet-mapping>
 		<servlet-name>SystemConfigAPI</servlet-name>
 		<url-pattern>/systemconfig/*</url-pattern>
+	</servlet-mapping>
+	
+	<!-- Alerts Module -->
+	<servlet>
+		<servlet-name>AlertsModuleAPI</servlet-name>
+		<servlet-class>ca.ubc.ctlt.copyalerts.alertsmodule.AlertsModuleAPI</servlet-class>
+		<load-on-startup>127</load-on-startup> <!-- make sure this servlet loads on startup, cause we need to start the scheduler process -->
+	</servlet>
+	
+	<servlet-mapping>
+		<servlet-name>AlertsModuleAPI</servlet-name>
+		<url-pattern>/alertsmodule/*</url-pattern>
 	</servlet-mapping>
 	
 </web-app>

@@ -43,6 +43,26 @@
 
 <!-- Portal Module Definitions -->
         <module-defs>
+        	<module-type ext-ref="ubc-copyright-alerts" title="Copyright Alerts" uicreatable="true">
+				<jsp-dir>showalerts</jsp-dir>
+				<jsp>
+					<view>view.jsp</view>
+					<!--<edit>edit</edit>
+					<admin>admin</admin>-->
+				</jsp>
+			</module-type>
+			<module type="ubc-copyright-alerts" isadmin="true" useraddable="true"
+				isdeletable="true" title="Copyright Alerts">
+				<description>Copyright Alerts</description>
+				<module-groups>
+					<module-group id="Everyone" />
+				</module-groups>
+				<ExtraInfo>
+					<property key="body.text" type="String">
+					Shows files belonging to you that needs to be copyright tagged.
+					</property>
+				</ExtraInfo>
+			</module>
         </module-defs>
 <!--  Custom Content Types -->
         <content-handlers>

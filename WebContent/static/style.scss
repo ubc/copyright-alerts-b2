@@ -70,5 +70,56 @@
 		vertical-align: top;
 		width: 33%;
 	}
+
+	h3
+	{
+		&.running, &.notrunning, &.runerror, &.unavailable, &.limit
+		{
+			width: 12em;
+			margin-top: 0em;
+			margin-left: 2em;
+			padding-top: 0.3em;
+			padding-bottom: 0.3em;
+			color: white;
+			text-align: center;
+		}
+		&.running
+		{
+			background: mediumseagreen;
+		}
+		&.notrunning
+		{
+			background: lightslategray;
+		}
+		&.runerror
+		{
+			background: firebrick;
+		}
+		&.unavailable
+		{
+			border: 1px solid gray;
+			color: black;
+		}
+		&.limit
+		{
+			background: royalblue;
+		}
+	}
+
+	.killjob
+	{
+		margin-left: 2em;
+		padding: 0.2em;
+	}
+
+	dl
+	{
+		margin-bottom: 1em;
+		dd
+		{
+			margin-left: 2em;
+		}
+	}
+
 }
 

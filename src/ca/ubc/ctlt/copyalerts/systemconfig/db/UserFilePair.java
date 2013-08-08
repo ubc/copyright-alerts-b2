@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.db;
+package ca.ubc.ctlt.copyalerts.systemconfig.db;
 
 import blackboard.persist.Id;
 

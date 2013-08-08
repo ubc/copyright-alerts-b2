@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts;
+package ca.ubc.ctlt.copyalerts.systemconfig;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,7 +18,7 @@ public class SavedConfiguration
 	public final static String HOURS_CONFIG = "hours"; // the limiting hours
 	public final static String MINUTES_CONFIG = "minutes"; // the limiting minutes
 	public final static String ATTRIBUTES_CONFIG = "metadata_template_attribute_ids";	// key to access the stored attribute ids
-
+	
 	// cause properties are always string, we're going to have to need a delimiter for array conversion for attributes
 	public final static String DELIM = "	";
 	
@@ -34,7 +34,7 @@ public class SavedConfiguration
 
 	// private fields that will be serialised
 	private String enable = "false";
-	private String cron = "0 1 * * 6 ?";
+	private String cron = "0 1 * * 6";
 	private boolean limit = false;
 	private int hours = 1;
 	private int minutes = 0;
@@ -88,7 +88,6 @@ public class SavedConfiguration
 					attributes.add(attr);
 				}
 			}
-			
 		}
 	}
 	
@@ -176,7 +175,7 @@ public class SavedConfiguration
 		save();
 		load(); // need to reload the new values
 	}
-
+	
 	/**
 	 * Indicates whether the scheduler is enabled.
 	 * @return the enable

@@ -1,7 +1,7 @@
-package ca.ubc.ctlt.copyalerts.indexer;
+package ca.ubc.ctlt.copyalerts.systemconfig.indexer;
 
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 
 import org.quartz.DateBuilder.IntervalUnit;
 import org.quartz.InterruptableJob;
@@ -27,12 +27,13 @@ import blackboard.cms.filesystem.CSFile;
 import blackboard.data.user.User;
 import blackboard.db.ConnectionNotAvailableException;
 import blackboard.persist.PersistenceException;
-import blackboard.platform.plugin.PlugInException;
+import blackboard.platform.vxi.service.VirtualSystemException;
 
-import ca.ubc.ctlt.copyalerts.SavedConfiguration;
-import ca.ubc.ctlt.copyalerts.db.FilesTable;
-import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
-import ca.ubc.ctlt.copyalerts.db.QueueTable;
+import ca.ubc.ctlt.copyalerts.systemconfig.SavedConfiguration;
+import ca.ubc.ctlt.copyalerts.systemconfig.db.FilesTable;
+import ca.ubc.ctlt.copyalerts.systemconfig.db.HostsTable;
+import ca.ubc.ctlt.copyalerts.systemconfig.db.InaccessibleDbException;
+import ca.ubc.ctlt.copyalerts.systemconfig.db.QueueTable;
 
 public class CSIndexJob implements InterruptableJob, TriggerListener
 {
@@ -53,7 +54,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	public void execute(JobExecutionContext context) throws JobExecutionException
 	{
 		String id = context.getFireTime().toString();
-		System.out.println(id + " Start");
+		System.out.println("ubc.ctlt.copyalerts Start");
 
 		// only one thread should ever be indexing at the same time
 		synchronized(executing)
@@ -70,18 +71,39 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			}
 		}
 		
-		
+		// only 1 of the servers should be running indexing, check if this is us
+		String hostname = context.getJobDetail().getJobDataMap().getString("hostname");
+		HostsTable ht;
+		try
+		{
+			ht = new HostsTable();
+			if (!ht.getLeader().equals(hostname))
+			{
+				System.out.println("We're not the one supposed to be executing.");
+				synchronized (executing)
+				{
+					executing = false;
+				}
+				return;
+			}
+		} catch (VirtualSystemException e1)
+		{
+			throw new JobExecutionException(e1);
+		} catch (InaccessibleDbException e)
+		{
+			throw new JobExecutionException(e);
+		}
+
 		// Implement execution time limit (if needed)
 		// Basically, we'll have a trigger that'll fire after the time limit has passed. We use the CSIndexJob object as a trigger listener
 		// and will trigger an interrupt when the time has passed.
 		SavedConfiguration config = new SavedConfiguration();
+		java.sql.Date started = new java.sql.Date((new Date()).getTime());
 		try
 		{
-			config.load();
-		} catch (PlugInException e)
-		{
-			throw new JobExecutionException(e);
-		} catch (IOException e)
+			// Save the fact that we've started running
+			ht.setRunStats(hostname, HostsTable.STATUS_RUNNING, started, new java.sql.Date(0));
+		} catch (InaccessibleDbException e)
 		{
 			throw new JobExecutionException(e);
 		}
@@ -107,10 +129,85 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				throw new JobExecutionException(e);
 			}
 		}
+		
+		// run indexing
+		boolean limitReached = false;
+		try
+		{
+			boolean ret = indexer(config);
+			if (ret)
+			{
+				java.sql.Date ended = new java.sql.Date((new Date()).getTime());
+				System.out.println("Finished by time limit");
+				ht.setRunStats(hostname, HostsTable.STATUS_LIMIT, started, ended);
+				limitReached = true;
+			}
+		} catch (JobExecutionException e)
+		{
+			java.sql.Date ended = new java.sql.Date((new Date()).getTime());
+			try
+			{
+				ht.setRunStats(hostname, HostsTable.STATUS_ERROR, started, ended);
+			} catch (InaccessibleDbException e1)
+			{
+				System.out.println("Catastrophic error, unable to even save error notification.");
+			}
+			throw e;
+		} catch (InaccessibleDbException e)
+		{
+			throw new JobExecutionException(e);
+		} 
+		
+		// Remove execution time limit now that we're done
+		if (config.isLimited())
+		{
+			try
+			{
+				System.out.println("Removing limit trigger");
+				sched.deleteJob(noopJob.getKey());
+				//sched.getListenerManager().removeTriggerListener(getName());
+			} catch (SchedulerException e)
+			{
+				System.out.println("Unable to remove limit trigger listener.");
+				e.printStackTrace();
+			}
+		}
 
+		// Save the fact that we've finished running only if we didn't finish by time limit
+		if (!limitReached)
+		{
+			java.sql.Date ended = new java.sql.Date((new Date()).getTime());
+			try
+			{
+				ht.setRunStats(hostname, HostsTable.STATUS_STOPPED, started, ended);
+			} catch (InaccessibleDbException e)
+			{
+				System.out.println("Unable to save run stats.");
+				e.printStackTrace();
+			}
+		}
+		System.out.println("ubc.ctlt.copyalerts Done");
+	
+		// let others execute now
+		synchronized (executing)
+		{
+			executing = false;
+		}
+
+	}
+	
+	/**
+	 * The actual indexing operation
+	 * @param config
+	 * @return true if stopped by time limit, false otherwise
+	 * @throws JobExecutionException
+	 */
+	private boolean indexer(SavedConfiguration config) throws JobExecutionException
+	{
 		// run actual job
 		// part 1, try generating the queue
 		QueueTable queue;
+		System.out.println("Queue Generation Start");
 		ArrayList<String> paths = new ArrayList<String>();
 		try
 		{
@@ -127,7 +224,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 					queue.add(paths);
 					if (syncStop())
 					{
-						break;
+						return true;
 					}
 				}
 				// now we can process the paths from the start
@@ -143,11 +240,13 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			throw new JobExecutionException(e);
 		}
 		// make sure not to execute next part if we're supposed to halt
+		System.out.println("Queue Generation Done");
 		if (syncStop())
 		{
-			paths.clear();
+			return true;
 		}
 		// part 2, go through the queue and check each file's metadata
+		System.out.println("Check Metadata Start");
 		IndexGenerator indexGen = new IndexGenerator(config.getAttributes());
 		// clear the database
 		try
@@ -199,36 +298,13 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			}
 			if (syncStop())
 			{
-				break;
+				return true;
 			}
 		}
-		
-		// Remove execution time limit now that we're done
-		if (config.isLimited())
-		{
-			try
-			{
-				System.out.println("Removing limit trigger");
-				sched.deleteJob(noopJob.getKey());
-				//sched.getListenerManager().removeTriggerListener(getName());
-			} catch (SchedulerException e)
-			{
-				System.out.println("Unable to remove limit trigger listener.");
-				e.printStackTrace();
-			}
-		}
-		
-
-		System.out.println(id + " Fire!");
-		
-		// let others execute now
-		synchronized (executing)
-		{
-			executing = false;
-		}
-
+		System.out.println("Check Metadata Done");
+		return false;
 	}
-
+	
 	@Override
 	public void interrupt() throws UnableToInterruptJobException
 	{

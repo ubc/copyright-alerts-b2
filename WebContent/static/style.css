@@ -34,3 +34,29 @@
   display: inline-block;
   vertical-align: top;
   width: 33%; }
+#alertsysconfig h3.running, #alertsysconfig h3.notrunning, #alertsysconfig h3.runerror, #alertsysconfig h3.unavailable, #alertsysconfig h3.limit {
+  width: 12em;
+  margin-top: 0em;
+  margin-left: 2em;
+  padding-top: 0.3em;
+  padding-bottom: 0.3em;
+  color: white;
+  text-align: center; }
+#alertsysconfig h3.running {
+  background: mediumseagreen; }
+#alertsysconfig h3.notrunning {
+  background: lightslategray; }
+#alertsysconfig h3.runerror {
+  background: firebrick; }
+#alertsysconfig h3.unavailable {
+  border: 1px solid gray;
+  color: black; }
+#alertsysconfig h3.limit {
+  background: royalblue; }
+#alertsysconfig .killjob {
+  margin-left: 2em;
+  padding: 0.2em; }
+#alertsysconfig dl {
+  margin-bottom: 1em; }
+  #alertsysconfig dl dd {
+    margin-left: 2em; }

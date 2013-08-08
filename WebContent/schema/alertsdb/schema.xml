@@ -26,12 +26,16 @@ to get the raw primary key for entries. You have to manually parse the primary k
 	<column name="pk1" data-type="int" nullable="false" identity="true" 
 		comment="This is the primary key for the table, in Oracle it should be updated using the sequence ubc_ctlt_ca_hosts_seq which will be created automatically" />
 	<column name="host" data-type="varchar(255)" nullable="false" comment="the hostname of this node" />
-	<column name="leader" data-type="char(1)" nullable="false" default="'N'" comment="whether this node is the leader">
+	<column name="leader" data-type="char(1)" nullable="false" default="'0'" comment="whether this node is the leader">
 		<value-constraint name="ubc_leaderconstraintyn">
-			<accepted-value value="Y" />
-			<accepted-value value="N" />
+			<accepted-value value="0" />
+			<accepted-value value="1" />
 		</value-constraint>
 	</column>
+	<column name="status" data-type="varchar(255)" nullable="false" default="'stopped'" comment="whether the node is running the indexing job right now" />
+	<!-- Blackboard does not allow date or timestamp data types, so have to store the time in strings -->
+	<column name="runstart" data-type="date" default="''" comment="when did the indexing job start" />
+	<column name="runend" data-type="date" default="''" comment="when did the indexing job stop" />
 	<primary-key name="ubc_ctlt_ca_hosts_pk1" comment="Unique primary key">
 		<columnref name="pk1" />
 	</primary-key>

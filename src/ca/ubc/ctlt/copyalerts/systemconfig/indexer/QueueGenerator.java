@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.indexer;
+package ca.ubc.ctlt.copyalerts.systemconfig.indexer;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -8,7 +8,7 @@ import blackboard.cms.filesystem.CSEntry;
 import blackboard.cms.filesystem.CSFile;
 import blackboard.data.user.User;
 import blackboard.persist.PersistenceException;
-import ca.ubc.ctlt.copyalerts.db.QueueTable;
+import ca.ubc.ctlt.copyalerts.systemconfig.db.QueueTable;
 
 public class QueueGenerator
 {

@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts;
+package ca.ubc.ctlt.copyalerts.systemconfig;
 
 import java.io.File;
 import java.io.FileInputStream;
