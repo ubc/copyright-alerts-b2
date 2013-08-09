@@ -24,7 +24,11 @@ public class QueueGenerator
 		{
 			// have to provide a fake user or getContext is not happy
 			User user = new User();
-			ctx = CSContext.getContext(user);
+			ctx = CSContext.getContext();
+			if (ctx == null)
+			{
+				System.out.println("ctx is null");
+			}
 			// Give ourself permission to do anything in the Content Collections.
 			// Must do this cause we don't have a real request contest that many of the CS API calls
 			// require when you're not a superuser.

@@ -1,11 +1,11 @@
 package ca.ubc.ctlt.copyalerts.systemconfig.db;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -34,7 +34,7 @@ public class HostsTable
 	public final static String STATUS_LIMIT = "limit";
 	public final static String STATUS_ERROR = "error";
 	
-	public final static String STATUS_RUNNING_KEY = "running";
+	public final static String STATUS_RUNNING_KEY = "status";
 	public final static String STATUS_RUNTIME_KEY = "runtime";
 	public final static String STATUS_START_KEY = "runstart";
 	public final static String STATUS_END_KEY = "runend";
@@ -62,13 +62,8 @@ public class HostsTable
 	public void add(String host, boolean leader) throws InaccessibleDbException
 	{
 		if (hosts.containsKey(host))
-		{
-			if (leader == hosts.get(host))
-			{ // same entry, do not need to add
-				return;
-			}
-			// entry already exists, delete it first, cause we're lazy and don't want to write code for update
-			delete(host);
+		{ // entry already exists
+			return;
 		}
 		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
@@ -202,16 +197,47 @@ public class HostsTable
 	 */
 	public void setLeader(String host) throws InaccessibleDbException
 	{
-		if (!hosts.containsKey(host))
-		{ // make sure we have the host entry, do nothing if we don't
+		if (!hosts.containsKey(host) || hosts.get(host))
+		{ // do nothing if we don't have the host entry or if the host is already the leader
 			return;
 		}
 		String formerLeader = getLeader();
-		if (!formerLeader.isEmpty())
+		// demote the current leader
+		// promote the new leader
+		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
+		Connection conn = null;
+		String query = "UPDATE "+ TABLENAME +" SET leader=? WHERE host=?";
+		PreparedStatement stmt;
+		try
 		{
-			add(formerLeader);
+			conn = cm.getConnection();
+			// convert the query string into a compiled statement for faster execution
+			stmt = conn.prepareStatement(query);
+			// demote current leader
+			stmt.setString(1, "0");
+			stmt.setString(2, formerLeader);
+			stmt.executeUpdate();
+			// promote the new leader
+			stmt.setString(1, "1");
+			stmt.setString(2, host);
+			stmt.executeUpdate();
+			stmt.close();
+			// update in memory mapping
+			hosts.put(formerLeader, false);
+			hosts.put(host, true);
+		} catch (SQLException e)
+		{
+			e.printStackTrace();
+			throw new InaccessibleDbException("Couldn't execute query", e);
+		} catch (ConnectionNotAvailableException e)
+		{
+			throw new InaccessibleDbException("Unable to connect to db", e);
 		}
-		add(host, true);
+		finally
+		{
+			if (conn != null) cm.releaseConnection(conn); // MUST release connection or we'll exhaust connection pool
+		}
+		
 	}
 	
 	/**
@@ -228,7 +254,7 @@ public class HostsTable
 	 * Save the run stats to the database
 	 * @throws InaccessibleDbException 
 	 */
-	public void setRunStats(String host, String status, Date start, Date end) throws InaccessibleDbException
+	public void setRunStats(String host, String status, Timestamp start, Timestamp end) throws InaccessibleDbException
 	{
 		if (!hosts.containsKey(host))
 		{ // invalid entry
@@ -244,8 +270,8 @@ public class HostsTable
 			// convert the query string into a compiled statement for faster execution
 			stmt = conn.prepareStatement(query);
 			stmt.setString(1, status);
-			stmt.setDate(2, start);
-			stmt.setDate(3, end);
+			stmt.setTimestamp(2, start);
+			stmt.setTimestamp(3, end);
 			stmt.executeUpdate();
 			stmt.close();
 		} catch (SQLException e)
@@ -284,39 +310,38 @@ public class HostsTable
 			String hostname = getLeader();
 			conn = cm.getConnection();
 			String status = STATUS_STOPPED;
-			Date start = new Date(0);
-			Date end = new Date(0);
+			Timestamp start = new Timestamp(0);
+			Timestamp end = new Timestamp(0);
 
 			// note that there's no order guarantee from just select rownum statements, so have to use the order by subquery
 			// to impose a repeatable order on the return results
 			if (!hostname.isEmpty())
 			{
 				String query = "SELECT "+ STATUS_RUNNING_KEY +", "+ STATUS_START_KEY +", "+ STATUS_END_KEY +" FROM "+ TABLENAME + " WHERE host='" + hostname + "'"; 
-				System.out.println(query);
 		        PreparedStatement queryCompiled = conn.prepareStatement(query);
 		        ResultSet res = queryCompiled.executeQuery();
 		
 		        while(res.next())
 		        { // 1: status, 2: start, 3: end, should be order of the columns returned
 		        	status = res.getString(1);
-		        	start = res.getDate(2);
-		        	end = res.getDate(3);
+		        	start = res.getTimestamp(2);
+		        	end = res.getTimestamp(3);
 		        }
 		        res.close();
 		        queryCompiled.close();
 			}
-	        
+			
 			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss a");
 	        HashMap<String, String> ret = new HashMap<String, String>();
 	        ret.put(STATUS_RUNNING_KEY, status);
 	        ret.put(STATUS_START_KEY, "-");
 	        ret.put(STATUS_RUNTIME_KEY, "-");
 	        ret.put(STATUS_END_KEY, "-");
-	        if (start.getTime() > 0)
+	        if (start != null && start.getTime() > 0)
 	        {
 		        ret.put(STATUS_START_KEY, dateFormat.format(start));
 	        }
-	        if (end.getTime() > 0)
+	        if (end != null && end.getTime() > 0)
 	        {
 		        ret.put(STATUS_RUNTIME_KEY, getRuntime(start, end));
 		        ret.put(STATUS_END_KEY, dateFormat.format(end));
@@ -345,7 +370,7 @@ public class HostsTable
 		}
 	}
 	
-	private String getRuntime(Date start, Date end)
+	private String getRuntime(Timestamp start, Timestamp end)
 	{
 		Duration duration = new Duration(end.getTime() - start.getTime()); // in milliseconds
 		PeriodFormatter formatter = new PeriodFormatterBuilder()

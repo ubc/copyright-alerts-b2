@@ -1,5 +1,6 @@
 package ca.ubc.ctlt.copyalerts.systemconfig.indexer;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -88,9 +89,11 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			}
 		} catch (VirtualSystemException e1)
 		{
+			e1.printStackTrace();
 			throw new JobExecutionException(e1);
 		} catch (InaccessibleDbException e)
 		{
+			e.printStackTrace();
 			throw new JobExecutionException(e);
 		}
 
@@ -98,13 +101,14 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		// Basically, we'll have a trigger that'll fire after the time limit has passed. We use the CSIndexJob object as a trigger listener
 		// and will trigger an interrupt when the time has passed.
 		SavedConfiguration config = new SavedConfiguration();
-		java.sql.Date started = new java.sql.Date((new Date()).getTime());
+		Timestamp started = new Timestamp((new Date()).getTime());
 		try
 		{
 			// Save the fact that we've started running
-			ht.setRunStats(hostname, HostsTable.STATUS_RUNNING, started, new java.sql.Date(0));
+			ht.setRunStats(hostname, HostsTable.STATUS_RUNNING, started, new Timestamp(0));
 		} catch (InaccessibleDbException e)
 		{
+			e.printStackTrace();
 			throw new JobExecutionException(e);
 		}
 		Scheduler sched = context.getScheduler();
@@ -137,14 +141,14 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			boolean ret = indexer(config);
 			if (ret)
 			{
-				java.sql.Date ended = new java.sql.Date((new Date()).getTime());
+				Timestamp ended = new Timestamp((new Date()).getTime());
 				System.out.println("Finished by time limit");
 				ht.setRunStats(hostname, HostsTable.STATUS_LIMIT, started, ended);
 				limitReached = true;
 			}
 		} catch (JobExecutionException e)
 		{
-			java.sql.Date ended = new java.sql.Date((new Date()).getTime());
+			Timestamp ended = new Timestamp((new Date()).getTime());
 			try
 			{
 				ht.setRunStats(hostname, HostsTable.STATUS_ERROR, started, ended);
@@ -155,6 +159,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			throw e;
 		} catch (InaccessibleDbException e)
 		{
+			e.printStackTrace();
 			throw new JobExecutionException(e);
 		} 
 		
@@ -176,7 +181,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		// Save the fact that we've finished running only if we didn't finish by time limit
 		if (!limitReached)
 		{
-			java.sql.Date ended = new java.sql.Date((new Date()).getTime());
+			Timestamp ended = new Timestamp((new Date()).getTime());
 			try
 			{
 				ht.setRunStats(hostname, HostsTable.STATUS_STOPPED, started, ended);
@@ -222,6 +227,14 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				{
 					paths = generator.next();
 					queue.add(paths);
+					try
+					{
+						Thread.sleep(5000);
+					} catch (InterruptedException e)
+					{
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 					if (syncStop())
 					{
 						return true;
@@ -261,9 +274,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		{
 			for (String p : paths)
 			{
-				// have to provide a fake user or getContext is not happy
-				User user = new User();
-				CSContext ctx = CSContext.getContext(user);
+				CSContext ctx = CSContext.getContext();
 				// Give ourself permission to do anything in the Content Collections.
 				// Must do this cause we don't have a real request contest that many of the CS API calls
 				// require when you're not a superuser.
