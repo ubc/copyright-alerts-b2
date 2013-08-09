@@ -202,6 +202,10 @@ public class SavedConfiguration
 		}
 		else
 		{
+			// jqcron is off by one in the day of week field, so add it back if needed
+			int correction = Integer.parseInt(parts[4]);
+			correction += 1;
+			parts[4] = Integer.toString(correction);
 			parts[2] = "?";
 		}
 		// add the seconds field
