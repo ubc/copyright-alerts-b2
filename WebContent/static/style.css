@@ -18,9 +18,10 @@
   padding-right: 0.5em;
   margin-bottom: 0.5em; }
 #alertsysconfig input.save {
-  display: block;
-  margin-top: 1em;
   padding: 0.5em; }
+#alertsysconfig div.savesection {
+  margin-top: 1em;
+  display: block; }
 #alertsysconfig ul.attributeIds {
   margin: 1em; }
   #alertsysconfig ul.attributeIds li {
@@ -60,3 +61,12 @@
   margin-bottom: 1em; }
   #alertsysconfig dl dd {
     margin-left: 2em; }
+#alertsysconfig .savemsg {
+  padding: 0.5em;
+  color: white; }
+  #alertsysconfig .savemsg.saving {
+    background: steelblue; }
+  #alertsysconfig .savemsg.success {
+    background: mediumseagreen; }
+  #alertsysconfig .savemsg.error {
+    background: firebrick; }

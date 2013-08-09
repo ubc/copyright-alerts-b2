@@ -43,9 +43,13 @@
 
 	input.save
 	{
-		display: block;
-		margin-top: 1em;
 		padding: 0.5em;
+	}
+
+	div.savesection
+	{
+		margin-top: 1em;
+		display: block;
 	}
 
 	ul.attributeIds
@@ -118,6 +122,26 @@
 		dd
 		{
 			margin-left: 2em;
+		}
+	}
+
+	.savemsg
+	{
+		padding: 0.5em;
+		color: white;
+		&.saving
+		{
+			background: steelblue;
+		}
+
+		&.success
+		{
+			background: mediumseagreen;
+		}
+
+		&.error
+		{
+			background: firebrick;
 		}
 	}
 

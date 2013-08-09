@@ -35,23 +35,39 @@ Services.factory('Host',
 
 var SystemConfigModule = angular.module('SystemConfigModule', ['SystemConfigServices']);
 
-function ScheduleCtrl($scope, Schedule, Host) 
+function ScheduleCtrl($scope, $timeout, Schedule, Host) 
 {
 	$scope.loading = true;
+	$scope.saving = "";
 	// the schedule get callback is a hack to get the jqCron plugin to update once the saved data is loaded
 	$scope.schedule = Schedule.get(function (data) { jQuery('#croninput').val(data.cron); jQuery('#croninput').blur(); $scope.loading = false; });
 	$scope.host = Host.get();
+	
+	$scope.saveSuccessful = function()
+	{
+		if ($scope.saving == "error") return;
+		$timeout(function() { $scope.saving = "success"; }, 500);
+		$timeout(function() { $scope.saving = ""; }, 6000);
+	};
+	
+	$scope.saveError = function()
+	{
+		$scope.saving = "error";
+	};
 
 	$scope.saveSchedule = function() 
 	{
-		$scope.schedule.$save();
-		$scope.host.$save();
+		$scope.saving = "saving";
+		$scope.schedule.$save($scope.saveSuccessful, $scope.saveError);
+		$scope.host.$save(function() {},$scope.saveError);
 	};
 }
 
-function StatusCtrl($scope, Status)
+function StatusCtrl($scope, $timeout, Status)
 {
-	$scope.status = Status.get();
+	(function updateStatus() {
+		$scope.status = Status.get(function() { $timeout(updateStatus, 10000); });
+	})();
 
 	$scope.stop = function()
 	{

@@ -23,14 +23,14 @@ jQuery.noConflict();
 <div id="alertsysconfig" ng-app="SystemConfigModule">
 	<div class="section" ng-controller="StatusCtrl">
 		<h1>Status</h1>
-		<div ng-switch on="status.running">
+		<div ng-switch on="status.status">
 		<h3 class="running" ng-switch-when="running">Running</h3>
 		<h3 class="limit" ng-switch-when="limit">Time Limit Reached</h3>
 		<h3 class="notrunning" ng-switch-when="stopped">Stopped</h3>
 		<h3 class="runerror" ng-switch-when="error">Error During Run</h3>
 		<h3 class="unavailable" ng-switch-default>Status Not Available</h3>
 		</div>
-		<input class="killjob" ng-show="status.running == 'running'" type="button" ng-click="stop()" value="Stop Current Running Job" />
+		<input class="killjob" ng-show="status.status == 'running'" type="button" ng-click="stop()" value="Stop Current Running Job" />
 		<h2>Last Run Statistics</h2>
 		<dl>
 			<dt>Runtime:</dt><dd>{{status.runtime}}</dd>
@@ -62,7 +62,12 @@ jQuery.noConflict();
 			<label>Run alert generation on:
 				<select ng-model="host.leader" ng-options="opt for opt in host.options"></select>
 			</label>
-			<input class='save' type="button" ng-click="saveSchedule()" value="Save Schedule" />
+			<div class="savesection">
+				<input class='save' type="button" ng-click="saveSchedule()" value="Save Schedule" />
+				<span class="savemsg saving" ng-show='saving == "saving"'>Saving...</span>
+				<span class="savemsg success" ng-show="saving == 'success'">Save Successful!</span>
+				<span class="savemsg error" ng-show="saving == 'error'">Error Saving</span>
+			</div>
 		</form>
 	</div>
 
