@@ -6,7 +6,6 @@ import blackboard.cms.filesystem.CSContext;
 import blackboard.cms.filesystem.CSDirectory;
 import blackboard.cms.filesystem.CSEntry;
 import blackboard.cms.filesystem.CSFile;
-import blackboard.data.user.User;
 import blackboard.persist.PersistenceException;
 import ca.ubc.ctlt.copyalerts.systemconfig.db.QueueTable;
 
@@ -22,8 +21,6 @@ public class QueueGenerator
 		// because as far as this Quartz job is aware, there are no users logged in
 		try
 		{
-			// have to provide a fake user or getContext is not happy
-			User user = new User();
 			ctx = CSContext.getContext();
 			if (ctx == null)
 			{
