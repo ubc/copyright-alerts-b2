@@ -17,15 +17,7 @@
 		<url-pattern>/settings</url-pattern>
 	</servlet-mapping>
 	<!-- Alerts Module -->
-	<servlet>
-		<servlet-name>AlertsModuleRouter</servlet-name>
-		<servlet-class>ca.ubc.ctlt.copyalerts.alertsmodule.AlertsModuleRouter</servlet-class>
-	</servlet>
-	
-	<servlet-mapping>
-		<servlet-name>AlertsModuleRouter</servlet-name>
-		<url-pattern>/showalerts/view.jsp</url-pattern>
-	</servlet-mapping>
+	<!-- no routing as it's a jsp -->
 	
 <!-- API -->
 	<!-- System Config -->

@@ -25,6 +25,7 @@
             <remove value="admin/remove.jsp"/>
  -->    
 		</http-actions>
+
 <!-- Application Pages -->
         <application-defs>
             <application handle="copyright-alerts" type="shared" use-ssl="false" 
@@ -44,7 +45,7 @@
 <!-- Portal Module Definitions -->
         <module-defs>
         	<module-type ext-ref="ubc-copyright-alerts" title="Copyright Alerts" uicreatable="true">
-				<jsp-dir>showalerts</jsp-dir>
+				<jsp-dir>alertsmodule-static</jsp-dir>
 				<jsp>
 					<view>view.jsp</view>
 					<!--<edit>edit</edit>
