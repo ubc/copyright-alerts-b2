@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.systemconfig;
+package ca.ubc.ctlt.copyalerts;
 
 import java.io.IOException;
 import java.util.ArrayList;

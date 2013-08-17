@@ -7,7 +7,7 @@ import blackboard.cms.filesystem.CSDirectory;
 import blackboard.cms.filesystem.CSEntry;
 import blackboard.cms.filesystem.CSFile;
 import blackboard.persist.PersistenceException;
-import ca.ubc.ctlt.copyalerts.systemconfig.db.QueueTable;
+import ca.ubc.ctlt.copyalerts.db.QueueTable;
 
 public class QueueGenerator
 {

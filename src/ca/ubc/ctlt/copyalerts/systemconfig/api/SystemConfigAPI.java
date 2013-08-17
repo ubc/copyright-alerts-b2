@@ -25,9 +25,9 @@ import static org.quartz.JobBuilder.*;
 import static org.quartz.TriggerBuilder.*;
 import static org.quartz.CronScheduleBuilder.*;
 
-import ca.ubc.ctlt.copyalerts.systemconfig.SavedConfiguration;
-import ca.ubc.ctlt.copyalerts.systemconfig.db.HostsTable;
-import ca.ubc.ctlt.copyalerts.systemconfig.db.InaccessibleDbException;
+import ca.ubc.ctlt.copyalerts.SavedConfiguration;
+import ca.ubc.ctlt.copyalerts.db.HostsTable;
+import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 import ca.ubc.ctlt.copyalerts.systemconfig.indexer.CSIndexJob;
 
 public class SystemConfigAPI extends HttpServlet

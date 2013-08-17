@@ -3,8 +3,8 @@ package ca.ubc.ctlt.copyalerts.systemconfig.indexer;
 import java.util.ArrayList;
 import java.util.List;
 
-import ca.ubc.ctlt.copyalerts.systemconfig.db.FilesTable;
-import ca.ubc.ctlt.copyalerts.systemconfig.db.InaccessibleDbException;
+import ca.ubc.ctlt.copyalerts.db.FilesTable;
+import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 import blackboard.cms.filesystem.CSAccessControlEntry;
 import blackboard.cms.filesystem.CSEntryMetadata;
 import blackboard.cms.filesystem.CSFile;

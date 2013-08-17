@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.systemconfig.db;
+package ca.ubc.ctlt.copyalerts.db;
 
 public class InaccessibleDbException extends Exception
 {

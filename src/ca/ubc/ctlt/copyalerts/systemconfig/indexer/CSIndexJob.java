@@ -29,11 +29,11 @@ import blackboard.db.ConnectionNotAvailableException;
 import blackboard.persist.PersistenceException;
 import blackboard.platform.vxi.service.VirtualSystemException;
 
-import ca.ubc.ctlt.copyalerts.systemconfig.SavedConfiguration;
-import ca.ubc.ctlt.copyalerts.systemconfig.db.FilesTable;
-import ca.ubc.ctlt.copyalerts.systemconfig.db.HostsTable;
-import ca.ubc.ctlt.copyalerts.systemconfig.db.InaccessibleDbException;
-import ca.ubc.ctlt.copyalerts.systemconfig.db.QueueTable;
+import ca.ubc.ctlt.copyalerts.SavedConfiguration;
+import ca.ubc.ctlt.copyalerts.db.FilesTable;
+import ca.ubc.ctlt.copyalerts.db.HostsTable;
+import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
+import ca.ubc.ctlt.copyalerts.db.QueueTable;
 
 public class CSIndexJob implements InterruptableJob, TriggerListener
 {

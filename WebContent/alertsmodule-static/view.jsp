@@ -2,18 +2,108 @@
 <%@ taglib prefix="bbNG" uri="/bbNG"%>
 
 <bbNG:includedPage ctxId="ctx">
-<div id="ubc_ctlt_ca_insert_div"></div>
+
+<style type="text/css">
+#ubc_ctlt_ca_angular_div li
+{
+	border-top: 1px dotted #ccc;
+	overflow: hidden;
+	width: 100%;
+}
+#ubc_ctlt_ca_angular_div li a
+{
+	padding: 0.5em 0;
+}
+#ubc_ctlt_ca_angular_div li a.metadata-link
+{
+	float: left;
+	word-wrap: break-word;
+}
+#ubc_ctlt_ca_angular_div li a.small-view
+{
+	font-size: 0.85em;
+	font-style: italic;
+	float: right;
+}
+#ubc_ctlt_ca_angular_div li:first-child
+{
+	border-top: none;
+}
+#ubc_ctlt_ca_angular_div li a:hover
+{
+	background: #ececec;
+	text-decoration: none;
+}
+#ubc_ctlt_ca_angular_div h4
+{
+	padding-top: 0.5em;
+}
+#ubc_ctlt_ca_angular_div h4 a span
+{
+	color: #555;
+}
+#ubc_ctlt_ca_angular_div p.update
+{
+	font-size: 0.85em;
+	margin-top: 0.75em;
+}
+#ubc_ctlt_ca_angular_div div.hideInitially
+{
+	display: none;
+}
+</style>
+
 <div id="ubc_ctlt_ca_angular_div">
-	<div ng-controller="FileListCtrl">
-		<p>Hello World!</p>
-		{{files.Test}}
+<div id="ubc_ctlt_ca_app" class="hideInitially" ng-controller="FileListCtrl">
+	<p>These courses have files that needs to be copyright tagged.</p>
+	<div ng-repeat="course in courseFiles.courses">
+		<h4 class="moduleTitle">
+			<a href="/bbcswebdav/courses/{{course.name}}">
+				{{course.name}}
+			</a>
+			<a ng-click="course.show=!course.show">
+				<span>({{course.numFiles}})</span>
+				<img alt="Show files for {{course.name}}" ng-show="!course.show"
+					src="/images/ci/ng/cm_arrow_down.gif" />
+				<img alt="Hide files for {{course.name}}" ng-show="course.show"
+					src="/images/ci/ng/cm_arrow_up.gif" />
+			</a>
+		</h4>
+		<ul ng-show="course.show">
+			<li ng-repeat="file in course.files">
+			<a class="metadata-link" href="/webapps/ubc-metadata-BBLEARN//metadata/list?path={{file.encodedPath}}">{{file.name}}</a>
+			<a class="small-view" href="/bbcswebdav{{file.rawPath}}">(view)</a>
+			</li>
+		</ul>
 	</div>
+	<p class='update'>Updated: {{lastupdate}}</p>
 </div>
+</div>
+
+<bbNG:jsBlock>
 <script type="text/javascript">
 
-function FileListCtrl($scope, Files) 
+function FileListCtrl($scope, Files, Status) 
 {
-	$scope.files = Files.get(); 
+	$scope.courseFiles = Files.get(
+		function(val)
+		{ // show the alerts if the user actually has untagged files
+			if (val.courses.length > 0)
+			{ 
+				$('ubc_ctlt_ca_app').toggleClassName('hideInitially');
+			}
+		}
+	);
+	$scope.lastupdate = "Retrieving...";
+	$scope.status = Status.get(
+		function(val)
+		{
+			if (val.runend == '-')
+				$scope.lastupdate = "Currently Running";
+			else
+				$scope.lastupdate = val.runend;
+		}
+	);
 };
 
 // Need a separate function to start angularjs cause Blackboard's javascript
@@ -29,6 +119,12 @@ function startAngular()
 		function($resource)
 		{
 			return $resource('/webapps/ubc-copyright-alerts-BBLEARN/alertsmodule/files');
+		}
+	);
+	services.factory('Status', 
+		function($resource) 
+		{
+			return $resource('/webapps/ubc-copyright-alerts-BBLEARN/systemconfig/status/status');
 		}
 	);
 	angular.module('CopyAlertsModule', ['CopyAlertsModuleServices']);
@@ -101,4 +197,5 @@ libLoader([
 ]);
 	
 </script>
+</bbNG:jsBlock>
 </bbNG:includedPage>
