@@ -2,83 +2,92 @@
 <%@ taglib prefix="bbNG" uri="/bbNG"%>
 
 <bbNG:includedPage ctxId="ctx">
-
-<style type="text/css">
-#ubc_ctlt_ca_angular_div li
-{
-	border-top: 1px dotted #ccc;
-	overflow: hidden;
-	width: 100%;
-}
-#ubc_ctlt_ca_angular_div li a
-{
-	padding: 0.5em 0;
-}
-#ubc_ctlt_ca_angular_div li a.metadata-link
-{
-	float: left;
-	word-wrap: break-word;
-}
-#ubc_ctlt_ca_angular_div li a.small-view
-{
-	font-size: 0.85em;
-	font-style: italic;
-	float: right;
-}
-#ubc_ctlt_ca_angular_div li:first-child
-{
-	border-top: none;
-}
-#ubc_ctlt_ca_angular_div li a:hover
-{
-	background: #ececec;
-	text-decoration: none;
-}
-#ubc_ctlt_ca_angular_div h4
-{
-	padding-top: 0.5em;
-}
-#ubc_ctlt_ca_angular_div h4 a span
-{
-	color: #555;
-}
-#ubc_ctlt_ca_angular_div p.update
-{
-	font-size: 0.85em;
-	margin-top: 0.75em;
-}
-#ubc_ctlt_ca_angular_div div.hideInitially
-{
-	display: none;
-}
-</style>
-
 <div id="ubc_ctlt_ca_angular_div">
 <div id="ubc_ctlt_ca_app" class="hideInitially" ng-controller="FileListCtrl">
 	<p>These courses have files that needs to be copyright tagged.</p>
 	<div ng-repeat="course in courseFiles.courses">
 		<h4 class="moduleTitle">
-			<a href="/bbcswebdav/courses/{{course.name}}">
-				{{course.name}}
-			</a>
 			<a ng-click="course.show=!course.show">
+				{{course.name}}
 				<span>({{course.numFiles}})</span>
 				<img alt="Show files for {{course.name}}" ng-show="!course.show"
 					src="/images/ci/ng/cm_arrow_down.gif" />
 				<img alt="Hide files for {{course.name}}" ng-show="course.show"
 					src="/images/ci/ng/cm_arrow_up.gif" />
+				<a class="side-controls" href="/bbcswebdav/courses/{{course.name}}">
+					(view)
+				</a>
 			</a>
 		</h4>
 		<ul ng-show="course.show">
 			<li ng-repeat="file in course.files">
-			<a class="metadata-link" href="/webapps/ubc-metadata-BBLEARN//metadata/list?path={{file.encodedPath}}">{{file.name}}</a>
-			<a class="small-view" href="/bbcswebdav{{file.rawPath}}">(view)</a>
+			<a class="main-link" href="/webapps/ubc-metadata-BBLEARN//metadata/list?path={{file.encodedPath}}">{{file.name}}</a>
+			<a class="side-controls" href="/bbcswebdav{{file.rawPath}}">(view)</a>
 			</li>
 		</ul>
 	</div>
 	<p class='update'>Updated: {{lastupdate}}</p>
 </div>
 </div>
+
+<!-- Style at bottom or else IE8 won't apply it -->
+<style type="text/css">
+/* add a border to each element in the ul */
+#ubc_ctlt_ca_angular_div li
+{
+	border-top: 1px dotted #ccc;
+	overflow: hidden;
+	width: 100%;
+}
+#ubc_ctlt_ca_angular_div li:first-child
+{
+	border-top: none;
+}
+/* spacing */
+#ubc_ctlt_ca_angular_div li a
+{
+	padding: 0.5em 0;
+}
+#ubc_ctlt_ca_angular_div h4
+{
+	padding-top: 0.5em;
+}
+/* push link and (view) links to opposite corners of the column*/
+#ubc_ctlt_ca_angular_div a.main-link
+{
+	float: left;
+	word-wrap: break-word;
+}
+#ubc_ctlt_ca_angular_div a.side-controls
+{
+	font-size: 0.85em;
+	font-style: italic;
+	float: right;
+}
+/* highlight on hover */
+#ubc_ctlt_ca_angular_div li a:hover
+{
+	background: #ececec;
+	text-decoration: none;
+}
+/* make the file count visually different from course name */
+#ubc_ctlt_ca_angular_div h4 a span
+{
+	color: #555;
+}
+/* make the date updated text small */
+#ubc_ctlt_ca_angular_div p.update
+{
+	font-size: 0.85em;
+	margin-top: 0.75em;
+}
+/* make sure to hide the file lists on load */
+#ubc_ctlt_ca_angular_div div.hideInitially
+{
+	display: none;
+}
+</style>
+
 
 <bbNG:jsBlock>
 <script type="text/javascript">
@@ -90,7 +99,7 @@ function FileListCtrl($scope, Files, Status)
 		{ // show the alerts if the user actually has untagged files
 			if (val.courses.length > 0)
 			{ 
-				$('ubc_ctlt_ca_app').toggleClassName('hideInitially');
+				$('ubc_ctlt_ca_app').removeClassName('hideInitially');
 			}
 		}
 	);
