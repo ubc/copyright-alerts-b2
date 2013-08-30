@@ -13,7 +13,7 @@ import blackboard.db.ConnectionNotAvailableException;
 public class QueueTable
 {
 	private final static String TABLENAME = "ubc_ctlt_ca_queue";
-	public final static int LOADNUM = 10;
+	public final static int LOADNUM = 500;
 	
 	/**
 	 * Add an array of paths of files to be processed to the queue.

@@ -147,6 +147,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			}
 		} catch (JobExecutionException e)
 		{
+			System.out.println("Indexer failed during execution.");
 			Timestamp ended = new Timestamp((new Date()).getTime());
 			try
 			{
@@ -158,9 +159,14 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			throw e;
 		} catch (InaccessibleDbException e)
 		{
+			System.out.println("Indexer could not access database.");
 			e.printStackTrace();
 			throw new JobExecutionException(e);
-		} 
+		} catch(Exception e)
+		{
+			System.out.println("Indexer threw unknown exception.");
+			e.printStackTrace();
+		}
 		
 		// Remove execution time limit now that we're done
 		if (config.isLimited())
@@ -212,6 +218,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		// part 1, try generating the queue
 		QueueTable queue;
 		System.out.println("Queue Generation Start");
+		
 		ArrayList<String> paths = new ArrayList<String>();
 		try
 		{
@@ -226,14 +233,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				{
 					paths = generator.next();
 					queue.add(paths);
-					try
-					{
-						Thread.sleep(5000);
-					} catch (InterruptedException e)
-					{
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
 					if (syncStop())
 					{
 						return true;
@@ -271,6 +270,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		}
 		while (!paths.isEmpty())
 		{
+			System.out.println("Copyright Alerts Indexing: " + paths.get(0));
 			for (String p : paths)
 			{
 				CSContext ctx = CSContext.getContext();
@@ -280,6 +280,11 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				ctx.isSuperUser(true);
 				// Retrieve file entry
 				CSEntry entry = ctx.findEntry(p);
+				if (entry == null)
+				{
+					System.out.println("Could not find: " + p);
+					continue;
+				}
 				CSFile file = (CSFile) entry;
 				// Retrieve metadata
 				try
