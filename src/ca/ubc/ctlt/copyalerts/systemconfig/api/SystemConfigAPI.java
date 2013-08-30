@@ -78,6 +78,9 @@ public class SystemConfigAPI extends HttpServlet
 	{
 		try
 		{
+			// first, make sure that running jobs know to stop
+			scheduler.interrupt(indexJob.getKey());
+			// then shut down the scheduler
 			System.out.println("Shutting down scheduler");
 			scheduler.shutdown(true);
 
