@@ -35,6 +35,7 @@ public class IndexGenerator
 			{ // there's a value for this attribute ID, so we can assume it's been copyright tagged
 				// there might be a concern if we don't check whether a user has actually selected a copyright
 				// though the metadata building block UI prevents that scenario so it should be ok?
+				System.out.println("Has tag already");
 				return;
 			}
 		}
@@ -62,14 +63,10 @@ public class IndexGenerator
 				String[] pidArr = pid.split(":");
 				String courseName = pidArr[2];
 				Course course = CourseDbLoader.Default.getInstance().loadByCourseId(courseName);
-				// We only want ISS and Instructor users for now
+				// We only want Instructor users for now
 				if (pid.matches(".+(?i)instructor.*"))
 				{
 					names.addAll(getInstructors(course.getId()));
-				}
-				else if (pid.matches(".+(?i)ubc_iss.*"))
-				{
-					names.addAll(getISS(course.getId()));
 				}
 			}
 		}
@@ -88,22 +85,6 @@ public class IndexGenerator
 		if (role == null)
 		{ // for testing on local dev instance
 			role = CourseMembership.Role.INSTRUCTOR;
-		}
-		return getUserWithRoleInCourse(courseId, role);
-	}
-
-	/**
-	 * Get a list of userids who are iss in the given course.
-	 * Note that ISS is a UBC specific role.
-	 * @return
-	 * @throws PersistenceException 
-	 */
-	private ArrayList<Id> getISS(Id courseId) throws PersistenceException
-	{
-		CourseMembership.Role role = CourseMembership.Role.fromIdentifier("UBC_ISS");
-		if (role == null)
-		{
-			return new ArrayList<Id>();
 		}
 		return getUserWithRoleInCourse(courseId, role);
 	}
