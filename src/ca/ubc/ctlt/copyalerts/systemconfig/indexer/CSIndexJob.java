@@ -1,5 +1,6 @@
 package ca.ubc.ctlt.copyalerts.systemconfig.indexer;
 
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
@@ -27,6 +28,7 @@ import blackboard.cms.filesystem.CSEntry;
 import blackboard.cms.filesystem.CSFile;
 import blackboard.db.ConnectionNotAvailableException;
 import blackboard.persist.PersistenceException;
+import blackboard.platform.plugin.PlugInException;
 import blackboard.platform.vxi.service.VirtualSystemException;
 
 import ca.ubc.ctlt.copyalerts.SavedConfiguration;
@@ -105,7 +107,17 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		{
 			// Save the fact that we've started running
 			ht.setRunStats(hostname, HostsTable.STATUS_RUNNING, started, new Timestamp(0));
+			// load configuration
+			config.load();
 		} catch (InaccessibleDbException e)
+		{
+			e.printStackTrace();
+			throw new JobExecutionException(e);
+		} catch (PlugInException e)
+		{
+			e.printStackTrace();
+			throw new JobExecutionException(e);
+		} catch (IOException e)
 		{
 			e.printStackTrace();
 			throw new JobExecutionException(e);
