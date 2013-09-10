@@ -13,6 +13,7 @@ to get the raw primary key for entries. You have to manually parse the primary k
 	<column name="pk1" data-type="int" nullable="false" identity="true" 
 		comment="This is the primary key for the table, in Oracle it should be updated using the sequence ubc_ctlt_ca_files_seq which will be created automatically" />
 	<column name="userid" data-type="varchar(255)" nullable="false" comment="userid responsible for file" />
+	<column name="course" data-type="varchar(255)" nullable="false" comment="userid responsible for file" />
 	<!-- Not sure how long file paths are allowed to be, so going to set it high, oracle db limits nvarchar to 4000 bytes, 
 		so let's use 1024 for some safety margin  -->
 	<column name="filepath" data-type="nvarchar(1024)" nullable="false" comment="identifies a file" />

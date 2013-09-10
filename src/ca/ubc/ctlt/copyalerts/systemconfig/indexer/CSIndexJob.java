@@ -274,7 +274,8 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		// clear the database
 		try
 		{
-			FilesTable.deleteAll();
+			FilesTable ft = new FilesTable();
+			ft.deleteAll();
 		} catch (InaccessibleDbException e)
 		{
 			System.out.println("Could not reset the database.");

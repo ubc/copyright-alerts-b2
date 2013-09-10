@@ -19,6 +19,7 @@ public class IndexGenerator
 {
 	// class to retrieve file ownership information and prep it for output into sql database
 	private ArrayList<String> attributes;
+	private FilesTable ft = new FilesTable();
 	
 	public IndexGenerator(ArrayList<String> attributes)
 	{
@@ -35,7 +36,6 @@ public class IndexGenerator
 			{ // there's a value for this attribute ID, so we can assume it's been copyright tagged
 				// there might be a concern if we don't check whether a user has actually selected a copyright
 				// though the metadata building block UI prevents that scenario so it should be ok?
-				System.out.println("Has tag already");
 				return;
 			}
 		}
@@ -70,7 +70,7 @@ public class IndexGenerator
 				}
 			}
 		}
-		FilesTable.add(file, names);
+		ft.add(file, names);
 	}
 	
 	/**
