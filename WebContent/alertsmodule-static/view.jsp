@@ -5,9 +5,9 @@
 <div id="ubc_ctlt_ca_angular_div">
 <div id="ubc_ctlt_ca_app" class="hideInitially" ng-controller="FileListCtrl">
 	<p>These courses have files that needs to be copyright tagged.</p>
-	<div ng-repeat="course in courseFiles.courses">
+	<div ng-repeat="(cid, course) in courseFiles.courses">
 		<h4 class="moduleTitle">
-			<a ng-click="course.show=!course.show">
+			<a ng-click="course.show=!course.show" href="" >
 				{{course.name}}
 				<span>({{course.numFiles}})</span>
 				<img alt="Show files for {{course.name}}" ng-show="!course.show"
@@ -23,6 +23,21 @@
 			<li ng-repeat="file in course.files">
 			<a class="main-link" href="/webapps/ubc-metadata-BBLEARN//metadata/list?path={{file.encodedPath}}">{{file.name}}</a>
 			<a class="side-controls" href="/bbcswebdav{{file.rawPath}}">(view)</a>
+			</li>
+			<li ng-if="course.numPages > 1" class="rumble inventory_paging">
+				<a class="pagelink" title="First Page" href="" ng-click="getPage(course, 1);" ng-hide="course.page == 1">
+					<img src="/images/ci/ng/small_rewind.gif" alt="First Page">
+				</a>
+				<a class="pagelink" title="Previous Page" href="" ng-click="getPage(course, course.page - 1);" ng-hide="course.page == 1">
+					<img src="/images/ci/ng/small_previous.gif" alt="Previous Page">
+				</a>
+				Page {{course.page}} of {{course.numPages}} 
+				<a class="pagelink" title="Next Page" href="" ng-click="getPage(course, course.page + 1);" ng-hide="course.page == course.numPages">
+					<img src="/images/ci/ng/small_next.gif" alt="Next Page">
+				</a>
+				<a class="pagelink" title="Last Page" href="" ng-click="getPage(course, course.numPages);" ng-hide="course.page == course.numPages">
+					<img src="/images/ci/ng/small_ffwd.gif" alt="Last Page">
+				</a>
 			</li>
 		</ul>
 	</div>
@@ -51,6 +66,19 @@
 #ubc_ctlt_ca_angular_div h4
 {
 	padding-top: 0.5em;
+}
+/* paging */
+#ubc_ctlt_ca_angular_div li.rumble
+{
+	background: none;
+}
+#ubc_ctlt_ca_angular_div li.inventory_paging
+{
+	border-top: none;
+}
+#ubc_ctlt_ca_angular_div li.inventory_paging a
+{
+	padding: 0;
 }
 /* push link and (view) links to opposite corners of the column*/
 #ubc_ctlt_ca_angular_div a.main-link
@@ -92,12 +120,21 @@
 <bbNG:jsBlock>
 <script type="text/javascript">
 
-function FileListCtrl($scope, Files, Status) 
+function FileListCtrl($scope, Files, Status, CourseFiles) 
 {
 	$scope.courseFiles = Files.get(
 		function(val)
 		{ // show the alerts if the user actually has untagged files
-			if (val.courses.length > 0)
+			// workaround for checking if associative array not empty due to IE8
+			// not supporting the easier methods
+			var count = 0;
+			for (course in val.courses)
+			{
+				count++;
+				break;
+			}
+
+			if (count > 0)
 			{ 
 				$('ubc_ctlt_ca_app').removeClassName('hideInitially');
 			}
@@ -113,6 +150,23 @@ function FileListCtrl($scope, Files, Status)
 				$scope.lastupdate = val.runend;
 		}
 	);
+	$scope.getPage = function(course, desiredPage)
+	{
+		if (desiredPage < 1 || 
+			desiredPage > course.numPages ||
+			desiredPage == course.page)
+		{ // invalid page request, ignore
+			return;
+		}
+		CourseFiles.get(
+			{courseid: course.courseId, page: desiredPage},
+			function(c) 
+			{
+				c.show = true;
+				$scope.courseFiles.courses[c.courseId] = c;
+			}
+		);
+	};
 };
 
 // Need a separate function to start angularjs cause Blackboard's javascript
@@ -128,6 +182,12 @@ function startAngular()
 		function($resource)
 		{
 			return $resource('/webapps/ubc-copyright-alerts-BBLEARN/alertsmodule/files');
+		}
+	);
+	services.factory('CourseFiles', 
+		function($resource)
+		{
+			return $resource('/webapps/ubc-copyright-alerts-BBLEARN/alertsmodule/files/:courseid/:page');
 		}
 	);
 	services.factory('Status', 
@@ -192,7 +252,7 @@ function libLoader(libs, after)
 libLoader([
 	{
 	"loaded": function() { return typeof angular != 'undefined'}, 
-	"url": "//ajax.googleapis.com/ajax/libs/angularjs/1.1.1/angular.min.js"
+	"url": "//ajax.googleapis.com/ajax/libs/angularjs/1.2.0-rc.2/angular.js"
 	},
 	{
 	"loaded": function() { 
@@ -200,7 +260,7 @@ libLoader([
 			catch(e) { return false; } 
 			return true; 
 		}, 
-	"url": "//ajax.googleapis.com/ajax/libs/angularjs/1.1.1/angular-resource.min.js",
+	"url": "//ajax.googleapis.com/ajax/libs/angularjs/1.2.0-rc.2/angular-resource.js",
 	"after": partial(startAngular)
 	}
 ]);

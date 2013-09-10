@@ -35,8 +35,11 @@
 	<!-- Alerts Module -->
 	<servlet>
 		<servlet-name>AlertsModuleAPI</servlet-name>
-		<servlet-class>ca.ubc.ctlt.copyalerts.alertsmodule.AlertsModuleAPI</servlet-class>
-		<load-on-startup>127</load-on-startup> <!-- make sure this servlet loads on startup, cause we need to start the scheduler process -->
+		<servlet-class>org.restlet.ext.servlet.ServerServlet</servlet-class>
+		<init-param>
+			<param-name>org.restlet.application</param-name>
+			<param-value>ca.ubc.ctlt.copyalerts.alertsmodule.router.AlertsModuleApp</param-value>
+		</init-param>
 	</servlet>
 	
 	<servlet-mapping>
