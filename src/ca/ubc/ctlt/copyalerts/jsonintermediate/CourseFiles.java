@@ -6,6 +6,7 @@ public class CourseFiles
 {
 	public String courseId;
 	public String name;
+	public String title;
 	public int numFiles;
 	public int page = 1;
 	public int numPages = 2;
@@ -16,9 +17,10 @@ public class CourseFiles
 	 * 
 	 * @param paths
 	 */
-	public CourseFiles(String courseId, String course, String path)
+	public CourseFiles(String courseId, String name, String title, String path)
 	{
-		this.name = course;
+		this.name = name;
+		this.title = title;
 		this.courseId = courseId;
 		addFile(path);
 	}

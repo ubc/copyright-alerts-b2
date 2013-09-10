@@ -8,11 +8,11 @@
 	<div ng-repeat="(cid, course) in courseFiles.courses">
 		<h4 class="moduleTitle">
 			<a ng-click="course.show=!course.show" href="" >
-				{{course.name}}
+				{{course.title}}
 				<span>({{course.numFiles}})</span>
-				<img alt="Show files for {{course.name}}" ng-show="!course.show"
+				<img alt="Show files for {{course.title}}" ng-show="!course.show"
 					src="/images/ci/ng/cm_arrow_down.gif" />
-				<img alt="Hide files for {{course.name}}" ng-show="course.show"
+				<img alt="Hide files for {{course.title}}" ng-show="course.show"
 					src="/images/ci/ng/cm_arrow_up.gif" />
 				<a class="side-controls" href="/bbcswebdav/courses/{{course.name}}">
 					(view)

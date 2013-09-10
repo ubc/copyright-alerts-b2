@@ -197,7 +197,7 @@ public class FilesTable
 	
 	        while(res.next())
 	        {
-	        	String course = res.getString(1);
+	        	String courseTitle = res.getString(1);
 	        	String path = res.getString(2);
         		String courseName = parseCourseName(path);
 	        	String id = getCourseId(courseName);
@@ -208,7 +208,7 @@ public class FilesTable
 	        	}
 	        	else
 	        	{ // create new entry
-	        		CourseFiles cf = new CourseFiles(id, course, path);
+	        		CourseFiles cf = new CourseFiles(id, courseName, courseTitle, path);
 	        		ret.put(id, cf);
 	        	}
 	        }
