@@ -87,6 +87,9 @@
 			<permission type="persist" name="user" actions="create,modify,delete" />
 			<permission type="persist" name="userrole" actions="create,modify,delete" />
 			<permission type="persist" name="course" actions="create,modify,delete" />
+			<!-- required by Restlet -->
+            <permission type="java.lang.RuntimePermission" name="createClassLoader" />
+            <permission type="java.lang.RuntimePermission" name="modifyThread" />
 <!--
             <permission type="persist" name="Group" actions="persist"/>
             <permission type="persist" name="GroupMembership " actions="persist"/>
