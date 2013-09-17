@@ -15,16 +15,14 @@ import org.joda.time.Duration;
 import org.joda.time.format.PeriodFormatter;
 import org.joda.time.format.PeriodFormatterBuilder;
 
-import ca.ubc.ctlt.copyalerts.systemconfig.api.HostOptions;
+import ca.ubc.ctlt.copyalerts.jsonintermediate.HostOptions;
+import ca.ubc.ctlt.copyalerts.systemconfig.HostResolver;
 
 import com.google.gson.Gson;
 
 import blackboard.db.BbDatabase;
 import blackboard.db.ConnectionManager;
 import blackboard.db.ConnectionNotAvailableException;
-import blackboard.persist.PersistenceException;
-import blackboard.platform.context.Context;
-import blackboard.platform.context.ContextManagerFactory;
 import blackboard.platform.vxi.service.VirtualSystemException;
 
 public class HostsTable
@@ -298,6 +296,7 @@ public class HostsTable
 		HostOptions ret = new HostOptions();
 		ret.leader = getLeader();
 		ret.options = hosts.keySet();
+		ret.alt = HostResolver.getAltHostnames();
 		return gson.toJson(ret);
 	}
 	
@@ -347,8 +346,8 @@ public class HostsTable
 		        ret.put(STATUS_END_KEY, dateFormat.format(end));
 	        }
 	        ret.put(STATUS_LEADHOST_KEY, hostname);
-			Context ctx = ContextManagerFactory.getInstance().getContext();
-	        ret.put(STATUS_CURHOST_KEY, ctx.getVirtualHost().getHostname());
+
+	        ret.put(STATUS_CURHOST_KEY, HostResolver.getHostname());
 	        Gson gson = new Gson();
 	        return gson.toJson(ret);
 		} catch (SQLException e)
@@ -360,9 +359,6 @@ public class HostsTable
 		} catch (VirtualSystemException e)
 		{
 			throw new InaccessibleDbException("Unable to access virtual system", e);
-		} catch (PersistenceException e)
-		{
-			throw new InaccessibleDbException("Unable to access persistence api", e);
 		}
 		finally
 		{

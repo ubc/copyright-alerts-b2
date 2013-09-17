@@ -39,6 +39,10 @@ jQuery.noConflict();
 			<dt>You are currently on host:</dt><dd>{{status.host}}</dd>
 			<dt>Alert generation is running on:</dt><dd>{{status.leader}}</dd>
 		</dl>
+		<h4>Alternative Hostnames</h4>
+		<ol>
+			<li ng-repeat="(type, name) in host.alt">{{type}} : {{name}}</li>
+		</ol>
 	</div>
 
 	<div class="section" ng-controller="ScheduleCtrl">

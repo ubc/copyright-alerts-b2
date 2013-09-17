@@ -67,7 +67,7 @@
 			color: red;
 		}
 	}
-	
+
 	div.section
 	{
 		display: inline-block;
@@ -143,6 +143,12 @@
 		{
 			background: firebrick;
 		}
+	}
+
+	ol
+	{
+		padding-top: 0.5em;
+		list-style: decimal inside;
 	}
 
 }

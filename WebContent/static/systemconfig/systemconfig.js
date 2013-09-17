@@ -63,7 +63,7 @@ function ScheduleCtrl($scope, $timeout, Schedule, Host)
 	};
 }
 
-function StatusCtrl($scope, $timeout, Status)
+function StatusCtrl($scope, $timeout, Status, Host)
 {
 	$scope.updateStatus = function()
 	{
@@ -83,6 +83,8 @@ function StatusCtrl($scope, $timeout, Status)
 		$scope.updateStatus();
 		$timeout(pollStatus, 10000);
 	})();
+	
+	$scope.host = Host.get();
 
 	$scope.stop = function()
 	{

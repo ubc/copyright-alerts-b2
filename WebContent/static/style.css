@@ -70,3 +70,6 @@
     background: mediumseagreen; }
   #alertsysconfig .savemsg.error {
     background: firebrick; }
+#alertsysconfig ol {
+  padding-top: 0.5em;
+  list-style: decimal inside; }

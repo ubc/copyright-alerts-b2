@@ -16,9 +16,6 @@ import org.quartz.impl.StdSchedulerFactory;
 
 import com.google.gson.Gson;
 
-import blackboard.persist.PersistenceException;
-import blackboard.platform.context.Context;
-import blackboard.platform.context.ContextManagerFactory;
 import blackboard.platform.plugin.PlugInException;
 import blackboard.platform.vxi.service.VirtualSystemException;
 import static org.quartz.JobBuilder.*;
@@ -28,6 +25,8 @@ import static org.quartz.CronScheduleBuilder.*;
 import ca.ubc.ctlt.copyalerts.SavedConfiguration;
 import ca.ubc.ctlt.copyalerts.db.HostsTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
+import ca.ubc.ctlt.copyalerts.jsonintermediate.HostOptions;
+import ca.ubc.ctlt.copyalerts.systemconfig.HostResolver;
 import ca.ubc.ctlt.copyalerts.systemconfig.indexer.CSIndexJob;
 
 public class SystemConfigAPI extends HttpServlet
@@ -295,17 +294,13 @@ public class SystemConfigAPI extends HttpServlet
 	{
 		try
 		{
-			Context ctx = ContextManagerFactory.getInstance().getContext();
-			hostname = ctx.getVirtualHost().getHostname();
+			hostname = HostResolver.getHostname();
 
 			if (!hostTable.contains(hostname))
 			{
 				hostTable.add(hostname);
 			}
 		} catch (VirtualSystemException e)
-		{
-			throw new ServletException(e);
-		} catch (PersistenceException e)
 		{
 			throw new ServletException(e);
 		} catch (InaccessibleDbException e)
