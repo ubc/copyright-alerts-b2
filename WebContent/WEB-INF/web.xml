@@ -9,7 +9,7 @@
 	<!-- System Config -->
 	<servlet>
 		<servlet-name>SystemConfigRouter</servlet-name>
-		<servlet-class>ca.ubc.ctlt.copyalerts.systemconfig.ui.SystemConfigRouter</servlet-class>
+		<servlet-class>ca.ubc.ctlt.copyalerts.systemconfig.router.SystemConfigRouter</servlet-class>
 	</servlet>
 	
 	<servlet-mapping>

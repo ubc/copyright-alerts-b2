@@ -1,11 +1,13 @@
-package ca.ubc.ctlt.copyalerts.systemconfig.api;
+package ca.ubc.ctlt.copyalerts.jsonintermediate;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 
 // quick convenience class to handle json conversion
 public class HostOptions
 {
 	public String leader = "";
 	public Collection<String> options = new ArrayList<String>();
+	public Map<String, String> alt = null;
 }
