@@ -65,8 +65,23 @@ function ScheduleCtrl($scope, $timeout, Schedule, Host)
 
 function StatusCtrl($scope, $timeout, Status)
 {
-	(function updateStatus() {
-		$scope.status = Status.get(function() { $timeout(updateStatus, 10000); });
+	$scope.updateStatus = function()
+	{
+		Status.get(
+			function(ret)
+			{
+				if ($scope.status === undefined || ret.status != $scope.status.status)
+				{ // prevent flickering by only updating if there's a change
+					$scope.status = ret;
+				}
+			}
+		);
+	};
+	
+	// poll for a new status update every 10 seconds
+	(function pollStatus() {
+		$scope.updateStatus();
+		$timeout(pollStatus, 10000);
 	})();
 
 	$scope.stop = function()
