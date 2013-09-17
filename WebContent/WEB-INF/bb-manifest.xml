@@ -76,24 +76,21 @@
 
 <!-- code permissions required for proper operation -->
         <permissions>
-            <!-- Spring need this to work -->
-            <permission type="java.lang.reflect.ReflectPermission" name="suppressAccessChecks" />
-			<permission type="attribute" name="user.authinfo" actions="get,set" /> 
-            <permission type="attribute" name="user.personalinfo" actions="get,set"/>
-            <permission type="java.io.FilePermission" name="&amp;lt;&amp;lt;ALL FILES&amp;gt;&amp;gt;" actions="read,write,execute,delete"/>
-            <permission type="java.util.PropertyPermission" name="*" actions="read,write" />
-            <permission type="java.lang.RuntimePermission" name="setContextClassLoader" />
+        	<!-- need these to access the currently logged in user's info for alerts -->
+			<permission type="attribute" name="user.authinfo" actions="get" /> 
+			<!-- need to be able to upgrade to content collection superadmin for file indexing -->
+			<permission type="attribute" name="user.personalinfo" actions="get"/>
+            <!-- read/write to configuration file, execute shell commands (only needed for alt hostnames) -->
+            <permission type="java.io.FilePermission" name="&amp;lt;&amp;lt;ALL FILES&amp;gt;&amp;gt;" actions="read,write,execute"/>
+            <!-- database access -->
             <permission type="java.lang.RuntimePermission" name="db.connection.*" />
-			<permission type="persist" name="user" actions="create,modify,delete" />
-			<permission type="persist" name="userrole" actions="create,modify,delete" />
-			<permission type="persist" name="course" actions="create,modify,delete" />
+            <!-- required by Gson -->
+            <permission type="java.lang.reflect.ReflectPermission" name="suppressAccessChecks" />
 			<!-- required by Restlet -->
             <permission type="java.lang.RuntimePermission" name="createClassLoader" />
             <permission type="java.lang.RuntimePermission" name="modifyThread" />
-<!--
-            <permission type="persist" name="Group" actions="persist"/>
-            <permission type="persist" name="GroupMembership " actions="persist"/>
--->
+            <!-- required to get hostname -->
+            <permission type="java.lang.RuntimePermission" name="getenv.HOSTNAME" />
         </permissions>
 
     </plugin>
