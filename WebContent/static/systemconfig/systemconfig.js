@@ -10,7 +10,7 @@ Services.factory('Status',
 	function($resource) 
 	{
 		return $resource(
-				'/webapps/ubc-copyright-alerts-BBLEARN/statustest/status/:action', 
+				'/webapps/ubc-copyright-alerts-BBLEARN/systemconfig/status/:action', 
 				{action: 'status'},
 				{
 					stop: {method: 'GET', params: {action: 'stop'}}
@@ -22,14 +22,14 @@ Services.factory('Status',
 Services.factory('MetadataAttributes', 
 	function($resource) 
 	{
-		return $resource('/webapps/ubc-copyright-alerts-BBLEARN/statustest/metadata');
+		return $resource('/webapps/ubc-copyright-alerts-BBLEARN/systemconfig/metadata');
 	}
 );
 
 Services.factory('Host', 
 	function($resource) 
 	{
-		return $resource('/webapps/ubc-copyright-alerts-BBLEARN/statustest/host');
+		return $resource('/webapps/ubc-copyright-alerts-BBLEARN/systemconfig/host');
 	}
 );
 

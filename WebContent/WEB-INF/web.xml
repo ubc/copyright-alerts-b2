@@ -22,18 +22,6 @@
 <!-- API -->
 	<!-- System Config -->
 	<servlet>
-		<servlet-name>SystemConfigAPI</servlet-name>
-		<servlet-class>ca.ubc.ctlt.copyalerts.systemconfig.api.SystemConfigAPI</servlet-class>
-		<load-on-startup>127</load-on-startup> <!-- make sure this servlet loads on startup, cause we need to start the scheduler process -->
-	</servlet>
-	
-	<servlet-mapping>
-		<servlet-name>SystemConfigAPI</servlet-name>
-		<url-pattern>/systemconfig/*</url-pattern>
-	</servlet-mapping>
-	
-	<!-- System Config Test -->
-	<servlet>
 		<servlet-name>SystemConfigApp</servlet-name>
 		<servlet-class>org.restlet.ext.servlet.ServerServlet</servlet-class>
 		<init-param>
@@ -44,7 +32,7 @@
 	
 	<servlet-mapping>
 		<servlet-name>SystemConfigApp</servlet-name>
-		<url-pattern>/statustest/*</url-pattern>
+		<url-pattern>/systemconfig/*</url-pattern>
 	</servlet-mapping>
 
 	<!-- Alerts Module -->
@@ -62,4 +50,11 @@
 		<url-pattern>/alertsmodule/*</url-pattern>
 	</servlet-mapping>
 	
+<!-- Startup Scheduler -->
+	<!-- System Config -->
+	<servlet>
+		<servlet-name>SchedulerStarter</servlet-name>
+		<servlet-class>ca.ubc.ctlt.copyalerts.systemconfig.api.SchedulerStarter</servlet-class>
+		<load-on-startup>127</load-on-startup> <!-- make sure this servlet loads on startup, cause we need to start the scheduler process -->
+	</servlet>
 </web-app>

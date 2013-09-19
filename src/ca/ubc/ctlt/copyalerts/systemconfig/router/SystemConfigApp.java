@@ -6,6 +6,7 @@ import org.restlet.routing.Router;
 
 import ca.ubc.ctlt.copyalerts.systemconfig.api.HostAPI;
 import ca.ubc.ctlt.copyalerts.systemconfig.api.MetadataAPI;
+import ca.ubc.ctlt.copyalerts.systemconfig.api.ScheduleAPI;
 import ca.ubc.ctlt.copyalerts.systemconfig.api.StatusAPI;
 
 public class SystemConfigApp extends Application
@@ -21,6 +22,7 @@ public class SystemConfigApp extends Application
         router.attach("/status/{action}", StatusAPI.class);
         router.attach("/metadata", MetadataAPI.class);
         router.attach("/host", HostAPI.class);
+        router.attach("/schedule", ScheduleAPI.class);
 
         return router;
     }
