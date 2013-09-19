@@ -4,6 +4,7 @@ import org.restlet.Application;
 import org.restlet.Restlet;
 import org.restlet.routing.Router;
 
+import ca.ubc.ctlt.copyalerts.systemconfig.api.MetadataAPI;
 import ca.ubc.ctlt.copyalerts.systemconfig.api.StatusAPI;
 
 public class SystemConfigApp extends Application
@@ -17,6 +18,7 @@ public class SystemConfigApp extends Application
 
         // Defines only one route
         router.attach("/status/{action}", StatusAPI.class);
+        router.attach("/metadata", MetadataAPI.class);
 
         return router;
     }

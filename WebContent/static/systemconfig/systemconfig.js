@@ -22,7 +22,7 @@ Services.factory('Status',
 Services.factory('MetadataAttributes', 
 	function($resource) 
 	{
-		return $resource('/webapps/ubc-copyright-alerts-BBLEARN/systemconfig/metadata');
+		return $resource('/webapps/ubc-copyright-alerts-BBLEARN/statustest/metadata');
 	}
 );
 

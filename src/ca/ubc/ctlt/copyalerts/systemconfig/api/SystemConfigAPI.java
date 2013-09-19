@@ -8,7 +8,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.quartz.SchedulerException;
-import org.quartz.UnableToInterruptJobException;
 import com.google.gson.Gson;
 
 import blackboard.platform.plugin.PlugInException;
@@ -70,6 +69,14 @@ public class SystemConfigAPI extends HttpServlet
 		response.setCharacterEncoding("UTF-8");
 		if (path.equals("/schedule"))
 		{ // returns a json map of all the schedule configuration values
+			try
+			{
+				config.load();
+			} catch (PlugInException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			response.getWriter().write(config.toJson());
 		}
 		else if (path.equals("/host"))
@@ -83,10 +90,6 @@ public class SystemConfigAPI extends HttpServlet
 				throw new ServletException(e);
 			}
 			response.getWriter().write(hostTable.toOptionsJson());
-		}
-		else if (path.equals("/metadata"))
-		{
-			response.getWriter().write(config.toJsonAttributes());
 		}
 		else
 		{
@@ -141,20 +144,6 @@ public class SystemConfigAPI extends HttpServlet
 			{
 				// TODO Auto-generated catch block
 				System.out.println("Unable to access the database while writing host configuration.");
-				response.sendError(500);
-				return;
-			}
-		    // return the new config to caller
-		    doGet(request, response);
-		}
-		else if (request.getPathInfo().equals("/metadata"))
-		{
-		    try
-			{
-				config.fromJsonAttributes(sb.toString());
-			} catch (PlugInException e)
-			{
-				System.out.println("Unable to update configuration.");
 				response.sendError(500);
 				return;
 			}
