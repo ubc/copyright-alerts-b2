@@ -2,7 +2,7 @@ var Services = angular.module('SystemConfigServices', ['ngResource']);
 Services.factory('Schedule', 
 	function($resource) 
 	{
-		return $resource('systemconfig/schedule');
+		return $resource('/webapps/ubc-copyright-alerts-BBLEARN/systemconfig/schedule');
 	}
 );
 
@@ -10,7 +10,7 @@ Services.factory('Status',
 	function($resource) 
 	{
 		return $resource(
-				'systemconfig/status/:action', 
+				'/webapps/ubc-copyright-alerts-BBLEARN/statustest/status/:action', 
 				{action: 'status'},
 				{
 					stop: {method: 'GET', params: {action: 'stop'}}
@@ -22,14 +22,14 @@ Services.factory('Status',
 Services.factory('MetadataAttributes', 
 	function($resource) 
 	{
-		return $resource('systemconfig/metadata');
+		return $resource('/webapps/ubc-copyright-alerts-BBLEARN/systemconfig/metadata');
 	}
 );
 
 Services.factory('Host', 
 	function($resource) 
 	{
-		return $resource('systemconfig/host');
+		return $resource('/webapps/ubc-copyright-alerts-BBLEARN/systemconfig/host');
 	}
 );
 

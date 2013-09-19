@@ -32,6 +32,21 @@
 		<url-pattern>/systemconfig/*</url-pattern>
 	</servlet-mapping>
 	
+	<!-- System Config Test -->
+	<servlet>
+		<servlet-name>SystemConfigApp</servlet-name>
+		<servlet-class>org.restlet.ext.servlet.ServerServlet</servlet-class>
+		<init-param>
+			<param-name>org.restlet.application</param-name>
+			<param-value>ca.ubc.ctlt.copyalerts.systemconfig.router.SystemConfigApp</param-value>
+		</init-param>
+	</servlet>
+	
+	<servlet-mapping>
+		<servlet-name>SystemConfigApp</servlet-name>
+		<url-pattern>/statustest/*</url-pattern>
+	</servlet-mapping>
+
 	<!-- Alerts Module -->
 	<servlet>
 		<servlet-name>AlertsModuleAPI</servlet-name>

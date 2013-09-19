@@ -295,7 +295,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				CSEntry entry = ctx.findEntry(p);
 				if (entry == null)
 				{
-					System.out.println("Could not find: " + p);
 					continue;
 				}
 				CSFile file = (CSFile) entry;
