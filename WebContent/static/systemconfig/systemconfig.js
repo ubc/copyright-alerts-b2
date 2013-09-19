@@ -29,7 +29,7 @@ Services.factory('MetadataAttributes',
 Services.factory('Host', 
 	function($resource) 
 	{
-		return $resource('/webapps/ubc-copyright-alerts-BBLEARN/systemconfig/host');
+		return $resource('/webapps/ubc-copyright-alerts-BBLEARN/statustest/host');
 	}
 );
 

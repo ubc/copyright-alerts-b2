@@ -79,18 +79,6 @@ public class SystemConfigAPI extends HttpServlet
 			}
 			response.getWriter().write(config.toJson());
 		}
-		else if (path.equals("/host"))
-		{
-			try
-			{
-				hostTable.load();
-			} catch (InaccessibleDbException e)
-			{
-				System.out.println("Unable to load hosts.");
-				throw new ServletException(e);
-			}
-			response.getWriter().write(hostTable.toOptionsJson());
-		}
 		else
 		{
 			response.sendError(404);
@@ -126,24 +114,6 @@ public class SystemConfigAPI extends HttpServlet
 			} catch (PlugInException e)
 			{
 				System.out.println("Unable to update configuration.");
-				response.sendError(500);
-				return;
-			}
-		    // return the new config to caller
-		    doGet(request, response);
-		}
-		else if (request.getPathInfo().equals("/host"))
-		{
-		    // parse the json string and save the new host leader
-	    	Gson gson = new Gson();
-	    	HostOptions host = gson.fromJson(sb.toString(), HostOptions.class);
-	    	try
-			{
-				hostTable.setLeader(host.leader);
-			} catch (InaccessibleDbException e)
-			{
-				// TODO Auto-generated catch block
-				System.out.println("Unable to access the database while writing host configuration.");
 				response.sendError(500);
 				return;
 			}
