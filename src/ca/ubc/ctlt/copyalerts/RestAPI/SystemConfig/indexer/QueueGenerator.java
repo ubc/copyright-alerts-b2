@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.systemconfig.indexer;
+package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.indexer;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;

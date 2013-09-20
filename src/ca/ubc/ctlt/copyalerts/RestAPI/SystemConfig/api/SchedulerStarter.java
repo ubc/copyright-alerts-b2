@@ -1,14 +1,14 @@
-package ca.ubc.ctlt.copyalerts.systemconfig.api;
+package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.api;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import org.quartz.SchedulerException;
 
 import blackboard.platform.vxi.service.VirtualSystemException;
+import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.HostResolver;
+import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.scheduler.SchedulerManager;
 import ca.ubc.ctlt.copyalerts.db.HostsTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
-import ca.ubc.ctlt.copyalerts.systemconfig.HostResolver;
-import ca.ubc.ctlt.copyalerts.systemconfig.scheduler.SchedulerManager;
 
 public class SchedulerStarter extends HttpServlet
 {

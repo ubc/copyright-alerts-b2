@@ -1,13 +1,13 @@
-package ca.ubc.ctlt.copyalerts.systemconfig.router;
+package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.router;
 
 import org.restlet.Application;
 import org.restlet.Restlet;
 import org.restlet.routing.Router;
 
-import ca.ubc.ctlt.copyalerts.systemconfig.api.HostAPI;
-import ca.ubc.ctlt.copyalerts.systemconfig.api.MetadataAPI;
-import ca.ubc.ctlt.copyalerts.systemconfig.api.ScheduleAPI;
-import ca.ubc.ctlt.copyalerts.systemconfig.api.StatusAPI;
+import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.api.HostAPI;
+import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.api.MetadataAPI;
+import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.api.ScheduleAPI;
+import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.api.StatusAPI;
 
 public class SystemConfigApp extends Application
 {

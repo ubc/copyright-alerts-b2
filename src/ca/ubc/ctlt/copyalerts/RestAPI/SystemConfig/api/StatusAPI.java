@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.systemconfig.api;
+package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.api;
 
 import org.quartz.UnableToInterruptJobException;
 import org.restlet.data.Status;
@@ -7,9 +7,9 @@ import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 import org.restlet.resource.ServerResource;
 
+import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.scheduler.SchedulerManager;
 import ca.ubc.ctlt.copyalerts.db.HostsTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
-import ca.ubc.ctlt.copyalerts.systemconfig.scheduler.SchedulerManager;
 
 public class StatusAPI extends ServerResource
 {

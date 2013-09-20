@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.systemconfig.indexer;
+package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.indexer;
 
 import java.io.IOException;
 import java.sql.Timestamp;

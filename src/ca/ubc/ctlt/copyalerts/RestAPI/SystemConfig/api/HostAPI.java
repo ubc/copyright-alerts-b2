@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.systemconfig.api;
+package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.api;
 
 import java.io.IOException;
 

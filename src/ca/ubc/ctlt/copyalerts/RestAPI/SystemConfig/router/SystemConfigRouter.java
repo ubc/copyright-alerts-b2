@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.systemconfig.router;
+package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.router;
 
 import java.io.IOException;
 
