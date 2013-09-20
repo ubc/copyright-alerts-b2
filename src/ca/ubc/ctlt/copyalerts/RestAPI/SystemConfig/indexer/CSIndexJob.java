@@ -31,7 +31,7 @@ import blackboard.persist.PersistenceException;
 import blackboard.platform.plugin.PlugInException;
 import blackboard.platform.vxi.service.VirtualSystemException;
 
-import ca.ubc.ctlt.copyalerts.SavedConfiguration;
+import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
 import ca.ubc.ctlt.copyalerts.db.FilesTable;
 import ca.ubc.ctlt.copyalerts.db.HostsTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;

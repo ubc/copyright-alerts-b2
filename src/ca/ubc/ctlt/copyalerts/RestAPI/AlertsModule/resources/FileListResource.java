@@ -8,10 +8,10 @@ import org.restlet.resource.ServerResource;
 
 import com.google.gson.Gson;
 
+import ca.ubc.ctlt.copyalerts.JsonIntermediate.CourseFiles;
+import ca.ubc.ctlt.copyalerts.JsonIntermediate.FileList;
 import ca.ubc.ctlt.copyalerts.db.FilesTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
-import ca.ubc.ctlt.copyalerts.jsonintermediate.CourseFiles;
-import ca.ubc.ctlt.copyalerts.jsonintermediate.FileList;
 
 import blackboard.data.user.User;
 import blackboard.platform.context.Context;

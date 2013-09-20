@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.jsonintermediate;
+package ca.ubc.ctlt.copyalerts.JsonIntermediate;
 
 import blackboard.persist.Id;
 

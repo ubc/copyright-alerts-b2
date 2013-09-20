@@ -15,8 +15,8 @@ import org.joda.time.Duration;
 import org.joda.time.format.PeriodFormatter;
 import org.joda.time.format.PeriodFormatterBuilder;
 
-import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.HostResolver;
-import ca.ubc.ctlt.copyalerts.jsonintermediate.HostOptions;
+import ca.ubc.ctlt.copyalerts.JsonIntermediate.HostOptions;
+import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
 
 import com.google.gson.Gson;
 

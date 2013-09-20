@@ -12,8 +12,8 @@ import org.restlet.resource.ServerResource;
 
 import blackboard.platform.plugin.PlugInException;
 
-import ca.ubc.ctlt.copyalerts.SavedConfiguration;
 import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.scheduler.SchedulerManager;
+import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
 
 public class ScheduleResource extends ServerResource
 {

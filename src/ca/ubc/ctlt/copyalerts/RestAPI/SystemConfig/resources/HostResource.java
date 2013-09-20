@@ -11,9 +11,9 @@ import org.restlet.resource.ServerResource;
 
 import com.google.gson.Gson;
 
+import ca.ubc.ctlt.copyalerts.JsonIntermediate.HostOptions;
 import ca.ubc.ctlt.copyalerts.db.HostsTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
-import ca.ubc.ctlt.copyalerts.jsonintermediate.HostOptions;
 
 public class HostResource extends ServerResource
 {

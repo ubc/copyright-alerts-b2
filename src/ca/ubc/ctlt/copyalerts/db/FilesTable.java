@@ -9,9 +9,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
-import ca.ubc.ctlt.copyalerts.jsonintermediate.CourseFiles;
-import ca.ubc.ctlt.copyalerts.jsonintermediate.FileList;
-import ca.ubc.ctlt.copyalerts.jsonintermediate.FilePath;
+import ca.ubc.ctlt.copyalerts.JsonIntermediate.CourseFiles;
+import ca.ubc.ctlt.copyalerts.JsonIntermediate.FileList;
+import ca.ubc.ctlt.copyalerts.JsonIntermediate.FilePath;
 
 import blackboard.cms.filesystem.CSFile;
 import blackboard.data.course.Course;

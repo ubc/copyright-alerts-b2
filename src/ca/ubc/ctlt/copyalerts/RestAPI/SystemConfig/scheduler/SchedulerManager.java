@@ -15,9 +15,9 @@ import static org.quartz.TriggerBuilder.*;
 import static org.quartz.CronScheduleBuilder.*;
 
 
-import ca.ubc.ctlt.copyalerts.SavedConfiguration;
-import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.HostResolver;
 import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.indexer.CSIndexJob;
+import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
+import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
 
 public class SchedulerManager
 {
