@@ -1,10 +1,10 @@
-package ca.ubc.ctlt.copyalerts.RestAPI.AlertsModule.router;
+package ca.ubc.ctlt.copyalerts.RestAPI.AlertsModule;
 
 import org.restlet.Application;
 import org.restlet.Restlet;
 import org.restlet.routing.Router;
 
-import ca.ubc.ctlt.copyalerts.RestAPI.AlertsModule.api.FileListResource;
+import ca.ubc.ctlt.copyalerts.RestAPI.AlertsModule.resources.FileListResource;
 
 public class AlertsModuleApp extends Application
 {

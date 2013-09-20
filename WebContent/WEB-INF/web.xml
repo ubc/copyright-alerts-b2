@@ -9,7 +9,7 @@
 	<!-- System Config -->
 	<servlet>
 		<servlet-name>SystemConfigRouter</servlet-name>
-		<servlet-class>ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.router.SystemConfigRouter</servlet-class>
+		<servlet-class>ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.SystemConfigJspRouter</servlet-class>
 	</servlet>
 	
 	<servlet-mapping>
@@ -26,7 +26,7 @@
 		<servlet-class>org.restlet.ext.servlet.ServerServlet</servlet-class>
 		<init-param>
 			<param-name>org.restlet.application</param-name>
-			<param-value>ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.router.SystemConfigApp</param-value>
+			<param-value>ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.SystemConfigApp</param-value>
 		</init-param>
 	</servlet>
 	
@@ -41,7 +41,7 @@
 		<servlet-class>org.restlet.ext.servlet.ServerServlet</servlet-class>
 		<init-param>
 			<param-name>org.restlet.application</param-name>
-			<param-value>ca.ubc.ctlt.copyalerts.RestAPI.AlertsModule.router.AlertsModuleApp</param-value>
+			<param-value>ca.ubc.ctlt.copyalerts.RestAPI.AlertsModule.AlertsModuleApp</param-value>
 		</init-param>
 	</servlet>
 	
@@ -54,7 +54,7 @@
 	<!-- System Config -->
 	<servlet>
 		<servlet-name>SchedulerStarter</servlet-name>
-		<servlet-class>ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.api.SchedulerStarter</servlet-class>
+		<servlet-class>ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.SchedulerStarter</servlet-class>
 		<load-on-startup>127</load-on-startup> <!-- make sure this servlet loads on startup, cause we need to start the scheduler process -->
 	</servlet>
 </web-app>

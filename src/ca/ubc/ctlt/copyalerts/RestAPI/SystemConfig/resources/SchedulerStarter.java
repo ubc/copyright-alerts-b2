@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.api;
+package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;

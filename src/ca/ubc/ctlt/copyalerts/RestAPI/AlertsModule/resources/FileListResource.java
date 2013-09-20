@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.RestAPI.AlertsModule.api;
+package ca.ubc.ctlt.copyalerts.RestAPI.AlertsModule.resources;
 
 import org.restlet.data.Status;
 import org.restlet.ext.json.JsonRepresentation;

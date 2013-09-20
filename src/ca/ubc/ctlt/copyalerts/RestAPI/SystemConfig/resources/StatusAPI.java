@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.api;
+package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources;
 
 import org.quartz.UnableToInterruptJobException;
 import org.restlet.data.Status;
