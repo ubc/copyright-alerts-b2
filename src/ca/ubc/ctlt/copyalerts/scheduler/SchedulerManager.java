@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.scheduler;
+package ca.ubc.ctlt.copyalerts.scheduler;
 
 import java.io.IOException;
 
@@ -15,9 +15,9 @@ import static org.quartz.TriggerBuilder.*;
 import static org.quartz.CronScheduleBuilder.*;
 
 
-import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.indexer.CSIndexJob;
 import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
 import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
+import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
 
 public class SchedulerManager
 {

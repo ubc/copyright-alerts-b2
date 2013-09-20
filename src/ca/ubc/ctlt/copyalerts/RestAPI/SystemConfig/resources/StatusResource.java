@@ -7,9 +7,9 @@ import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 import org.restlet.resource.ServerResource;
 
-import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.scheduler.SchedulerManager;
 import ca.ubc.ctlt.copyalerts.db.HostsTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
+import ca.ubc.ctlt.copyalerts.scheduler.SchedulerManager;
 
 public class StatusResource extends ServerResource
 {

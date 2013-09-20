@@ -54,7 +54,7 @@
 	<!-- System Config -->
 	<servlet>
 		<servlet-name>SchedulerStarter</servlet-name>
-		<servlet-class>ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.SchedulerStarter</servlet-class>
+		<servlet-class>ca.ubc.ctlt.copyalerts.scheduler.SchedulerStarter</servlet-class>
 		<load-on-startup>127</load-on-startup> <!-- make sure this servlet loads on startup, cause we need to start the scheduler process -->
 	</servlet>
 </web-app>

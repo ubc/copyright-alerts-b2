@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.scheduler;
+package ca.ubc.ctlt.copyalerts.scheduler;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;

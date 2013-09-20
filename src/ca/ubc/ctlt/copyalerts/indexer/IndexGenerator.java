@@ -1,4 +1,4 @@
-package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.indexer;
+package ca.ubc.ctlt.copyalerts.indexer;
 
 import java.util.ArrayList;
 import java.util.List;
