@@ -50,6 +50,21 @@
 		<url-pattern>/alertsmodule/*</url-pattern>
 	</servlet-mapping>
 	
+	<!-- OnDemandIndexer -->
+	<servlet>
+		<servlet-name>OnDemandIndexerAPI</servlet-name>
+		<servlet-class>org.restlet.ext.servlet.ServerServlet</servlet-class>
+		<init-param>
+			<param-name>org.restlet.application</param-name>
+			<param-value>ca.ubc.ctlt.copyalerts.RestAPI.OnDemandIndexer.OnDemandIndexerApp</param-value>
+		</init-param>
+	</servlet>
+	
+	<servlet-mapping>
+		<servlet-name>OnDemandIndexerAPI</servlet-name>
+		<url-pattern>/ondemandindexer/*</url-pattern>
+	</servlet-mapping>
+
 <!-- Startup Scheduler -->
 	<!-- System Config -->
 	<servlet>

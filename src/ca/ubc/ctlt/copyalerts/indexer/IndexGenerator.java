@@ -28,16 +28,9 @@ public class IndexGenerator
 	
 	public void process(CSFile file) throws PersistenceException, InaccessibleDbException
 	{
-		CSEntryMetadata meta = file.getCSEntryMetadata();
-		for (String attr : attributes)
+		if (fileIsTagged(file))
 		{
-			String res = meta.getStandardProperty(attr);
-			if (!res.isEmpty())
-			{ // there's a value for this attribute ID, so we can assume it's been copyright tagged
-				// there might be a concern if we don't check whether a user has actually selected a copyright
-				// though the metadata building block UI prevents that scenario so it should be ok?
-				return;
-			}
+			return;
 		}
 		// the file has not been copyright tagged, store it in the database
 		CSAccessControlEntry[] accesses = file.getAccessControlEntries();
@@ -71,6 +64,22 @@ public class IndexGenerator
 			}
 		}
 		ft.add(file, names);
+	}
+	
+	public boolean fileIsTagged(CSFile file)
+	{
+		CSEntryMetadata meta = file.getCSEntryMetadata();
+		for (String attr : attributes)
+		{
+			String res = meta.getStandardProperty(attr);
+			if (!res.isEmpty())
+			{ // there's a value for this attribute ID, so we can assume it's been copyright tagged
+				// there might be a concern if we don't check whether a user has actually selected a copyright
+				// though the metadata building block UI prevents that scenario so it should be ok?
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	/**

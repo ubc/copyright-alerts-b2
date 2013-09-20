@@ -119,6 +119,29 @@ public class FilesTable
 		}
 	}
 	
+	public void deleteFile(String path) throws InaccessibleDbException
+	{
+		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
+		Connection conn = null;
+		String query = "delete from "+ TABLENAME + " where filepath = ?";
+		try
+		{
+			conn = cm.getConnection();
+			PreparedStatement stmt = conn.prepareStatement(query);
+			stmt.setString(1, path);
+			stmt.executeUpdate();
+		} catch (SQLException e)
+		{
+			throw new InaccessibleDbException("Couldn't execute query", e);
+		} catch (ConnectionNotAvailableException e)
+		{
+			throw new InaccessibleDbException("Unable to connect to db", e);
+		}
+		finally
+		{
+			if (conn != null) cm.releaseConnection(conn); // MUST release connection or we'll exhaust connection pool
+		}
+	}
 	/**
 	 * Parse out the course name from the full content system path.
 	 * @param path
