@@ -2,9 +2,9 @@ package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources;
 
 import java.io.IOException;
 
+import org.quartz.SchedulerException;
 import org.restlet.data.Status;
 import org.restlet.ext.json.JsonRepresentation;
-import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
@@ -13,11 +13,12 @@ import org.restlet.resource.ServerResource;
 import blackboard.platform.plugin.PlugInException;
 
 import ca.ubc.ctlt.copyalerts.SavedConfiguration;
+import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.scheduler.SchedulerManager;
 
-public class MetadataAPI extends ServerResource
+public class ScheduleResource extends ServerResource
 {
 	private SavedConfiguration config = new SavedConfiguration();
-	
+
 	@Override
 	protected void doInit() throws ResourceException
 	{
@@ -37,18 +38,36 @@ public class MetadataAPI extends ServerResource
 	}
 
 	@Get("json")
-	public Representation getMetadata()
-	{
-		return new JsonRepresentation(config.toJsonAttributes());
+	public JsonRepresentation getMetadata()
+	{	
+		try
+		{
+			config.load();
+		} catch (PlugInException e)
+		{
+			e.printStackTrace();
+			throw new ResourceException(e);
+		} catch (IOException e)
+		{
+			e.printStackTrace();
+			throw new ResourceException(e);
+		}
+		return new JsonRepresentation(config.toJson());
 	}
 	
 	@Post("json")
-	public Representation saveMetadata(Representation data)
+	public JsonRepresentation saveMetadata(JsonRepresentation data)
 	{
-		try
+	    try
 		{
 			String json = data.getText();
-			config.fromJsonAttributes(json);
+		    config.fromJson(json);
+		    SchedulerManager.getInstance().updateScheduler();
+		} catch (SchedulerException e)
+		{
+			e.printStackTrace();
+			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
+			return null;
 		} catch (PlugInException e)
 		{
 			e.printStackTrace();

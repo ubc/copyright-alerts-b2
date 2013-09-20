@@ -15,7 +15,7 @@ import ca.ubc.ctlt.copyalerts.db.HostsTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 import ca.ubc.ctlt.copyalerts.jsonintermediate.HostOptions;
 
-public class HostAPI extends ServerResource
+public class HostResource extends ServerResource
 {
 	private HostsTable hostTable = null;
 	@Override

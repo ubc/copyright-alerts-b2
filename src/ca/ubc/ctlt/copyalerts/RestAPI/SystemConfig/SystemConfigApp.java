@@ -4,10 +4,10 @@ import org.restlet.Application;
 import org.restlet.Restlet;
 import org.restlet.routing.Router;
 
-import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.HostAPI;
-import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.MetadataAPI;
-import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.ScheduleAPI;
-import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.StatusAPI;
+import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.HostResource;
+import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.MetadataResource;
+import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.ScheduleResource;
+import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.StatusResource;
 
 public class SystemConfigApp extends Application
 {
@@ -19,10 +19,10 @@ public class SystemConfigApp extends Application
         Router router = new Router(getContext());
 
         // Defines only one route
-        router.attach("/status/{action}", StatusAPI.class);
-        router.attach("/metadata", MetadataAPI.class);
-        router.attach("/host", HostAPI.class);
-        router.attach("/schedule", ScheduleAPI.class);
+        router.attach("/status/{action}", StatusResource.class);
+        router.attach("/metadata", MetadataResource.class);
+        router.attach("/host", HostResource.class);
+        router.attach("/schedule", ScheduleResource.class);
 
         return router;
     }

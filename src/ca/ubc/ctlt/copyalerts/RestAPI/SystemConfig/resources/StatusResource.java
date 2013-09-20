@@ -11,7 +11,7 @@ import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.scheduler.SchedulerManager;
 import ca.ubc.ctlt.copyalerts.db.HostsTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 
-public class StatusAPI extends ServerResource
+public class StatusResource extends ServerResource
 {
 	private HostsTable hostTable = null;
 
