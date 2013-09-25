@@ -36,7 +36,7 @@ public class HostResource extends ServerResource
 	{
 		try
 		{
-			hostTable.load();
+			hostTable.loadHosts();
 		} catch (InaccessibleDbException e)
 		{
 			e.printStackTrace();

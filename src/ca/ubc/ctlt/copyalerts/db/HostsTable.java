@@ -47,7 +47,7 @@ public class HostsTable
 	
 	public HostsTable() throws InaccessibleDbException
 	{
-		load();
+		loadHosts();
 	}
 
 	/**
@@ -57,7 +57,7 @@ public class HostsTable
 	 * @param leader
 	 * @throws InaccessibleDbException 
 	 */
-	public void add(String host, boolean leader) throws InaccessibleDbException
+	public void addHost(String host, boolean leader) throws InaccessibleDbException
 	{
 		if (hosts.containsKey(host))
 		{ // entry already exists
@@ -96,9 +96,9 @@ public class HostsTable
 	 * @param host
 	 * @throws InaccessibleDbException 
 	 */
-	public void add(String host) throws InaccessibleDbException
+	public void addHost(String host) throws InaccessibleDbException
 	{
-		add(host, false);
+		addHost(host, false);
 	}
 	
 	/**
@@ -106,16 +106,17 @@ public class HostsTable
 	 * @param host
 	 * @throws InaccessibleDbException
 	 */
-	public void delete(String host) throws InaccessibleDbException
+	public void deleteHost(String host) throws InaccessibleDbException
 	{
 		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
-		String query = "delete from "+ TABLENAME +" where host='"+ host +"'";
-		Statement stmt;
+		String query = "delete from "+ TABLENAME +" where host = ?";
+		PreparedStatement stmt;
 		try
 		{
 			conn = cm.getConnection();
-			stmt = conn.createStatement();
+			stmt = conn.prepareStatement(query);
+			stmt.setString(1, host);
 			stmt.executeUpdate(query);
 			hosts.remove(host);
 		} catch (SQLException e)
@@ -136,15 +137,13 @@ public class HostsTable
 	 * 
 	 * @throws InaccessibleDbException
 	 */
-	public void load() throws InaccessibleDbException
+	public void loadHosts() throws InaccessibleDbException
 	{
 		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		try 
 		{
 			conn = cm.getConnection();
-			// note that there's no order guarantee from just select rownum statements, so have to use the order by subquery
-			// to impose a repeatable order on the return results
 			String query = "SELECT * FROM "+ TABLENAME;
 	        PreparedStatement queryCompiled = conn.prepareStatement(query);
 	        ResultSet res = queryCompiled.executeQuery();
@@ -243,7 +242,7 @@ public class HostsTable
 	 * @param host
 	 * @return
 	 */
-	public boolean contains(String host)
+	public boolean hasHost(String host)
 	{
 		return hosts.containsKey(host);
 	}
@@ -252,7 +251,7 @@ public class HostsTable
 	 * Save the run stats to the database
 	 * @throws InaccessibleDbException 
 	 */
-	public void setRunStats(String host, String status, Timestamp start, Timestamp end) throws InaccessibleDbException
+	public void saveRunStats(String host, String status, Timestamp start, Timestamp end) throws InaccessibleDbException
 	{
 		if (!hosts.containsKey(host))
 		{ // invalid entry
@@ -316,8 +315,9 @@ public class HostsTable
 			// to impose a repeatable order on the return results
 			if (!hostname.isEmpty())
 			{
-				String query = "SELECT "+ STATUS_RUNNING_KEY +", "+ STATUS_START_KEY +", "+ STATUS_END_KEY +" FROM "+ TABLENAME + " WHERE host='" + hostname + "'"; 
+				String query = "SELECT "+ STATUS_RUNNING_KEY +", "+ STATUS_START_KEY +", "+ STATUS_END_KEY +" FROM "+ TABLENAME + " WHERE host = ?"; 
 		        PreparedStatement queryCompiled = conn.prepareStatement(query);
+		        queryCompiled.setString(1, hostname);
 		        ResultSet res = queryCompiled.executeQuery();
 		
 		        while(res.next())

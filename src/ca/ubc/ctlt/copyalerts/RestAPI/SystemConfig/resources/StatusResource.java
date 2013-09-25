@@ -24,7 +24,7 @@ public class StatusResource extends ServerResource
 			try
 			{
 				if (hostTable == null) hostTable = new HostsTable(); // initialize it if needed
-				hostTable.load();
+				hostTable.loadHosts();
 				return new JsonRepresentation(hostTable.toStatusJson());
 			} catch (InaccessibleDbException e)
 			{

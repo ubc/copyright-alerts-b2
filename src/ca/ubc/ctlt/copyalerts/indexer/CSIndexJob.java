@@ -106,7 +106,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		try
 		{
 			// Save the fact that we've started running
-			ht.setRunStats(hostname, HostsTable.STATUS_RUNNING, started, new Timestamp(0));
+			ht.saveRunStats(hostname, HostsTable.STATUS_RUNNING, started, new Timestamp(0));
 			// load configuration
 			config.load();
 		} catch (InaccessibleDbException e)
@@ -154,7 +154,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			{
 				Timestamp ended = new Timestamp((new Date()).getTime());
 				System.out.println("Finished by time limit");
-				ht.setRunStats(hostname, HostsTable.STATUS_LIMIT, started, ended);
+				ht.saveRunStats(hostname, HostsTable.STATUS_LIMIT, started, ended);
 				limitReached = true;
 			}
 		} catch (JobExecutionException e)
@@ -163,7 +163,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			Timestamp ended = new Timestamp((new Date()).getTime());
 			try
 			{
-				ht.setRunStats(hostname, HostsTable.STATUS_ERROR, started, ended);
+				ht.saveRunStats(hostname, HostsTable.STATUS_ERROR, started, ended);
 			} catch (InaccessibleDbException e1)
 			{
 				System.out.println("Catastrophic error, unable to even save error notification.");
@@ -201,7 +201,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			Timestamp ended = new Timestamp((new Date()).getTime());
 			try
 			{
-				ht.setRunStats(hostname, HostsTable.STATUS_STOPPED, started, ended);
+				ht.saveRunStats(hostname, HostsTable.STATUS_STOPPED, started, ended);
 			} catch (InaccessibleDbException e)
 			{
 				System.out.println("Unable to save run stats.");

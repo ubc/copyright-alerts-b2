@@ -39,7 +39,6 @@ public class SavedConfiguration
 	private int hours = 1;
 	private int minutes = 0;
 	
-	
 	/**
 	 * Load config settings from the configuration file.
 	 * @throws PlugInException 

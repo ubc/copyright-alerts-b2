@@ -26,9 +26,9 @@ public class SchedulerStarter extends HttpServlet
 			HostsTable hostTable = new HostsTable();
 			// store this host into the hosts table
 			String hostname = HostResolver.getHostname();
-			if (!hostTable.contains(hostname))
+			if (!hostTable.hasHost(hostname))
 			{
-				hostTable.add(hostname);
+				hostTable.addHost(hostname);
 			}
 		} catch (VirtualSystemException e)
 		{
