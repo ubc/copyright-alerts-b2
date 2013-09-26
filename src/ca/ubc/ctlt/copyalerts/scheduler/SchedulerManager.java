@@ -1,7 +1,5 @@
 package ca.ubc.ctlt.copyalerts.scheduler;
 
-import java.io.IOException;
-
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
@@ -9,7 +7,6 @@ import org.quartz.Trigger;
 import org.quartz.UnableToInterruptJobException;
 import org.quartz.impl.StdSchedulerFactory;
 
-import blackboard.platform.plugin.PlugInException;
 import static org.quartz.JobBuilder.*;
 import static org.quartz.TriggerBuilder.*;
 import static org.quartz.CronScheduleBuilder.*;
@@ -26,12 +23,13 @@ public class SchedulerManager
 	private JobDetail indexJob;
 	private Trigger indexTrigger;
 	private Scheduler scheduler = null;
-	private SavedConfiguration config = new SavedConfiguration();
+	private SavedConfiguration config;
 	
 	private SchedulerManager()
 	{
 		try
 		{
+			config = SavedConfiguration.getInstance();
 			updateScheduler();
 		} catch (SchedulerException e)
 		{
@@ -102,18 +100,6 @@ public class SchedulerManager
 	 */
 	public void updateScheduler() throws SchedulerException
 	{
-		try
-		{
-			config.load();
-		} catch (PlugInException e)
-		{
-			e.printStackTrace();
-			throw new SchedulerException(e);
-		} catch (IOException e)
-		{
-			e.printStackTrace();
-			throw new SchedulerException(e);
-		}
 		// create and configure scheduler according to configuration
 		// 1. we have no prior scheduler enabled, need to create it
 		// 2. we already have a prior scheduler, need to modify its settings

@@ -1,6 +1,5 @@
 package ca.ubc.ctlt.copyalerts.indexer;
 
-import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
@@ -28,7 +27,6 @@ import blackboard.cms.filesystem.CSEntry;
 import blackboard.cms.filesystem.CSFile;
 import blackboard.db.ConnectionNotAvailableException;
 import blackboard.persist.PersistenceException;
-import blackboard.platform.plugin.PlugInException;
 import blackboard.platform.vxi.service.VirtualSystemException;
 
 import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
@@ -101,23 +99,15 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		// Implement execution time limit (if needed)
 		// Basically, we'll have a trigger that'll fire after the time limit has passed. We use the CSIndexJob object as a trigger listener
 		// and will trigger an interrupt when the time has passed.
-		SavedConfiguration config = new SavedConfiguration();
+		SavedConfiguration config;
 		Timestamp started = new Timestamp((new Date()).getTime());
 		try
 		{
 			// Save the fact that we've started running
 			ht.saveRunStats(hostname, HostsTable.STATUS_RUNNING, started, new Timestamp(0));
 			// load configuration
-			config.load();
+			config = SavedConfiguration.getInstance();
 		} catch (InaccessibleDbException e)
-		{
-			e.printStackTrace();
-			throw new JobExecutionException(e);
-		} catch (PlugInException e)
-		{
-			e.printStackTrace();
-			throw new JobExecutionException(e);
-		} catch (IOException e)
 		{
 			e.printStackTrace();
 			throw new JobExecutionException(e);

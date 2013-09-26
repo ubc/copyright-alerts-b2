@@ -1,7 +1,6 @@
 package ca.ubc.ctlt.copyalerts.JsonIntermediate;
 
 import java.util.HashMap;
-import java.util.List;
 
 public class FileList
 {

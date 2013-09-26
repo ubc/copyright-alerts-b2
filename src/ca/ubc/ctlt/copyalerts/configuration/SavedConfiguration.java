@@ -1,9 +1,14 @@
 package ca.ubc.ctlt.copyalerts.configuration;
 
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
+
+import ca.ubc.ctlt.copyalerts.db.HostsTable;
+import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 
 import com.google.gson.Gson;
 
@@ -11,6 +16,9 @@ import blackboard.platform.plugin.PlugInException;
 
 public class SavedConfiguration
 {
+	// singleton instance
+	private static final SavedConfiguration instance = new SavedConfiguration();
+
 	// Cron scheduler configuration, time to start executing
 	public final static String ENABLE_CONFIG = "enable"; // whether the scheduler is enabled
 	public final static String CRON_CONFIG = "cron"; // when to start the alert generation
@@ -26,6 +34,7 @@ public class SavedConfiguration
 	private transient Properties prop = new Properties();
 	private transient Gson gson = new Gson();
 	private transient ArrayList<String> attributes = new ArrayList<String>();
+	private transient HostsTable hostsTable;
 
 	// NOTE: All configuration settings stored in Properties must be strings, so we can't just ask GSON to
 	// Serialise the Properties object, since angularjs will be expecting difference datatypes for certain
@@ -39,25 +48,42 @@ public class SavedConfiguration
 	private int hours = 1;
 	private int minutes = 0;
 	
-	/**
-	 * Load config settings from the configuration file.
-	 * @throws PlugInException 
-	 * @throws IOException 
-	 */
-	public void load() throws PlugInException, IOException
+	private SavedConfiguration() 
 	{
 		try
 		{
-			prop = BuildingBlockHelper.loadBuildingBlockSettings();
-		} catch (PlugInException e)
+			hostsTable = new HostsTable();
+			load();
+		} catch (InaccessibleDbException e)
 		{
-			System.out.println("CopyrightAlert unable to find Building Block configuration file, attempting to create.");
-			throw e;
+			// not reading the configuration is serious enough that the building block
+			// shouldn't start up
+			e.printStackTrace();
+			throw new RuntimeException(e);
 		} catch (IOException e)
 		{
-			System.out.println("CopyrightAlert unable to open Building Block configuration, aborting.");
-			throw e;
+			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
+	}
+	
+	public static SavedConfiguration getInstance()
+	{
+		return instance;
+	}
+	
+	/**
+	 * Load config settings from the configuration file.
+	 * @throws InaccessibleDbException 
+	 * @throws PlugInException 
+	 * @throws IOException 
+	 */
+	private void load() throws InaccessibleDbException, IOException
+	{
+		String configString = hostsTable.loadConfig();
+		if (configString == null) configString = "";
+		StringReader input = new StringReader(configString);
+		prop.load(input);
 		
 		if (prop.getProperty(ENABLE_CONFIG) == null)
 		{ // no prior configuration saved, establish defaults first
@@ -92,10 +118,11 @@ public class SavedConfiguration
 	
 	/**
 	 * Save config settings to the configuration file.
+	 * @throws InaccessibleDbException 
 	 * @throws PlugInException 
 	 * @throws IOException 
 	 */
-	private void save() throws PlugInException, IOException
+	private void save() throws InaccessibleDbException, IOException
 	{
 		String savedAttrs = "";
 		// convert array into string for saving in config file
@@ -112,18 +139,11 @@ public class SavedConfiguration
 		}
 		prop.setProperty(ATTRIBUTES_CONFIG, savedAttrs);
 		
-		try
-		{
-			BuildingBlockHelper.saveBuildingBlockSettings(prop);
-		} catch (PlugInException e)
-		{
-			System.out.println("CopyrightAlert unable to save Building Block configuration file, aborting.");
-			throw e;
-		} catch (IOException e)
-		{
-			System.out.println("CopyrightAlert unable to open Building Block configuration, aborting.");
-			throw e;
-		}
+		StringWriter writer = new StringWriter();
+		prop.store(writer, "Copyright Alerts Configuration");
+		hostsTable.saveConfig(writer.toString());
+		
+		load();
 	}
 	
 	/**
@@ -138,14 +158,14 @@ public class SavedConfiguration
 	/**
 	 * Parse and store configuration values from a json string
 	 * @param json
+	 * @throws InaccessibleDbException 
 	 * @throws IOException 
 	 * @throws PlugInException 
 	 */
-	public void fromJson(String json) throws PlugInException, IOException
+	public void fromJson(String json) throws InaccessibleDbException, IOException
 	{
 		prop = gson.fromJson(json, prop.getClass());
 		save();
-		load(); // need to reload the new values
 	}
 
 	/**
@@ -163,16 +183,16 @@ public class SavedConfiguration
 	/**
 	 * Parse and store configuration values from a json string
 	 * @param json
+	 * @throws InaccessibleDbException 
 	 * @throws IOException 
 	 * @throws PlugInException 
 	 */
-	public void fromJsonAttributes(String json) throws PlugInException, IOException
+	public void fromJsonAttributes(String json) throws InaccessibleDbException, IOException
 	{
 		HashMap<String, ArrayList<String>> list = new HashMap<String, ArrayList<String>>();
 		list = gson.fromJson(json, list.getClass());
 		attributes = list.get("attributes");
 		save();
-		load(); // need to reload the new values
 	}
 	
 	/**

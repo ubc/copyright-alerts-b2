@@ -10,48 +10,24 @@ import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
 
-import blackboard.platform.plugin.PlugInException;
-
 import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
+import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 import ca.ubc.ctlt.copyalerts.scheduler.SchedulerManager;
 
 public class ScheduleResource extends ServerResource
 {
-	private SavedConfiguration config = new SavedConfiguration();
+	private SavedConfiguration config;
 
 	@Override
 	protected void doInit() throws ResourceException
 	{
-		try
-		{
-			config.load();
-		} catch (PlugInException e)
-		{
-			e.printStackTrace();
-			throw new ResourceException(e);
-		} catch (IOException e)
-		{
-			e.printStackTrace();
-			throw new ResourceException(e);
-		}
+		config = SavedConfiguration.getInstance();
 		super.doInit();
 	}
 
 	@Get("json")
 	public JsonRepresentation getMetadata()
 	{	
-		try
-		{
-			config.load();
-		} catch (PlugInException e)
-		{
-			e.printStackTrace();
-			throw new ResourceException(e);
-		} catch (IOException e)
-		{
-			e.printStackTrace();
-			throw new ResourceException(e);
-		}
 		return new JsonRepresentation(config.toJson());
 	}
 	
@@ -68,12 +44,12 @@ public class ScheduleResource extends ServerResource
 			e.printStackTrace();
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 			return null;
-		} catch (PlugInException e)
+		} catch (IOException e)
 		{
 			e.printStackTrace();
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 			return null;
-		} catch (IOException e)
+		} catch (InaccessibleDbException e)
 		{
 			e.printStackTrace();
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);

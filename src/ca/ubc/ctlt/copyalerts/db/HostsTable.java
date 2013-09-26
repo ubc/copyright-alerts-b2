@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -283,6 +282,70 @@ public class HostsTable
 			if (conn != null) cm.releaseConnection(conn); // MUST release connection or we'll exhaust connection pool
 		}
 		
+	}
+	
+	/**
+	 * Load the schedule & metadata template configuration
+	 * @return
+	 * @throws InaccessibleDbException 
+	 */
+	public String loadConfig() throws InaccessibleDbException
+	{
+		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
+		Connection conn = null;
+		try 
+		{
+			conn = cm.getConnection();
+			String query = "SELECT config FROM "+ TABLENAME +" WHERE leader = '1'";
+			PreparedStatement queryCompiled = conn.prepareStatement(query);
+			ResultSet res = queryCompiled.executeQuery();
+			String ret = "";
+			while(res.next())
+			{
+				ret = res.getString(1);
+				break;
+			}
+			res.close();
+			queryCompiled.close();
+			return ret;
+		} catch (SQLException e)
+		{
+			throw new InaccessibleDbException("Couldn't execute query", e);
+		} catch (ConnectionNotAvailableException e)
+		{
+			throw new InaccessibleDbException("Unable to connect to db", e);
+		}
+		finally
+		{
+			if (conn != null) cm.releaseConnection(conn);
+		}
+	}
+	
+	public void saveConfig(String config) throws InaccessibleDbException
+	{
+		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
+		Connection conn = null;
+		String query = "UPDATE "+ TABLENAME +" SET config = ?";
+		PreparedStatement stmt;
+		try
+		{
+			conn = cm.getConnection();
+			// convert the query string into a compiled statement for faster execution
+			stmt = conn.prepareStatement(query);
+			stmt.setString(1, config);
+			stmt.executeUpdate();
+			stmt.close();
+		} catch (SQLException e)
+		{
+			throw new InaccessibleDbException("Couldn't execute query", e);
+		} catch (ConnectionNotAvailableException e)
+		{
+			throw new InaccessibleDbException("Unable to connect to db", e);
+		}
+		finally
+		{
+			if (conn != null) cm.releaseConnection(conn); // MUST release connection or we'll exhaust connection pool
+		}
 	}
 	
 	/**

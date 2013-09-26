@@ -22,7 +22,6 @@ import blackboard.cms.filesystem.CSFile;
 import blackboard.data.user.User;
 import blackboard.platform.context.Context;
 import blackboard.platform.context.ContextManagerFactory;
-import blackboard.platform.plugin.PlugInException;
 
 public class ProcessFilesResource extends ServerResource
 {
@@ -38,21 +37,16 @@ public class ProcessFilesResource extends ServerResource
 	@Post("json")
 	public JsonRepresentation processFiles(JsonRepresentation data)
 	{
-		SavedConfiguration config = new SavedConfiguration();
+		SavedConfiguration config;
 		String json;
 		CSContext csCtx;
 		try
 		{
+			config = SavedConfiguration.getInstance();
 			csCtx = CSContext.getContext();
 			csCtx.isSuperUser(true);
-			config.load();
 			json = data.getText();
 		} catch (IOException e)
-		{
-			e.printStackTrace();
-			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
-			return null;
-		} catch (PlugInException e)
 		{
 			e.printStackTrace();
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
