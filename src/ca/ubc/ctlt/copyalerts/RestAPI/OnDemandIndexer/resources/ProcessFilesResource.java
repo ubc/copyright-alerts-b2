@@ -20,6 +20,7 @@ import blackboard.cms.filesystem.CSContext;
 import blackboard.cms.filesystem.CSEntry;
 import blackboard.cms.filesystem.CSFile;
 import blackboard.data.user.User;
+import blackboard.persist.PersistenceException;
 import blackboard.platform.context.Context;
 import blackboard.platform.context.ContextManagerFactory;
 
@@ -56,7 +57,16 @@ public class ProcessFilesResource extends ServerResource
 		Gson gson = new Gson();
 		ProcessFiles pf = gson.fromJson(json, ProcessFiles.class);
 
-		IndexGenerator gen = new IndexGenerator(config.getAttributes());
+		IndexGenerator gen;
+		try
+		{
+			gen = new IndexGenerator(config.getAttributes());
+		} catch (PersistenceException e1)
+		{
+			e1.printStackTrace();
+			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
+			return null;
+		}
 		FilesTable ft = new FilesTable();
 		for (String file : pf.files)
 		{

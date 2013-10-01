@@ -9,7 +9,6 @@
 </bbNG:pageHeader>
 <link href="${ctx.request.contextPath}/static/jqcron/jqCron.css" type="text/css" rel="stylesheet" />
 <link href="${ctx.request.contextPath}/static/style.css" type="text/css" rel="stylesheet" />
-<link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
 <script>
@@ -76,18 +75,21 @@ jQuery.noConflict();
 	</div>
 
 	<div class="section" ng-controller="MetadataIdCtrl">
-		<h1>Copyright Metadata Template Attribute IDs</h1>
-		<p>If a file's metadata contains the attribute IDs listed here, then it is considered to be properly tagged.</p>
-		<ul class='attributeIds'>
-			<li ng-repeat="attr in config.attributes">
-				<a href="#" ng-click="remove(attr)"><i class="icon-remove"></i></a> {{attr}}
-			</li>
-		</ul>
+		<h1>Copyright Metadata Template</h1>
+		<p>
+		Select the Metadata Template used for copyright. A file is considered to be
+		properly tagged if any of the boolean type attributes of the selected
+		template has been set.
+		</p>
 		<!-- Note that one of the blackboard js libs start complaining about you not waiting for submits to finish if you press the "Enter" key for submit too
 		many times. Shouldn't be a problem for normal use, there's only a few ids. -->
-		<form name="attributeform" ng-submit="submit()">
-			<input type="text" id="newattr" ng-model="newattr" /> 
-			<input type="button" ng-click="submit()" value="Add ID" />
+		<form name="templateform" ng-submit="submit()" class="templateform">
+			<select ng-model="config.selected" ng-options="templateId as templateName for (templateId, templateName) in config.templatesList">
+			</select>
+			<input type="button" ng-click="submit()" value="Set Template" />
+			<span class="savemsg saving" ng-show='saving == "saving"'>Saving...</span>
+			<span class="savemsg success" ng-show="saving == 'success'">Save Successful!</span>
+			<span class="savemsg error" ng-show="saving == 'error'">Error Saving</span>
 		</form>
 	</div>
 </div>

@@ -6,12 +6,18 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.Set;
 
 import ca.ubc.ctlt.copyalerts.db.HostsTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 
 import com.google.gson.Gson;
 
+import blackboard.cms.metadata.CSFormManagerFactory;
+import blackboard.persist.Id;
+import blackboard.persist.PersistenceException;
+import blackboard.persist.metadata.AttributeDefinition;
+import blackboard.platform.forms.Form;
 import blackboard.platform.plugin.PlugInException;
 
 public class SavedConfiguration
@@ -25,7 +31,7 @@ public class SavedConfiguration
 	public final static String LIMIT_CONFIG = "limit"; // whether we should limit how much time alerts generation gets to run
 	public final static String HOURS_CONFIG = "hours"; // the limiting hours
 	public final static String MINUTES_CONFIG = "minutes"; // the limiting minutes
-	public final static String ATTRIBUTES_CONFIG = "metadata_template_attribute_ids";	// key to access the stored attribute ids
+	public final static String TEMPLATE_CONFIG = "metadata_template_id";	// key to access the stored attribute ids
 	
 	// cause properties are always string, we're going to have to need a delimiter for array conversion for attributes
 	public final static String DELIM = "	";
@@ -33,7 +39,7 @@ public class SavedConfiguration
 	// private fields that will not be serialized since they're not used on the client side
 	private transient Properties prop = new Properties();
 	private transient Gson gson = new Gson();
-	private transient ArrayList<String> attributes = new ArrayList<String>();
+	private transient String metadataTemplate = "";
 	private transient HostsTable hostsTable;
 
 	// NOTE: All configuration settings stored in Properties must be strings, so we can't just ask GSON to
@@ -92,7 +98,7 @@ public class SavedConfiguration
 			prop.setProperty(LIMIT_CONFIG, Boolean.toString(limit));
 			prop.setProperty(HOURS_CONFIG, Integer.toString(hours));
 			prop.setProperty(MINUTES_CONFIG, Integer.toString(minutes));
-			prop.setProperty(ATTRIBUTES_CONFIG, "");
+			prop.setProperty(TEMPLATE_CONFIG, "");
 			save();
 		}
 		else
@@ -102,17 +108,7 @@ public class SavedConfiguration
 			limit = Boolean.parseBoolean(prop.getProperty(LIMIT_CONFIG));
 			hours = Integer.parseInt(prop.getProperty(HOURS_CONFIG));
 			minutes = Integer.parseInt(prop.getProperty(MINUTES_CONFIG));
-
-			String res = prop.getProperty(ATTRIBUTES_CONFIG);
-			if (!res.isEmpty())
-			{
-				String[] attrArr = res.split(DELIM);
-				attributes.clear();
-				for (String attr : attrArr)
-				{
-					attributes.add(attr);
-				}
-			}
+			metadataTemplate = prop.getProperty(TEMPLATE_CONFIG);
 		}
 	}
 	
@@ -124,21 +120,9 @@ public class SavedConfiguration
 	 */
 	private void save() throws InaccessibleDbException, IOException
 	{
-		String savedAttrs = "";
-		// convert array into string for saving in config file
-		for (String attr : attributes)
-		{
-			if (savedAttrs.isEmpty())
-			{
-				savedAttrs = attr;
-			}
-			else
-			{
-				savedAttrs += DELIM + attr;
-			}
-		}
-		prop.setProperty(ATTRIBUTES_CONFIG, savedAttrs);
-		
+		// need to save it here cause otherwise, the value will be lost when we reserialize prop from schedule json
+		prop.setProperty(TEMPLATE_CONFIG, metadataTemplate);
+
 		StringWriter writer = new StringWriter();
 		prop.store(writer, "Copyright Alerts Configuration");
 		hostsTable.saveConfig(writer.toString());
@@ -167,17 +151,10 @@ public class SavedConfiguration
 		prop = gson.fromJson(json, prop.getClass());
 		save();
 	}
-
-	/**
-	 * Convert the configuration values into a json string
-	 * @return
-	 */
-	public String toJsonAttributes()
+	
+	public String getMetadataTemplate()
 	{
-		// need to put it in a map as ngResource doesn't like bare arrays and prefer objects
-		HashMap<String, ArrayList<String>> list = new HashMap<String, ArrayList<String>>();
-		list.put("attributes", attributes);
-		return gson.toJson(list);
+		return metadataTemplate;
 	}
 	
 	/**
@@ -187,11 +164,9 @@ public class SavedConfiguration
 	 * @throws IOException 
 	 * @throws PlugInException 
 	 */
-	public void fromJsonAttributes(String json) throws InaccessibleDbException, IOException
+	public void saveMetadataTemplate(String template) throws InaccessibleDbException, IOException
 	{
-		HashMap<String, ArrayList<String>> list = new HashMap<String, ArrayList<String>>();
-		list = gson.fromJson(json, list.getClass());
-		attributes = list.get("attributes");
+		metadataTemplate = template;
 		save();
 	}
 	
@@ -266,9 +241,25 @@ public class SavedConfiguration
 
 	/**
 	 * @return the attributes
+	 * @throws PersistenceException 
 	 */
-	public ArrayList<String> getAttributes()
+	public ArrayList<String> getAttributes() throws PersistenceException
 	{
-		return attributes;
+		// find form by form ID
+		Id formId = Id.generateId(Form.DATA_TYPE, metadataTemplate);
+		Form form = CSFormManagerFactory.getInstance().loadFormById(formId);
+
+		ArrayList<String> ret = new ArrayList<String>();
+		// get all attributes in the form
+		Set<AttributeDefinition> adSet = form.getAttributeDefinitions();
+		for (AttributeDefinition ad : adSet) 
+		{
+			if (ad.getValueTypeLabel().equals("Boolean"))
+			{
+				ret.add(ad.getName());
+			}
+		}
+		
+		return ret;
 	}
 }

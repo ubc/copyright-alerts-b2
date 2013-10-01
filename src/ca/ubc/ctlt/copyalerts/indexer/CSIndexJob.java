@@ -260,7 +260,15 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		}
 		// part 2, go through the queue and check each file's metadata
 		System.out.println("Check Metadata Start");
-		IndexGenerator indexGen = new IndexGenerator(config.getAttributes());
+		IndexGenerator indexGen;
+		try
+		{
+			indexGen = new IndexGenerator(config.getAttributes());
+		} catch (PersistenceException e)
+		{
+			System.out.println("Could not get metadata template attributes.");
+			throw new JobExecutionException(e);
+		}
 		// clear the database
 		try
 		{

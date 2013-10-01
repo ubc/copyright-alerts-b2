@@ -92,9 +92,10 @@ function StatusCtrl($scope, $timeout, Status, Host)
 	};
 }
 
-function MetadataIdCtrl($scope, MetadataAttributes)
+function MetadataIdCtrl($scope, $timeout, MetadataAttributes)
 {
 	$scope.config = MetadataAttributes.get();
+	$scope.saving = "";
 
 	$scope.remove = function (attr) 
 	{
@@ -103,14 +104,23 @@ function MetadataIdCtrl($scope, MetadataAttributes)
 		$scope.config.$save();
 	};
 	
+	$scope.saveSuccessful = function()
+	{
+		if ($scope.saving == "error") return;
+		$timeout(function() { $scope.saving = "success"; }, 500);
+		$timeout(function() { $scope.saving = ""; }, 6000);
+	};
+	
+	$scope.saveError = function()
+	{
+		$scope.saving = "error";
+	};
+	
+	
 	$scope.submit = function() 
 	{
-		if (this.newattr) 
-		{
-			$scope.config.attributes.push(this.newattr);
-			$scope.config.$save();
-			this.newattr = '';
-		}
+		$scope.saving = "saving";
+		$scope.config.$save($scope.saveSuccessful, $scope.saveError);
 		return false;
 	};
 }

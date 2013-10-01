@@ -52,22 +52,6 @@
 		display: block;
 	}
 
-	ul.attributeIds
-	{
-		margin: 1em;
-		li
-		{
-			padding: 0.5em;
-			margin-bottom: 0.2em;
-			@include light-border;
-		}
-		a
-		{
-			margin-right: 0.5em;
-			color: red;
-		}
-	}
-
 	div.section
 	{
 		display: inline-block;
@@ -151,5 +135,9 @@
 		list-style: decimal inside;
 	}
 
+	.templateform
+	{
+		margin-top: 0.5em;
+	}
 }
 
