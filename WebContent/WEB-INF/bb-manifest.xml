@@ -91,6 +91,10 @@
             <permission type="java.lang.RuntimePermission" name="modifyThread" />
             <!-- required to get hostname -->
             <permission type="java.lang.RuntimePermission" name="getenv.HOSTNAME" />
+            <!-- required to send request to other nodes for config syncing -->
+            <permission type="java.net.SocketPermission" name="*.lms.it.ubc.ca" actions="connect,resolve" />
+            <!-- required for restlet ssl client connections -->
+            <permission type="java.lang.RuntimePermission" name="setFactory" />
         </permissions>
 
     </plugin>

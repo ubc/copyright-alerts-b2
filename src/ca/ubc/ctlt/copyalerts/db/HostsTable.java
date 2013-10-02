@@ -357,6 +357,7 @@ public class HostsTable
 		Gson gson = new Gson();
 		HostOptions ret = new HostOptions();
 		ret.leader = getLeader();
+		ret.current = HostResolver.getHostname();
 		ret.options = hosts.keySet();
 		ret.alt = HostResolver.getAltHostnames();
 		return gson.toJson(ret);
@@ -448,5 +449,13 @@ public class HostsTable
 			return "0s";
 		}
 		return formattedDuration;
+	}
+
+	/**
+	 * @return the hosts
+	 */
+	public HashMap<String, Boolean> getHosts()
+	{
+		return hosts;
 	}
 }

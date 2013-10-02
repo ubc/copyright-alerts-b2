@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.Properties;
 import java.util.Set;
 
+import ca.ubc.ctlt.copyalerts.JsonIntermediate.ScheduleConfiguration;
+import ca.ubc.ctlt.copyalerts.JsonIntermediate.SyncStatus;
 import ca.ubc.ctlt.copyalerts.db.HostsTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 
@@ -36,23 +38,14 @@ public class SavedConfiguration
 	// cause properties are always string, we're going to have to need a delimiter for array conversion for attributes
 	public final static String DELIM = "	";
 	
-	// private fields that will not be serialized since they're not used on the client side
-	private transient Properties prop = new Properties();
-	private transient Gson gson = new Gson();
-	private transient String metadataTemplate = "";
-	private transient HostsTable hostsTable;
+	private Properties prop = new Properties();
+	private Gson gson = new Gson();
+	private String metadataTemplate = "";
+	private HostsTable hostsTable;
+	
+	// allows easy serialization to json for schedule configurations
+	private ScheduleConfiguration config = new ScheduleConfiguration();
 
-	// NOTE: All configuration settings stored in Properties must be strings, so we can't just ask GSON to
-	// Serialise the Properties object, since angularjs will be expecting difference datatypes for certain
-	// form elements (e.g.: boolean for checkboxes), so we'll serialise the SavedConfiguration class since
-	// we can specify datatypes here.
-
-	// private fields that will be serialised
-	private String enable = "false";
-	private String cron = "0 1 * * 6";
-	private boolean limit = false;
-	private int hours = 1;
-	private int minutes = 0;
 	
 	private SavedConfiguration() 
 	{
@@ -84,7 +77,7 @@ public class SavedConfiguration
 	 * @throws PlugInException 
 	 * @throws IOException 
 	 */
-	private void load() throws InaccessibleDbException, IOException
+	public void load() throws InaccessibleDbException, IOException
 	{
 		String configString = hostsTable.loadConfig();
 		if (configString == null) configString = "";
@@ -93,21 +86,16 @@ public class SavedConfiguration
 		
 		if (prop.getProperty(ENABLE_CONFIG) == null)
 		{ // no prior configuration saved, establish defaults first
-			prop.setProperty(ENABLE_CONFIG, enable);
-			prop.setProperty(CRON_CONFIG, cron);
-			prop.setProperty(LIMIT_CONFIG, Boolean.toString(limit));
-			prop.setProperty(HOURS_CONFIG, Integer.toString(hours));
-			prop.setProperty(MINUTES_CONFIG, Integer.toString(minutes));
-			prop.setProperty(TEMPLATE_CONFIG, "");
+			loadFromConfig();
 			save();
 		}
 		else
 		{ // load prior configuration
-			enable = prop.getProperty(ENABLE_CONFIG);
-			cron = prop.getProperty(CRON_CONFIG);
-			limit = Boolean.parseBoolean(prop.getProperty(LIMIT_CONFIG));
-			hours = Integer.parseInt(prop.getProperty(HOURS_CONFIG));
-			minutes = Integer.parseInt(prop.getProperty(MINUTES_CONFIG));
+			config.enable = prop.getProperty(ENABLE_CONFIG);
+			config.cron = prop.getProperty(CRON_CONFIG);
+			config.limit = Boolean.parseBoolean(prop.getProperty(LIMIT_CONFIG));
+			config.hours = Integer.parseInt(prop.getProperty(HOURS_CONFIG));
+			config.minutes = Integer.parseInt(prop.getProperty(MINUTES_CONFIG));
 			metadataTemplate = prop.getProperty(TEMPLATE_CONFIG);
 		}
 	}
@@ -131,14 +119,38 @@ public class SavedConfiguration
 	}
 	
 	/**
-	 * Convert the configuration values into a json string
+	 * Take the values from config and put it into the properties file
+	 */
+	private void loadFromConfig()
+	{
+		prop.setProperty(ENABLE_CONFIG, config.enable);
+		prop.setProperty(CRON_CONFIG, config.cron);
+		prop.setProperty(LIMIT_CONFIG, Boolean.toString(config.limit));
+		prop.setProperty(HOURS_CONFIG, Integer.toString(config.hours));
+		prop.setProperty(MINUTES_CONFIG, Integer.toString(config.minutes));
+		prop.setProperty(TEMPLATE_CONFIG, "");
+	}
+	
+	/**
+	 * Convert the configuration values into a json string with empty syncstatus
 	 * @return
 	 */
 	public String toJson()
 	{
-		return gson.toJson(this);
+		config.syncstatus = new SyncStatus();
+		return gson.toJson(config);
 	}
 	
+	/**
+	 * Convert the configuration values into a json string, includes a syncstatus message
+	 * @return
+	 */
+	public String toJson(SyncStatus status)
+	{
+		config.syncstatus = status;
+		return gson.toJson(config);
+	}
+
 	/**
 	 * Parse and store configuration values from a json string
 	 * @param json
@@ -148,7 +160,8 @@ public class SavedConfiguration
 	 */
 	public void fromJson(String json) throws InaccessibleDbException, IOException
 	{
-		prop = gson.fromJson(json, prop.getClass());
+		config = gson.fromJson(json, config.getClass());
+		loadFromConfig();
 		save();
 	}
 	
@@ -176,7 +189,7 @@ public class SavedConfiguration
 	 */
 	public boolean isEnable()
 	{
-		if (enable.equals("true")) return true;
+		if (config.enable.equals("true")) return true;
 		return false;
 	}
 
@@ -189,7 +202,7 @@ public class SavedConfiguration
 	 */
 	public String getQuartzCron()
 	{
-		String[] parts = cron.split(" ");
+		String[] parts = config.cron.split(" ");
 		if (parts[4].equals("*"))
 		{
 			parts[4] = "?";
@@ -218,7 +231,7 @@ public class SavedConfiguration
 	 */
 	public boolean isLimited()
 	{
-		return limit;
+		return config.limit;
 	}
 
 	/**
@@ -227,7 +240,7 @@ public class SavedConfiguration
 	 */
 	public int getHours()
 	{
-		return hours;
+		return config.hours;
 	}
 
 	/**
@@ -236,7 +249,7 @@ public class SavedConfiguration
 	 */
 	public int getMinutes()
 	{
-		return minutes;
+		return config.minutes;
 	}
 
 	/**

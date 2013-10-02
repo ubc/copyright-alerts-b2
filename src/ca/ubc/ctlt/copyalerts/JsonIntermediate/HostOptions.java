@@ -8,6 +8,7 @@ import java.util.Map;
 public class HostOptions
 {
 	public String leader = "";
+	public String current = "";
 	public Collection<String> options = new ArrayList<String>();
 	public Map<String, String> alt = null;
 }

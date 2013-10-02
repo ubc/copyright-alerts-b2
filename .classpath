@@ -12,6 +12,9 @@
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/org.restlet.ext.json.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/org.json.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/org.restlet.ext.servlet.jar"/>
+	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/org.restlet.ext.httpclient.jar"/>
+	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/org.restlet.ext.net.jar"/>
+	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/org.restlet.ext.ssl.jar"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/servlet-api-2.5-sources.jar"/>

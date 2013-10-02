@@ -66,3 +66,15 @@
   list-style: decimal inside; }
 #alertsysconfig .templateform {
   margin-top: 0.5em; }
+#alertsysconfig .syncmessages {
+  margin-top: 0.5em; }
+  #alertsysconfig .syncmessages span {
+    display: block;
+    margin-bottom: 0.5em; }
+  #alertsysconfig .syncmessages a {
+    padding-top: 0.05em;
+    font-weight: bold;
+    color: pink;
+    float: right; }
+  #alertsysconfig .syncmessages a:hover {
+    color: white; }
