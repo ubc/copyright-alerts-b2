@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Properties;
 import java.util.Set;
 

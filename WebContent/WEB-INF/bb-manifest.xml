@@ -80,8 +80,6 @@
 			<permission type="attribute" name="user.authinfo" actions="get" /> 
 			<!-- need to be able to upgrade to content collection superadmin for file indexing -->
 			<permission type="attribute" name="user.personalinfo" actions="get"/>
-            <!-- read/write to configuration file, execute shell commands (only needed for alt hostnames) -->
-            <permission type="java.io.FilePermission" name="&amp;lt;&amp;lt;ALL FILES&amp;gt;&amp;gt;" actions="read,write,execute"/>
             <!-- database access -->
             <permission type="java.lang.RuntimePermission" name="db.connection.*" />
             <!-- required by Gson -->

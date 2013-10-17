@@ -7,20 +7,14 @@ import java.util.Map.Entry;
 import org.quartz.SchedulerException;
 import org.restlet.Client;
 import org.restlet.Context;
-import org.restlet.Request;
-import org.restlet.Response;
-import org.restlet.data.Method;
 import org.restlet.data.Protocol;
 import org.restlet.data.Status;
 import org.restlet.ext.json.JsonRepresentation;
-import org.restlet.representation.Representation;
 import org.restlet.resource.ClientResource;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
-
-import com.google.gson.Gson;
 
 import ca.ubc.ctlt.copyalerts.JsonIntermediate.SyncStatus;
 import ca.ubc.ctlt.copyalerts.configuration.HostResolver;

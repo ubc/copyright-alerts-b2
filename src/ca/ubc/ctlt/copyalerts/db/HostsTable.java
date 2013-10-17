@@ -359,7 +359,6 @@ public class HostsTable
 		ret.leader = getLeader();
 		ret.current = HostResolver.getHostname();
 		ret.options = hosts.keySet();
-		ret.alt = HostResolver.getAltHostnames();
 		return gson.toJson(ret);
 	}
 	

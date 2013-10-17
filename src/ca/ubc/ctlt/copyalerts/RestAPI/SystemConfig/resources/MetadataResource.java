@@ -1,7 +1,6 @@
 package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
