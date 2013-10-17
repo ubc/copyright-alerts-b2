@@ -91,7 +91,7 @@ public class ScheduleResource extends ServerResource
 		{
 			String host = entry.getKey();
 			if (host.equals(ownHost)) continue; // skip if own hostname
-			String targetUrl = "https://" + host + "/webapps/ubc-copyright-alerts-BBLEARN/systemconfig/sync";
+			String targetUrl = "http://" + host + "/webapps/ubc-copyright-alerts-BBLEARN/systemconfig/sync";
 			Client client = new Client(new Context(), Protocol.HTTPS);
 			ClientResource resource = new ClientResource(targetUrl);
 			resource.setNext(client);
