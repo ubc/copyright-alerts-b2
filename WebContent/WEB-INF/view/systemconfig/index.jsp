@@ -68,13 +68,6 @@ jQuery.noConflict();
 				<span class="savemsg error" ng-show="saving == 'error'">Error Saving</span>
 			</div>
 		</form>
-		<div class="syncmessages">
-			<span ng-repeat="syncMsg in syncSuccess" class="savemsg success">{{syncMsg}} updated</span>
-			<span ng-repeat="syncMsg in syncFailure" class="savemsg error">
-				{{syncMsg}} update failed 
-				<a ng-click="deleteSyncFailure(syncMsg);" href="">X</a>
-			</span>
-		</div>
 	</div>
 
 	<div class="section" ng-controller="MetadataIdCtrl">

@@ -8,7 +8,6 @@ import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.HostResource;
 import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.MetadataResource;
 import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.ScheduleResource;
 import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.StatusResource;
-import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.SyncResource;
 
 public class SystemConfigApp extends Application
 {
@@ -24,7 +23,6 @@ public class SystemConfigApp extends Application
         router.attach("/metadata", MetadataResource.class);
         router.attach("/host", HostResource.class);
         router.attach("/schedule", ScheduleResource.class);
-        router.attach("/sync", SyncResource.class);
 
         return router;
     }

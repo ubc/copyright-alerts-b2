@@ -140,27 +140,5 @@
 		margin-top: 0.5em;
 	}
 
-	.syncmessages
-	{
-		margin-top: 0.5em;
-		span
-		{
-			display: block;
-			margin-bottom: 0.5em;
-		}
-
-		& a
-		{
-			padding-top: 0.05em;
-			font-weight: bold;
-			color: pink;
-			float: right;
-		}
-
-		& a:hover
-		{
-			color: white;
-		}
-	}
 }
 

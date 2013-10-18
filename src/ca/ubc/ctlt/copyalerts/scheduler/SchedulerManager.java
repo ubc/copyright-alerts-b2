@@ -10,6 +10,7 @@ import org.quartz.impl.StdSchedulerFactory;
 import static org.quartz.JobBuilder.*;
 import static org.quartz.TriggerBuilder.*;
 import static org.quartz.CronScheduleBuilder.*;
+import static org.quartz.SimpleScheduleBuilder.*;
 
 
 import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
@@ -108,39 +109,58 @@ public class SchedulerManager
 			scheduler = StdSchedulerFactory.getDefaultScheduler();
 			// create a job
 			indexJob = newJob(CSIndexJob.class)
-					.withIdentity("myJob", "group1")
+					.withIdentity("indexjob", "group1")
 					.build();
 			// pass data to the job
 			indexJob.getJobDataMap().put("hostname", HostResolver.getHostname());
 			// create a trigger that runs on the cron configuration
-			indexTrigger = newTrigger()
-			        .withIdentity("trigger1", "group1")
-			        .withSchedule(cronSchedule(config.getQuartzCron()))
-			        .build();
+			indexTrigger = buildCronTrigger();
 			
 			// combine job and trigger and run it
 			scheduler.scheduleJob(indexJob, indexTrigger);
+
+			// create a job for updating configuration
+			JobDetail configUpdateJob = newJob(ConfigUpdateJob.class)
+					.withIdentity("configupdatejob", "configUpdateGroup")
+					.build();
+			// create a trigger that runs at interval to check the database for updates
+			Trigger configUpdateTrigger = newTrigger()
+			        .withIdentity("configupdatetrigger", "configUpdateGroup")
+			        .startNow()
+			        .withSchedule(simpleSchedule()
+			        		.withIntervalInMinutes(60)
+			        		.repeatForever())
+			        .build();
+			// schedule the job
+			scheduler.scheduleJob(configUpdateJob, configUpdateTrigger);
+			scheduler.start();
+			return;
 		}
 		else 
 		{ // need to modify existing scheduler settings to the new settings
-			Trigger trigger = newTrigger()
-			        .withIdentity("trigger1", "group1")
-			        .withSchedule(cronSchedule(config.getQuartzCron()))
-			        .build();
+			Trigger trigger = buildCronTrigger();
 			scheduler.rescheduleJob(indexTrigger.getKey(), trigger);
 			indexTrigger = trigger;
 		}
 
-		if (config.isEnable() && scheduler.isInStandbyMode())
-		{ // allow trigger firing if needed
-			System.out.println("Start scheduling");
-			scheduler.start();
-		}
-		else if (!config.isEnable() && scheduler.isStarted())
-		{ // stop trigger firing if needed
-			System.out.println("Pause scheduling");
-			scheduler.standby();
+		// because we recreate the trigger on every update, it loses it's previous paused status anyways,
+		// so we don't need to resume the trigger, only pause it if necessary
+		if (!config.isEnable())
+		{ // stop index job trigger firing if needed
+			System.out.println("Pause scheduling ");
+			scheduler.pauseJob(indexJob.getKey());
 		}
 		
+	}
+	
+	private Trigger buildCronTrigger()
+	{
+		Trigger trigger = newTrigger()
+	        .withIdentity("trigger1", "group1")
+	        .withSchedule(
+	        		cronSchedule(config.getQuartzCron()).withMisfireHandlingInstructionDoNothing()
+        	)
+	        .build();
+		return trigger;
 	}
 }

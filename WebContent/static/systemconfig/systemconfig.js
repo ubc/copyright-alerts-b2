@@ -42,42 +42,14 @@ function ScheduleCtrl($scope, $timeout, $http, Schedule, Host)
 	// the schedule get callback is a hack to get the jqCron plugin to update once the saved data is loaded
 	$scope.schedule = Schedule.get(function (data) { jQuery('#croninput').val(data.cron); jQuery('#croninput').blur(); $scope.loading = false; });
 	$scope.host = Host.get();
-	$scope.syncSuccess = [];
-	$scope.syncFailure = [];
-	
-	// remove sync failure messages
-	$scope.deleteSyncFailure = function(host)
-	{
-		var index = $scope.syncFailure.indexOf(host);
-		if (index == -1) return; // host not found
-		$scope.syncFailure.splice(index, 1);
-	};
-	// remove sync success messages
-	$scope.deleteSyncSuccess = function(host)
-	{
-		var index = $scope.syncSuccess.indexOf(host);
-		if (index == -1) return; // host not found
-		$scope.syncSuccess.splice(index, 1);
-	};
 	
 	// callback for saving schedule successful
 	$scope.saveSuccessful = function(ret)
 	{
 		if ($scope.saving == "error") return;
-		$scope.syncSuccess = ret.syncstatus.syncSuccess;
-		$scope.syncFailure = ret.syncstatus.syncFailure;
 		
-		if ($scope.syncFailure.length > 0)
-		{
-			$scope.saving = "error";
-			$timeout(function() { $scope.syncSuccess = []; }, 10000); // remove success message
-		}
-		else
-		{
-			$timeout(function() { $scope.saving = "success"; }, 500);
-			$timeout(function() { $scope.syncSuccess = []; }, 10000);
-			$timeout(function() { $scope.saving = ""; }, 5000);
-		}
+		$timeout(function() { $scope.saving = "success"; }, 500);
+		$timeout(function() { $scope.saving = ""; }, 5000);
 	};
 	
 	// callback for saving schedule failed
