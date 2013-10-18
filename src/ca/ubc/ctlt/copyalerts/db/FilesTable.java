@@ -70,15 +70,17 @@ public class FilesTable
 			stmt = conn.prepareStatement(query);
 			
 			String courseName = parseCourseName(file.getFullPath());
-
-			for (Id e : users)
-			{
-				stmt.setString(1, e.toExternalString());
-				stmt.setString(2, getCourseTitle(courseName));
-				stmt.setString(3, file.getFullPath());
-				stmt.executeUpdate();
+			if (!courseName.isEmpty())
+			{ // only process if we were able to parse the course name
+				for (Id e : users)
+				{
+					stmt.setString(1, e.toExternalString());
+					stmt.setString(2, getCourseTitle(courseName));
+					stmt.setString(3, file.getFullPath());
+					stmt.executeUpdate();
+				}
+				stmt.close();
 			}
-			stmt.close();
 		} catch (SQLException e)
 		{
 			throw new InaccessibleDbException("Couldn't execute query", e);
@@ -152,6 +154,14 @@ public class FilesTable
 		// try to parse out the course name from the path
 		// first remove the /courses/
 		String courseName = path.substring(9);
+		if (courseName.charAt(0) == '.')
+		{ // hidden file or directory, skip
+			return "";
+		}
+		if (courseName.indexOf("/") < 0)
+		{ // not a directory, skip
+			return "";
+		}
 		// next segment in the path should be the course name
 		courseName = courseName.substring(0, courseName.indexOf("/"));
 		return courseName;
