@@ -14,13 +14,11 @@ import ca.ubc.ctlt.copyalerts.JsonIntermediate.FileList;
 import ca.ubc.ctlt.copyalerts.JsonIntermediate.FilePath;
 
 import blackboard.cms.filesystem.CSFile;
-import blackboard.data.course.Course;
 import blackboard.db.BbDatabase;
 import blackboard.db.ConnectionManager;
 import blackboard.db.ConnectionNotAvailableException;
 import blackboard.persist.Id;
 import blackboard.persist.PersistenceException;
-import blackboard.persist.course.CourseDbLoader;
 
 public class FilesTable
 {
@@ -28,8 +26,7 @@ public class FilesTable
 	private final static int ENTRYPERPAGE = 25;
 	
 	// store mapping of course names to course title, names are id like, title is human readable
-	private HashMap<String, String> courseNameToTitle = new HashMap<String, String>(); 
-	private HashMap<String, String> courseNameToId = new HashMap<String, String>();
+	private CourseCache courses = new CourseCache();
 	
 	// have to load paging specially as each course can be paged
 	// have a loadCourseFiles or getCourseFiles
@@ -59,6 +56,20 @@ public class FilesTable
 
 	public void add(CSFile file, ArrayList<Id> users) throws InaccessibleDbException
 	{
+		// first, make sure that we're using a valid course
+		String courseName = parseCourseName(file.getFullPath());
+		if (courseName.isEmpty()) return; // failed to parse course name, so must be invalid
+		boolean validCourse;
+		try
+		{
+			validCourse = courses.addIfValidCourse(courseName);
+			if (!validCourse) return; // couldn't retrieve course from cache or database, so must be invalid
+		} catch (PersistenceException e)
+		{
+			throw new InaccessibleDbException("Unable to read from db", e);
+		}
+		
+		// write to database
 		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		String query = "insert into "+ TABLENAME +" (pk1, userid, course, filepath) values ("+ TABLENAME +"_seq.nextval, ?, ?, ?)";
@@ -69,18 +80,14 @@ public class FilesTable
 			// convert the query string into a compiled statement for faster execution
 			stmt = conn.prepareStatement(query);
 			
-			String courseName = parseCourseName(file.getFullPath());
-			if (!courseName.isEmpty())
-			{ // only process if we were able to parse the course name
-				for (Id e : users)
-				{
-					stmt.setString(1, e.toExternalString());
-					stmt.setString(2, getCourseTitle(courseName));
-					stmt.setString(3, file.getFullPath());
-					stmt.executeUpdate();
-				}
-				stmt.close();
+			for (Id e : users)
+			{
+				stmt.setString(1, e.toExternalString());
+				stmt.setString(2, courses.getCourseTitle(courseName));
+				stmt.setString(3, file.getFullPath());
+				stmt.executeUpdate();
 			}
+			stmt.close();
 		} catch (SQLException e)
 		{
 			throw new InaccessibleDbException("Couldn't execute query", e);
@@ -90,7 +97,7 @@ public class FilesTable
 		} catch (PersistenceException e)
 		{
 			throw new InaccessibleDbException("Unable to read from db", e);
-		}
+		} 
 		finally
 		{
 			if (conn != null) cm.releaseConnection(conn); // MUST release connection or we'll exhaust connection pool
@@ -168,47 +175,6 @@ public class FilesTable
 	}
 	
 	/**
-	 * Get the course title from the course name. The course title is human readable and includes
-	 * the full text of the subject being taught. E.g.: Course name would be something like Math101
-	 * while course title would be Math101 - Integral Calculus with Applications to Physical Sciences
-	 * @param courseName
-	 * @return
-	 * @throws PersistenceException
-	 */
-	private String getCourseTitle(String courseName) throws PersistenceException
-	{
-		cacheCourseInfo(courseName);
-		return courseNameToTitle.get(courseName);
-	}
-	
-	/**
-	 * Get the course id, this is the id string used by blackboard to identify courses.
-	 * @param courseName
-	 * @return
-	 * @throws PersistenceException
-	 */
-	private String getCourseId(String courseName) throws PersistenceException
-	{
-		cacheCourseInfo(courseName);
-		return courseNameToId.get(courseName);
-	}
-	
-	/**
-	 * Store course id and course title in a cache for faster access. Course titles and id are stored in hash maps
-	 * accessed by their course name.
-	 */
-	private void cacheCourseInfo(String courseName) throws PersistenceException
-	{
-		CourseDbLoader cload = CourseDbLoader.Default.getInstance();
-		if (!courseNameToTitle.containsKey(courseName) || !courseNameToId.containsKey(courseName))
-		{
-			Course course = cload.loadByCourseId(courseName);
-			courseNameToTitle.put(courseName, course.getTitle());
-			courseNameToId.put(courseName, course.getId().toExternalString());
-		}
-	}
-	
-	/**
 	 * Load all files that the given user needs to tag.
 	 * @param userid
 	 * @return
@@ -233,7 +199,7 @@ public class FilesTable
 	        	String courseTitle = res.getString(1);
 	        	String path = res.getString(2);
         		String courseName = parseCourseName(path);
-	        	String id = getCourseId(courseName);
+	        	String id = courses.getCourseId(courseName);
 	        	// STORE PATH FOR RETURN
 	        	if (ret.containsKey(id))
 	        	{ // add to existing entry
@@ -257,7 +223,7 @@ public class FilesTable
 			throw new InaccessibleDbException("Unable to connect to db", e);
 		} catch (PersistenceException e)
 		{
-			throw new InaccessibleDbException("Unable to load course data", e);
+			throw new InaccessibleDbException("Unable to read from db", e);
 		}
 		finally
 		{
