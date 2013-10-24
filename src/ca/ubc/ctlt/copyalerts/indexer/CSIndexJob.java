@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import org.quartz.DateBuilder.IntervalUnit;
+import org.quartz.DisallowConcurrentExecution;
 import org.quartz.InterruptableJob;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
@@ -35,11 +36,9 @@ import ca.ubc.ctlt.copyalerts.db.HostsTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 import ca.ubc.ctlt.copyalerts.db.QueueTable;
 
+@DisallowConcurrentExecution
 public class CSIndexJob implements InterruptableJob, TriggerListener
 {
-	// Meant to keep two threads from running indexing at the same time, need to be static as it's shared between all instances
-	public static Boolean executing = false; // an intrinsic lock using Java's synchronized statement
-	
 	// Execute will check this variable periodically. If true, it'll immediately stop execution.
 	public Boolean stop = false;
 	
@@ -50,24 +49,8 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException
 	{
-		String id = context.getFireTime().toString();
 		System.out.println("ubc.ctlt.copyalerts Start");
 
-		// only one thread should ever be indexing at the same time
-		synchronized(executing)
-		{
-			if (executing)
-			{
-				System.out.println(id + " stopping, already executing.");
-				return;
-			}
-			else
-			{
-				System.out.println(id + " proceeding, no previous execution.");
-				executing = true;
-			}
-		}
-		
 		// only 1 of the servers should be running indexing, check if this is us
 		String hostname = context.getJobDetail().getJobDataMap().getString("hostname");
 		HostsTable ht;
@@ -77,10 +60,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			if (!ht.getLeader().equals(hostname))
 			{
 				System.out.println("We're not the one supposed to be executing.");
-				synchronized (executing)
-				{
-					executing = false;
-				}
 				return;
 			}
 		} catch (VirtualSystemException e1)
@@ -196,13 +175,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			}
 		}
 		System.out.println("ubc.ctlt.copyalerts Done");
-	
-		// let others execute now
-		synchronized (executing)
-		{
-			executing = false;
-		}
-
 	}
 	
 	/**
