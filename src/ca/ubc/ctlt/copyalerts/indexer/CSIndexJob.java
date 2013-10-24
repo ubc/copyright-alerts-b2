@@ -43,9 +43,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	// Execute will check this variable periodically. If true, it'll immediately stop execution.
 	public Boolean stop = false;
 	
-	// interrupt() will not return until it's sure execute got the stop message. We indicate that execute has received the stop message with this.
-	public Boolean interruptProcessed = false;
-	
 	public CSIndexJob() throws ConnectionNotAvailableException
 	{
 	}

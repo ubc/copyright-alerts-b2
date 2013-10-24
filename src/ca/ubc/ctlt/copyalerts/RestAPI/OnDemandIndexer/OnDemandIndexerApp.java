@@ -4,6 +4,7 @@ import org.restlet.Application;
 import org.restlet.Restlet;
 import org.restlet.routing.Router;
 
+import ca.ubc.ctlt.copyalerts.RestAPI.AuthRouter;
 import ca.ubc.ctlt.copyalerts.RestAPI.OnDemandIndexer.resources.ProcessFilesResource;
 
 public class OnDemandIndexerApp extends Application
@@ -13,7 +14,7 @@ public class OnDemandIndexerApp extends Application
      */
     @Override
     public synchronized Restlet createInboundRoot() {
-        Router router = new Router(getContext());
+        Router router = new AuthRouter(getContext());
 
         // Defines only one route
         router.attach("/processfiles", ProcessFilesResource.class);

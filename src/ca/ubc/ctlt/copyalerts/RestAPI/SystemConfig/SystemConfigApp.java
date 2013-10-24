@@ -2,8 +2,7 @@ package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig;
 
 import org.restlet.Application;
 import org.restlet.Restlet;
-import org.restlet.routing.Router;
-
+import ca.ubc.ctlt.copyalerts.RestAPI.AuthRouter;
 import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.HostResource;
 import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.MetadataResource;
 import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.ScheduleResource;
@@ -16,7 +15,8 @@ public class SystemConfigApp extends Application
      */
     @Override
     public synchronized Restlet createInboundRoot() {
-        Router router = new Router(getContext());
+        AuthRouter router = new AuthRouter(getContext());
+        router.setSysAdminOnly(true);
 
         // Defines only one route
         router.attach("/status/{action}", StatusResource.class);

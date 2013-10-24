@@ -7,7 +7,7 @@
 
 	<target name="deploy" depends="package-war">
 		<taskdef name="b2deploy" classpath="${basedir}/lib/b2deploy-task.jar" classname="org.oscelot.ant.B2DeployTask" />
-		<b2deploy localfilepath="${b2.package.name}.war" host="137.82.12.118" courseorgavailable="true" clean="true" />
+		<b2deploy localfilepath="${b2.package.name}.war" host="bblvm" courseorgavailable="true" clean="true" />
 	</target>
 
 	<target name="package-war">

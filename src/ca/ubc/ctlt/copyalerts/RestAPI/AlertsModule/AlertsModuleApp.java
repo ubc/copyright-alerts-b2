@@ -4,6 +4,7 @@ import org.restlet.Application;
 import org.restlet.Restlet;
 import org.restlet.routing.Router;
 
+import ca.ubc.ctlt.copyalerts.RestAPI.AuthRouter;
 import ca.ubc.ctlt.copyalerts.RestAPI.AlertsModule.resources.FileListResource;
 
 public class AlertsModuleApp extends Application
@@ -14,7 +15,7 @@ public class AlertsModuleApp extends Application
     @Override
     public synchronized Restlet createInboundRoot() {
         // Create a router Restlet that routes each call to a new instance of HelloWorldResource.
-        Router router = new Router(getContext());
+        Router router = new AuthRouter(getContext());
 
         // Defines only one route
         router.attach("/files", FileListResource.class);
