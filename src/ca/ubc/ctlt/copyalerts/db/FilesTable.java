@@ -9,6 +9,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import ca.ubc.ctlt.copyalerts.JsonIntermediate.CourseFiles;
 import ca.ubc.ctlt.copyalerts.JsonIntermediate.FileList;
 import ca.ubc.ctlt.copyalerts.JsonIntermediate.FilePath;
@@ -22,6 +25,7 @@ import blackboard.persist.PersistenceException;
 
 public class FilesTable
 {
+	private final static Logger logger = LoggerFactory.getLogger(FilesTable.class);
 	private final static String TABLENAME = "ubc_ctlt_ca_files";
 	private final static int ENTRYPERPAGE = 25;
 	
@@ -246,7 +250,7 @@ public class FilesTable
 		
 		if (page < 1 || page > numPages)
 		{ // trying to get a non-existent page, just return the first page
-			System.out.println("page " + page + " numpages " + numPages);
+			logger.debug("page " + page + " numpages " + numPages);
 			return splitToPage(cf, 1);
 		}
 		

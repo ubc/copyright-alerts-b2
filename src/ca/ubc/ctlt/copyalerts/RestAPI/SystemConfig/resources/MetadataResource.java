@@ -11,6 +11,8 @@ import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 
@@ -26,6 +28,8 @@ import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 
 public class MetadataResource extends ServerResource
 {
+	private final static Logger logger = LoggerFactory.getLogger(MetadataResource.class);
+	
 	private SavedConfiguration config;
 	private HashMap<String, String> templates = new HashMap<String, String>();
 	private Gson gson = new Gson();
@@ -46,12 +50,12 @@ public class MetadataResource extends ServerResource
 			return new JsonRepresentation(gson.toJson(t));
 		} catch (KeyNotFoundException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 			return null;
 		} catch (PersistenceException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 			return null;
 		}
@@ -67,12 +71,12 @@ public class MetadataResource extends ServerResource
 			config.saveMetadataTemplate(t.selected);
 		} catch (IOException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 			return null;
 		} catch (InaccessibleDbException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 			return null;
 		}

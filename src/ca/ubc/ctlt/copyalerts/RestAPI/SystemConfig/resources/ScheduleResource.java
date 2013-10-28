@@ -8,6 +8,8 @@ import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
@@ -15,6 +17,8 @@ import ca.ubc.ctlt.copyalerts.scheduler.SchedulerManager;
 
 public class ScheduleResource extends ServerResource
 {
+	private final static Logger logger = LoggerFactory.getLogger(ScheduleResource.class);
+	
 	private SavedConfiguration config;
 	@Override
 	protected void doInit() throws ResourceException
@@ -39,17 +43,17 @@ public class ScheduleResource extends ServerResource
 		    SchedulerManager.getInstance().updateScheduler();
 		} catch (SchedulerException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 			return null;
 		} catch (IOException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 			return null;
 		} catch (InaccessibleDbException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 			return null;
 		}

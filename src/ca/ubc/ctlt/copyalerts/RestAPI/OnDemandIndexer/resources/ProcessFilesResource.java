@@ -7,6 +7,8 @@ import org.restlet.ext.json.JsonRepresentation;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ServerResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ca.ubc.ctlt.copyalerts.JsonIntermediate.ProcessFiles;
 import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
@@ -26,12 +28,14 @@ import blackboard.platform.context.ContextManagerFactory;
 
 public class ProcessFilesResource extends ServerResource
 {
+	private final static Logger logger = LoggerFactory.getLogger(ProcessFilesResource.class);
+	
 	@Get("json")
 	public JsonRepresentation uselessGet()
 	{
 		Context ctx = ContextManagerFactory.getInstance().getContext();
 		User user = ctx.getUser();
-		System.out.println("UID: " + user.getId().toExternalString());
+		logger.debug("UID: " + user.getId().toExternalString());
 		return new JsonRepresentation("hello");
 	}
 	
@@ -49,7 +53,7 @@ public class ProcessFilesResource extends ServerResource
 			json = data.getText();
 		} catch (IOException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 			return null;
 		}
@@ -61,9 +65,9 @@ public class ProcessFilesResource extends ServerResource
 		try
 		{
 			gen = new IndexGenerator(config.getAttributes());
-		} catch (PersistenceException e1)
+		} catch (PersistenceException e)
 		{
-			e1.printStackTrace();
+			logger.error(e.getMessage(), e);
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 			return null;
 		}
@@ -80,10 +84,10 @@ public class ProcessFilesResource extends ServerResource
 					try
 					{
 						ft.deleteFile(file);
-						System.out.println("File removed " + file);
+						logger.debug("File removed " + file);
 					} catch (InaccessibleDbException e)
 					{
-						e.printStackTrace();
+						logger.error(e.getMessage(), e);
 						getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 						return null;
 					}

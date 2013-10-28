@@ -5,6 +5,8 @@ import org.restlet.ext.json.JsonRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 import org.restlet.resource.ServerResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 
@@ -19,6 +21,8 @@ import blackboard.platform.context.ContextManagerFactory;
 
 public class FileListResource extends ServerResource
 {
+	private final static Logger logger = LoggerFactory.getLogger(FileListResource.class);
+	
 	/** 
 	 * The resulting json should look something like this:
 	{
@@ -69,7 +73,7 @@ public class FileListResource extends ServerResource
 			}
 		} catch (InaccessibleDbException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 		} 
 		return null;

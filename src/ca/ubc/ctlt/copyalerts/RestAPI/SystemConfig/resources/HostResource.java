@@ -8,6 +8,8 @@ import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 
@@ -17,6 +19,7 @@ import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 
 public class HostResource extends ServerResource
 {
+	private final static Logger logger = LoggerFactory.getLogger(HostResource.class);
 	private HostsTable hostTable = null;
 	@Override
 	protected void doInit() throws ResourceException
@@ -26,7 +29,7 @@ public class HostResource extends ServerResource
 			hostTable = new HostsTable();
 		} catch (InaccessibleDbException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new ResourceException(e);
 		}
 	}
@@ -39,7 +42,7 @@ public class HostResource extends ServerResource
 			hostTable.loadHosts();
 		} catch (InaccessibleDbException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 			return null;
 		}
@@ -58,12 +61,12 @@ public class HostResource extends ServerResource
 			hostTable.setLeader(host.leader);
 		} catch (InaccessibleDbException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 			return null;
 		} catch (IOException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 			return null;
 		}

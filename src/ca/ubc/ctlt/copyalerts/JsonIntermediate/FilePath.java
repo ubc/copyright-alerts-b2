@@ -3,8 +3,13 @@ package ca.ubc.ctlt.copyalerts.JsonIntermediate;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class FilePath
 {
+	private final static Logger logger = LoggerFactory.getLogger(FilePath.class);
+	
 	public String name;
 	public String encodedPath;
 	public String rawPath;
@@ -18,8 +23,7 @@ public class FilePath
 			this.encodedPath = URLEncoder.encode(path, "utf-8");
 		} catch (UnsupportedEncodingException e)
 		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 		}
 		// parse out the file name from the path
 		name = path.substring(path.lastIndexOf("/") + 1);

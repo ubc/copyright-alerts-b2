@@ -7,6 +7,9 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import ca.ubc.ctlt.copyalerts.JsonIntermediate.ScheduleConfiguration;
 import ca.ubc.ctlt.copyalerts.JsonIntermediate.SyncStatus;
 import ca.ubc.ctlt.copyalerts.db.HostsTable;
@@ -23,6 +26,8 @@ import blackboard.platform.plugin.PlugInException;
 
 public class SavedConfiguration
 {
+	private final static Logger logger = LoggerFactory.getLogger(SavedConfiguration.class);
+
 	// singleton instance
 	private static final SavedConfiguration instance = new SavedConfiguration();
 
@@ -56,11 +61,11 @@ public class SavedConfiguration
 		{
 			// not reading the configuration is serious enough that the building block
 			// shouldn't start up
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new RuntimeException(e);
 		} catch (IOException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new RuntimeException(e);
 		}
 	}

@@ -2,6 +2,10 @@ package ca.ubc.ctlt.copyalerts.indexer;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import blackboard.cms.filesystem.CSContext;
 import blackboard.cms.filesystem.CSDirectory;
 import blackboard.cms.filesystem.CSEntry;
@@ -11,6 +15,7 @@ import ca.ubc.ctlt.copyalerts.db.QueueTable;
 
 public class QueueGenerator
 {
+	private final static Logger logger = LoggerFactory.getLogger(QueueGenerator.class);
 	private ArrayDeque<CSEntry> frontier = new ArrayDeque<CSEntry>();
 	private CSContext ctx;
 	
@@ -24,7 +29,7 @@ public class QueueGenerator
 			ctx = CSContext.getContext();
 			if (ctx == null)
 			{
-				System.out.println("ctx is null");
+				logger.error("ctx is null");
 			}
 			// Give ourself permission to do anything in the Content Collections.
 			// Must do this cause we don't have a real request contest that many of the CS API calls
@@ -35,8 +40,7 @@ public class QueueGenerator
 			frontier.add(root);
 		} catch (Exception e)
 		{
-			System.out.println("Dead");
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 		}
 	}
 	

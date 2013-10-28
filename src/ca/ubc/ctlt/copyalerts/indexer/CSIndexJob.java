@@ -17,7 +17,8 @@ import org.quartz.Trigger.CompletedExecutionInstruction;
 import org.quartz.TriggerListener;
 import org.quartz.UnableToInterruptJobException;
 import org.quartz.jobs.NoOpJob;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import static org.quartz.JobBuilder.*;
 import static org.quartz.TriggerBuilder.*;
 import static org.quartz.DateBuilder.*;
@@ -39,6 +40,8 @@ import ca.ubc.ctlt.copyalerts.db.QueueTable;
 @DisallowConcurrentExecution
 public class CSIndexJob implements InterruptableJob, TriggerListener
 {
+	private final static Logger logger = LoggerFactory.getLogger(CSIndexJob.class);
+
 	// Execute will check this variable periodically. If true, it'll immediately stop execution.
 	public Boolean stop = false;
 	
@@ -49,7 +52,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException
 	{
-		System.out.println("ubc.ctlt.copyalerts Start");
+		logger.info("Indexing Start");
 
 		// only 1 of the servers should be running indexing, check if this is us
 		String hostname = context.getJobDetail().getJobDataMap().getString("hostname");
@@ -59,16 +62,16 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			ht = new HostsTable();
 			if (!ht.getLeader().equals(hostname))
 			{
-				System.out.println("We're not the one supposed to be executing.");
+				logger.info("We're not selected as the alert generation host, stopping.");
 				return;
 			}
-		} catch (VirtualSystemException e1)
+		} catch (VirtualSystemException e)
 		{
-			e1.printStackTrace();
-			throw new JobExecutionException(e1);
+			logger.error(e.getMessage(), e);
+			throw new JobExecutionException(e);
 		} catch (InaccessibleDbException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new JobExecutionException(e);
 		}
 
@@ -85,7 +88,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			config = SavedConfiguration.getInstance();
 		} catch (InaccessibleDbException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new JobExecutionException(e);
 		}
 		Scheduler sched = context.getScheduler();
@@ -93,9 +96,8 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		Trigger trigger;
 		if (config.isLimited())
 		{
-			System.out.println("Limit enabled");
 			int minutes = (config.getHours() * 60) + config.getMinutes();
-			System.out.println("Limit at: " + minutes);
+			logger.info("Limit execution to " + minutes + " minutes.");
 			trigger = newTrigger()
 					.withIdentity("CSIndexJobStopTrigger", "CSIndexJobGroup")
 					.startAt(futureDate(minutes, IntervalUnit.MINUTE))
@@ -106,7 +108,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				sched.getListenerManager().addTriggerListener(this, triggerGroupEquals("CSIndexJobGroup"));
 			} catch (SchedulerException e)
 			{
-				System.out.println("Unable to schedule job or add limit listener.");
+				logger.error("Unable to schedule job or add limit listener.");
 				throw new JobExecutionException(e);
 			}
 		}
@@ -119,31 +121,29 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			if (ret)
 			{
 				Timestamp ended = new Timestamp((new Date()).getTime());
-				System.out.println("Finished by time limit");
+				logger.debug("Finished by time limit");
 				ht.saveRunStats(hostname, HostsTable.STATUS_LIMIT, started, ended);
 				limitReached = true;
 			}
 		} catch (JobExecutionException e)
 		{
-			System.out.println("Indexer failed during execution.");
+			logger.error("Indexer failed during execution.", e);
 			Timestamp ended = new Timestamp((new Date()).getTime());
 			try
 			{
 				ht.saveRunStats(hostname, HostsTable.STATUS_ERROR, started, ended);
 			} catch (InaccessibleDbException e1)
 			{
-				System.out.println("Catastrophic error, unable to even save error notification.");
+				logger.error("Catastrophic error, unable to even save error notification.", e1);
 			}
 			throw e;
 		} catch (InaccessibleDbException e)
 		{
-			System.out.println("Indexer could not access database.");
-			e.printStackTrace();
+			logger.error("Indexer could not access database.", e);
 			throw new JobExecutionException(e);
 		} catch(Exception e)
 		{
-			System.out.println("Indexer threw unknown exception.");
-			e.printStackTrace();
+			logger.error("Indexer threw unknown exception.", e);
 		}
 		
 		// Remove execution time limit now that we're done
@@ -151,13 +151,11 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		{
 			try
 			{
-				System.out.println("Removing limit trigger");
+				logger.debug("Removing limit trigger");
 				sched.deleteJob(noopJob.getKey());
-				//sched.getListenerManager().removeTriggerListener(getName());
 			} catch (SchedulerException e)
 			{
-				System.out.println("Unable to remove limit trigger listener.");
-				e.printStackTrace();
+				logger.warn("Unable to remove limit trigger listener.", e);
 			}
 		}
 
@@ -170,11 +168,10 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				ht.saveRunStats(hostname, HostsTable.STATUS_STOPPED, started, ended);
 			} catch (InaccessibleDbException e)
 			{
-				System.out.println("Unable to save run stats.");
-				e.printStackTrace();
+				logger.warn("Unable to save run stats.", e);
 			}
 		}
-		System.out.println("ubc.ctlt.copyalerts Done");
+		logger.info("ubc.ctlt.copyalerts Done");
 	}
 	
 	/**
@@ -188,7 +185,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		// run actual job
 		// part 1, try generating the queue
 		QueueTable queue;
-		System.out.println("Queue Generation Start");
+		logger.info("Queue Generation Start");
 		
 		ArrayList<String> paths = new ArrayList<String>();
 		try
@@ -214,28 +211,28 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			}
 		} catch (InaccessibleDbException e1)
 		{
-			System.out.println("Could not access database, stopping index job.");
+			logger.error("Could not access database, stopping index job.", e1);
 			throw new JobExecutionException(e1);
 		} catch (PersistenceException e)
 		{
-			System.out.println("Persistence Exception.");
+			logger.error("Persistence Exception.", e);
 			throw new JobExecutionException(e);
 		}
 		// make sure not to execute next part if we're supposed to halt
-		System.out.println("Queue Generation Done");
+		logger.info("Queue Generation Done");
 		if (syncStop())
 		{
 			return true;
 		}
 		// part 2, go through the queue and check each file's metadata
-		System.out.println("Check Metadata Start");
+		logger.info("Check Metadata Start");
 		IndexGenerator indexGen;
 		try
 		{
 			indexGen = new IndexGenerator(config.getAttributes());
 		} catch (PersistenceException e)
 		{
-			System.out.println("Could not get metadata template attributes.");
+			logger.error("Could not get metadata template attributes.", e);
 			throw new JobExecutionException(e);
 		}
 		// clear the database
@@ -245,12 +242,12 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			ft.deleteAll();
 		} catch (InaccessibleDbException e)
 		{
-			System.out.println("Could not reset the database.");
+			logger.error("Could not reset the database.", e);
 			throw new JobExecutionException(e);
 		}
 		while (!paths.isEmpty())
 		{
-			System.out.println("Copyright Alerts Indexing: " + paths.get(0));
+			logger.debug("Copyright Alerts Indexing: " + paths.get(0));
 			for (String p : paths)
 			{
 				CSContext ctx = CSContext.getContext();
@@ -271,11 +268,11 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 					indexGen.process(file);
 				} catch (PersistenceException e)
 				{
-					System.out.println("Could not access BB database, stopping index job.");
+					logger.error("Could not access BB database, stopping index job.", e);
 					throw new JobExecutionException(e);
 				} catch (InaccessibleDbException e)
 				{
-					System.out.println("Could not access database, stopping index job.");
+					logger.error("Could not access database, stopping index job.", e);
 					throw new JobExecutionException(e);
 				}
 			}
@@ -287,7 +284,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				paths = queue.load();
 			} catch (InaccessibleDbException e)
 			{
-				System.out.println("Could not access database, stopping index job.");
+				logger.error("Could not access database, stopping index job.", e);
 				throw new JobExecutionException(e);
 			}
 			if (syncStop())
@@ -295,14 +292,14 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				return true;
 			}
 		}
-		System.out.println("Check Metadata Done");
+		logger.info("Check Metadata Done");
 		return false;
 	}
 	
 	@Override
 	public void interrupt() throws UnableToInterruptJobException
 	{
-		System.out.println("In interrupt");
+		logger.debug("Index job interrupt.");
 
 		// inform execute that it should stop now
 		synchronized (stop)
@@ -322,8 +319,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			interrupt();
 		} catch (UnableToInterruptJobException e)
 		{
-			System.out.println("Unable to self interrupt.");
-			e.printStackTrace();
+			logger.error("Unable to self interrupt.", e);
 		}
 		
 	}
@@ -334,7 +330,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		{
 			if (stop)
 			{
-				System.out.println("Execute stopping");
+				logger.info("Indexing stopping");
 				return true;
 			}
 		}

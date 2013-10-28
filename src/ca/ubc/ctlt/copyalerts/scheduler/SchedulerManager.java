@@ -6,6 +6,8 @@ import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.UnableToInterruptJobException;
 import org.quartz.impl.StdSchedulerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.quartz.JobBuilder.*;
 import static org.quartz.TriggerBuilder.*;
@@ -19,6 +21,7 @@ import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
 
 public class SchedulerManager
 {
+	private final static Logger logger = LoggerFactory.getLogger(SchedulerManager.class);
 	private static final SchedulerManager instance = new SchedulerManager();
 	
 	private JobDetail indexJob;
@@ -34,7 +37,6 @@ public class SchedulerManager
 			updateScheduler();
 		} catch (SchedulerException e)
 		{
-			e.printStackTrace();
 			throw new RuntimeException("Unable to start jqcron scheduler.");
 		}
 	}
@@ -59,7 +61,7 @@ public class SchedulerManager
 			// first, make sure that running jobs know to stop
 			scheduler.interrupt(indexJob.getKey());
 			// then shut down the scheduler
-			System.out.println("Shutting down scheduler");
+			logger.info("Shutting down scheduler");
 			scheduler.shutdown(true);
 
 			// Even though scheduler waits for threads to end, it still needs an additional second or so
@@ -69,11 +71,11 @@ public class SchedulerManager
 				Thread.sleep(1000);
 			} catch (InterruptedException e)
 			{
-				e.printStackTrace();
+				logger.warn("Unable to wait for scheduler shutdown.", e);
 			}
 		} catch (SchedulerException e)
 		{
-			e.printStackTrace();
+			logger.warn("Scheduler unable to cleanly shutdown.", e);
 		}
 	}
 	
@@ -147,7 +149,7 @@ public class SchedulerManager
 		// so we don't need to resume the trigger, only pause it if necessary
 		if (!config.isEnable())
 		{ // stop index job trigger firing if needed
-			System.out.println("Pause scheduling ");
+			logger.debug("Pause scheduling ");
 			scheduler.pauseJob(indexJob.getKey());
 		}
 		

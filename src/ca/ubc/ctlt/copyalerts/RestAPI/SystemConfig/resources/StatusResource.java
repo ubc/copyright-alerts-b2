@@ -6,6 +6,8 @@ import org.restlet.ext.json.JsonRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 import org.restlet.resource.ServerResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ca.ubc.ctlt.copyalerts.db.HostsTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
@@ -13,6 +15,8 @@ import ca.ubc.ctlt.copyalerts.scheduler.SchedulerManager;
 
 public class StatusResource extends ServerResource
 {
+	private final static Logger logger = LoggerFactory.getLogger(StatusResource.class);
+	
 	private HostsTable hostTable = null;
 
 	@Get("json")
@@ -28,7 +32,7 @@ public class StatusResource extends ServerResource
 				return new JsonRepresentation(hostTable.toStatusJson());
 			} catch (InaccessibleDbException e)
 			{
-				e.printStackTrace();
+				logger.error(e.getMessage(), e);
 				getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 				return null;
 			}
@@ -41,7 +45,7 @@ public class StatusResource extends ServerResource
 				return null;
 			} catch (UnableToInterruptJobException e)
 			{
-				e.printStackTrace();
+				logger.error(e.getMessage(), e);
 				getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 				return null;
 			}

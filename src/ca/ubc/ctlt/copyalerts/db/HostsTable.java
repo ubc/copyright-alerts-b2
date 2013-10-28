@@ -13,6 +13,8 @@ import java.util.Map.Entry;
 import org.joda.time.Duration;
 import org.joda.time.format.PeriodFormatter;
 import org.joda.time.format.PeriodFormatterBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ca.ubc.ctlt.copyalerts.JsonIntermediate.HostOptions;
 import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
@@ -26,6 +28,8 @@ import blackboard.platform.vxi.service.VirtualSystemException;
 
 public class HostsTable
 {
+	private final static Logger logger = LoggerFactory.getLogger(HostsTable.class);
+	
 	public final static String STATUS_RUNNING = "running";
 	public final static String STATUS_STOPPED = "stopped";
 	public final static String STATUS_LIMIT = "limit";
@@ -223,7 +227,7 @@ public class HostsTable
 			hosts.put(host, true);
 		} catch (SQLException e)
 		{
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new InaccessibleDbException("Couldn't execute query", e);
 		} catch (ConnectionNotAvailableException e)
 		{
