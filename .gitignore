@@ -4,8 +4,20 @@
 *.war
 *.ear
 
+# libraries
+WebContent/WEB-INF/lib/
+
 # sass cache
 .sass-cache/
 
 # vim
 *.swp
+
+# gradle
+.gradle/
+build/
+
+# eclipse
+.project
+.classpath
+.settings/

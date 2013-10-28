@@ -93,6 +93,8 @@
             <permission type="java.net.SocketPermission" name="*.lms.it.ubc.ca" actions="connect,resolve" />
             <!-- required for restlet ssl client connections -->
             <permission type="java.lang.RuntimePermission" name="setFactory" />
+            <!-- used by Quartz, gives a warning if not here, but seems to work without it -->
+            <permission type="java.util.PropertyPermission" name="*" actions="read,write" />
         </permissions>
 
     </plugin>
