@@ -2,7 +2,6 @@
 #alertsysconfig #croninput {
   display: none; }
 #alertsysconfig input[type='text'] {
-  padding: 0.3em;
   margin-right: 0.8em;
   border: 1px solid #999;
   border-radius: 4px; }

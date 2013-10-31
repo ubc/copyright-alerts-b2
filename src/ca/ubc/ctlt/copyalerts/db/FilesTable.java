@@ -155,6 +155,42 @@ public class FilesTable
 			if (conn != null) cm.releaseConnection(conn); // MUST release connection or we'll exhaust connection pool
 		}
 	}
+	
+	// Get the number of entries in this table
+	public int getCount() throws InaccessibleDbException
+	{
+		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
+		Connection conn = null;
+		int ret = 0;
+
+		try 
+		{
+			conn = cm.getConnection();
+			String query = "SELECT COUNT(*) FROM " + TABLENAME;
+	        PreparedStatement queryCompiled = conn.prepareStatement(query);
+	        ResultSet res = queryCompiled.executeQuery();
+
+	        res.next();
+        	ret = res.getInt(1);
+
+	        res.close();
+	        queryCompiled.close();
+		} catch (SQLException e)
+		{
+			throw new InaccessibleDbException("Couldn't execute query", e);
+		} catch (ConnectionNotAvailableException e)
+		{
+			throw new InaccessibleDbException("Unable to connect to db", e);
+		}
+		finally
+		{
+			if (conn != null) cm.releaseConnection(conn);
+		}
+
+        return ret;
+	}
+	
+	
 	/**
 	 * Parse out the course name from the full content system path.
 	 * @param path

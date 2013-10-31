@@ -12,6 +12,8 @@ import blackboard.db.ConnectionNotAvailableException;
 
 public class QueueTable
 {
+	//private final static Logger logger = LoggerFactory.getLogger(QueueTable.class);
+	
 	private final static String TABLENAME = "ubc_ctlt_ca_queue";
 	public final static int LOADNUM = 500;
 	
@@ -140,6 +142,40 @@ public class QueueTable
 		{
 			if (conn != null) cm.releaseConnection(conn);
 		}
+	}
+	
+	// Get the number of entries in this table
+	public int getCount() throws InaccessibleDbException
+	{
+		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
+		Connection conn = null;
+		int ret = 0;
+
+		try 
+		{
+			conn = cm.getConnection();
+			String query = "SELECT COUNT(*) FROM " + TABLENAME;
+	        PreparedStatement queryCompiled = conn.prepareStatement(query);
+	        ResultSet res = queryCompiled.executeQuery();
+
+	        res.next();
+        	ret = res.getInt(1);
+
+	        res.close();
+	        queryCompiled.close();
+		} catch (SQLException e)
+		{
+			throw new InaccessibleDbException("Couldn't execute query", e);
+		} catch (ConnectionNotAvailableException e)
+		{
+			throw new InaccessibleDbException("Unable to connect to db", e);
+		}
+		finally
+		{
+			if (conn != null) cm.releaseConnection(conn);
+		}
+
+        return ret;
 	}
 	
 }

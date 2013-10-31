@@ -13,7 +13,8 @@ Services.factory('Status',
 				'/webapps/ubc-copyright-alerts-BBLEARN/systemconfig/status/:action', 
 				{action: 'status'},
 				{
-					stop: {method: 'GET', params: {action: 'stop'}}
+					stop: {method: 'GET', params: {action: 'stop'}},
+					progress: {method: 'GET', params: {action: 'progress'}}
 				}
 				);
 	}
@@ -94,6 +95,13 @@ function StatusCtrl($scope, $timeout, Status, Host)
 	{
 		Status.stop();
 	};
+	
+	$scope.getProgress = function()
+	{
+		$scope.progress = Status.progress();
+	};
+	
+	$scope.getProgress();
 }
 
 function MetadataIdCtrl($scope, $timeout, MetadataAttributes)

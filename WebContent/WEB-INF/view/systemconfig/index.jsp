@@ -29,15 +29,23 @@ jQuery.noConflict();
 		<h3 class="runerror" ng-switch-when="error">Error During Run</h3>
 		<h3 class="unavailable" ng-switch-default>Status Not Available</h3>
 		</div>
+		<!-- doesn't work in a multi-node environment
 		<input class="killjob" ng-show="status.status == 'running'" type="button" ng-click="stop()" value="Stop Current Running Job" />
+		-->
+		<h2>Progress</h2>
+			<dl>
+				<dt>Queue:</dt><dd>{{progress.queueCount}}</dd>
+				<dt>Untagged Files:</dt><dd>{{progress.fileCount}}</dd>
+			</dl>
+			<input type="button" ng-click="getProgress()" value="Refresh Progress" />
 		<h2>Last Run Statistics</h2>
-		<dl>
-			<dt>Runtime:</dt><dd>{{status.runtime}}</dd>
-			<dt>Start:</dt><dd>{{status.runstart}}</dd>
-			<dt>End:</dt><dd>{{status.runend}}</dd>
-			<dt>You are currently on host:</dt><dd>{{status.host}}</dd>
-			<dt>Alert generation is running on:</dt><dd>{{status.leader}}</dd>
-		</dl>
+			<dl>
+				<dt>Runtime:</dt><dd>{{status.runtime}}</dd>
+				<dt>Start:</dt><dd>{{status.runstart}}</dd>
+				<dt>End:</dt><dd>{{status.runend}}</dd>
+				<dt>You are currently on host:</dt><dd>{{status.host}}</dd>
+				<dt>Alert generation is running on:</dt><dd>{{status.leader}}</dd>
+			</dl>
 	</div>
 
 	<div class="section" ng-controller="ScheduleCtrl">
