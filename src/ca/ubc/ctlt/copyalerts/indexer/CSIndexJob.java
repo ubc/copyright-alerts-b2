@@ -218,6 +218,9 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		logger.info("Queue Generation Start");
 		
 		ArrayList<String> paths = new ArrayList<String>();
+		// we're either going to continue processing a previously generated queue or have to generate a new queue entirely.
+		// assume that we're continuing processing a previously generated queue for now
+		boolean newQueue = false;
 		try
 		{
 			queue = new QueueTable();
@@ -238,6 +241,13 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				}
 				// now we can process the paths from the start
 				paths = queue.load();
+				// we just generated a new queue, so definitely not loading leftovers from the last run
+				newQueue = true;
+				logger.debug("Generated new queue.");
+			}
+			else
+			{
+				logger.debug("Continue with previously generated queue.");
 			}
 		} catch (InaccessibleDbException e1)
 		{
@@ -268,8 +278,14 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		// clear the database
 		try
 		{
-			FilesTable ft = new FilesTable();
-			ft.deleteAll();
+			// only clear the database if it's a new run
+			// and we're not finishing up the last run
+			if (newQueue)
+			{
+				logger.debug("Removing all previous file records.");
+				FilesTable ft = new FilesTable();
+				ft.deleteAll();
+			}
 		} catch (InaccessibleDbException e)
 		{
 			logger.error("Could not reset the database.", e);
