@@ -15,7 +15,7 @@ public class QueueTable
 	//private final static Logger logger = LoggerFactory.getLogger(QueueTable.class);
 	
 	private final static String TABLENAME = "ubc_ctlt_ca_queue";
-	public final static int LOADNUM = 500;
+	public final static int LOADNUM = 1000;
 	
 	/**
 	 * Add an array of paths of files to be processed to the queue.
