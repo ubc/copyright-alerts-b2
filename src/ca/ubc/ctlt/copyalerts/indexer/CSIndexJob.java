@@ -31,6 +31,7 @@ import blackboard.db.ConnectionNotAvailableException;
 import blackboard.persist.PersistenceException;
 import blackboard.platform.vxi.service.VirtualSystemException;
 
+import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
 import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
 import ca.ubc.ctlt.copyalerts.db.FilesTable;
 import ca.ubc.ctlt.copyalerts.db.HostsTable;
@@ -41,9 +42,20 @@ import ca.ubc.ctlt.copyalerts.db.QueueTable;
 public class CSIndexJob implements InterruptableJob, TriggerListener
 {
 	private final static Logger logger = LoggerFactory.getLogger(CSIndexJob.class);
+	
+	private final static String JOBGROUP = "CSIndexJobGroup";
 
 	// Execute will check this variable periodically. If true, it'll immediately stop execution.
 	public Boolean stop = false;
+	// this job does nothing, but we use the trigger to tell us if the job's time limit has been reached
+	private JobDetail noopJob = newJob(NoOpJob.class).withIdentity("CSIndexJobNoOp", JOBGROUP).build();
+	
+	// needed to be made class vars for use by cleanUpOnException
+	private HostsTable ht = null;
+	private JobExecutionContext context = null;
+	private Timestamp started = new Timestamp(0);
+	private Timestamp ended = new Timestamp(0);
+	private String hostname = HostResolver.getHostname();
 	
 	public CSIndexJob() throws ConnectionNotAvailableException
 	{
@@ -53,10 +65,10 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	public void execute(JobExecutionContext context) throws JobExecutionException
 	{
 		logger.info("Indexing Start");
+		
+		this.context = context;
 
 		// only 1 of the servers should be running indexing, check if this is us
-		String hostname = context.getJobDetail().getJobDataMap().getString("hostname");
-		HostsTable ht;
 		try
 		{
 			ht = new HostsTable();
@@ -67,49 +79,44 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			}
 		} catch (VirtualSystemException e)
 		{
-			logger.error(e.getMessage(), e);
-			throw new JobExecutionException(e);
+			throw cleanUpOnException(e);
 		} catch (InaccessibleDbException e)
 		{
-			logger.error(e.getMessage(), e);
-			throw new JobExecutionException(e);
+			throw cleanUpOnException(e);
 		}
 
 		// Implement execution time limit (if needed)
 		// Basically, we'll have a trigger that'll fire after the time limit has passed. We use the CSIndexJob object as a trigger listener
 		// and will trigger an interrupt when the time has passed.
 		SavedConfiguration config;
-		Timestamp started = new Timestamp((new Date()).getTime());
+		started = new Timestamp((new Date()).getTime());
 		try
 		{
 			// Save the fact that we've started running
-			ht.saveRunStats(hostname, HostsTable.STATUS_RUNNING, started, new Timestamp(0));
+			ht.saveRunStats(hostname, HostsTable.STATUS_RUNNING, started, ended);
 			// load configuration
 			config = SavedConfiguration.getInstance();
 		} catch (InaccessibleDbException e)
 		{
-			logger.error(e.getMessage(), e);
-			throw new JobExecutionException(e);
+			throw cleanUpOnException(e);
 		}
 		Scheduler sched = context.getScheduler();
-		JobDetail noopJob = newJob(NoOpJob.class).withIdentity("CSIndexJobNoOp", "CSIndexJobGroup").build();
 		Trigger trigger;
 		if (config.isLimited())
 		{
 			int minutes = (config.getHours() * 60) + config.getMinutes();
 			logger.info("Limit execution to " + minutes + " minutes.");
 			trigger = newTrigger()
-					.withIdentity("CSIndexJobStopTrigger", "CSIndexJobGroup")
+					.withIdentity("CSIndexJobStopTrigger", JOBGROUP)
 					.startAt(futureDate(minutes, IntervalUnit.MINUTE))
 					.build();
 			try
 			{
 				sched.scheduleJob(noopJob, trigger);
-				sched.getListenerManager().addTriggerListener(this, triggerGroupEquals("CSIndexJobGroup"));
+				sched.getListenerManager().addTriggerListener(this, triggerGroupEquals(JOBGROUP));
 			} catch (SchedulerException e)
 			{
-				logger.error("Unable to schedule job or add limit listener.");
-				throw new JobExecutionException(e);
+				throw cleanUpOnException(e);
 			}
 		}
 		
@@ -120,30 +127,23 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			boolean ret = indexer(config);
 			if (ret)
 			{
-				Timestamp ended = new Timestamp((new Date()).getTime());
+				ended = new Timestamp((new Date()).getTime());
 				logger.debug("Finished by time limit");
 				ht.saveRunStats(hostname, HostsTable.STATUS_LIMIT, started, ended);
 				limitReached = true;
 			}
 		} catch (JobExecutionException e)
 		{
-			logger.error("Indexer failed during execution.", e);
-			Timestamp ended = new Timestamp((new Date()).getTime());
-			try
-			{
-				ht.saveRunStats(hostname, HostsTable.STATUS_ERROR, started, ended);
-			} catch (InaccessibleDbException e1)
-			{
-				logger.error("Catastrophic error, unable to even save error notification.", e1);
-			}
-			throw e;
+			logger.error("Indexer failed during execution.");
+			throw cleanUpOnException(e);
 		} catch (InaccessibleDbException e)
 		{
-			logger.error("Indexer could not access database.", e);
-			throw new JobExecutionException(e);
+			logger.error("Indexer could not access database.");
+			throw cleanUpOnException(e);
 		} catch(Exception e)
 		{
-			logger.error("Indexer threw unknown exception.", e);
+			logger.error("Indexer threw unexpected exception.");
+			throw new JobExecutionException(e);
 		}
 		
 		// Remove execution time limit now that we're done
@@ -172,6 +172,36 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			}
 		}
 		logger.info("ubc.ctlt.copyalerts Done");
+	}
+	
+	/**
+	 * Need to remove the limit trigger if we've set it and need to update status with error
+	 * @param e
+	 * @throws JobExecutionException
+	 */
+	private JobExecutionException cleanUpOnException(Exception e)
+	{
+		Scheduler sched = context.getScheduler();
+		try
+		{
+			if (sched.checkExists(noopJob.getKey()))
+			{
+				sched.deleteJob(noopJob.getKey());
+			}
+		} catch (SchedulerException e1)
+		{
+			logger.error("Exception clean up failed, unable to remove time limit trigger.");
+		}
+
+		try
+		{
+			ht.saveRunStats(hostname, HostsTable.STATUS_ERROR, started, ended);
+		} catch (InaccessibleDbException e1)
+		{
+			logger.error("Exception clean up failed, unable to update execution status.");
+		}
+		logger.error(e.getMessage(), e);
+		return new JobExecutionException(e);
 	}
 	
 	/**
@@ -276,6 +306,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 					throw new JobExecutionException(e);
 				}
 			}
+			
 
 			// load next batch of files
 			try
