@@ -28,7 +28,7 @@ dependencies {
 task copyToLib(type: Sync) {
 	into "WebContent/WEB-INF/lib"
 	from configurations.runtime
-	//exclude "slf4j*" // conflicts with blackboard's included version
 }
 
 build.dependsOn(copyToLib)
+tasks.eclipse.dependsOn(copyToLib)
