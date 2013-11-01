@@ -17,7 +17,6 @@ import ca.ubc.ctlt.copyalerts.JsonIntermediate.FileList;
 import ca.ubc.ctlt.copyalerts.JsonIntermediate.FilePath;
 
 import blackboard.cms.filesystem.CSFile;
-import blackboard.db.BbDatabase;
 import blackboard.db.ConnectionManager;
 import blackboard.db.ConnectionNotAvailableException;
 import blackboard.persist.Id;
@@ -26,11 +25,13 @@ import blackboard.persist.PersistenceException;
 public class FilesTable
 {
 	private final static Logger logger = LoggerFactory.getLogger(FilesTable.class);
+
 	private final static String TABLENAME = "ubc_ctlt_ca_files";
 	private final static int ENTRYPERPAGE = 25;
 	
 	// store mapping of course names to course title, names are id like, title is human readable
 	private CourseCache courses = new CourseCache();
+	private ConnectionManager cm = DbInit.getConnectionManager();
 	
 	// have to load paging specially as each course can be paged
 	// have a loadCourseFiles or getCourseFiles
@@ -74,7 +75,6 @@ public class FilesTable
 		}
 		
 		// write to database
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		String query = "insert into "+ TABLENAME +" (pk1, userid, course, filepath) values ("+ TABLENAME +"_seq.nextval, ?, ?, ?)";
 		PreparedStatement stmt;
@@ -110,7 +110,6 @@ public class FilesTable
 	
 	public void deleteAll() throws InaccessibleDbException
 	{
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		String query = "delete from "+ TABLENAME;
 		Statement stmt;
@@ -134,7 +133,6 @@ public class FilesTable
 	
 	public void deleteFile(String path) throws InaccessibleDbException
 	{
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		String query = "delete from "+ TABLENAME + " where filepath = ?";
 		try
@@ -159,7 +157,6 @@ public class FilesTable
 	// Get the number of entries in this table
 	public int getCount() throws InaccessibleDbException
 	{
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		int ret = 0;
 
@@ -222,7 +219,6 @@ public class FilesTable
 	 */
 	private HashMap<String, CourseFiles> loadAll(String userid) throws InaccessibleDbException
 	{
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 
 		HashMap<String, CourseFiles> ret = new HashMap<String, CourseFiles>();
@@ -286,7 +282,6 @@ public class FilesTable
 		
 		if (page < 1 || page > numPages)
 		{ // trying to get a non-existent page, just return the first page
-			logger.debug("page " + page + " numpages " + numPages);
 			return splitToPage(cf, 1);
 		}
 		

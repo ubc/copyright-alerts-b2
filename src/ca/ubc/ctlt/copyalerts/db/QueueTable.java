@@ -6,17 +6,21 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-import blackboard.db.BbDatabase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import blackboard.db.ConnectionManager;
 import blackboard.db.ConnectionNotAvailableException;
 
 public class QueueTable
 {
-	//private final static Logger logger = LoggerFactory.getLogger(QueueTable.class);
+	private final static Logger logger = LoggerFactory.getLogger(QueueTable.class);
 	
 	private final static String TABLENAME = "ubc_ctlt_ca_queue";
 	public final static int LOADNUM = 1000;
 	
+	private ConnectionManager cm = DbInit.getConnectionManager();
+
 	/**
 	 * Add an array of paths of files to be processed to the queue.
 	 * @param paths
@@ -26,7 +30,6 @@ public class QueueTable
 	{
 		// Not sure if cm can be made into a private field, but it looks like connections have to be released or Oracle
 		// will not be happy
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		// WARNING:
 		// For some reason, batch operations instantly crashes the Oracle listener, so we're
@@ -74,7 +77,6 @@ public class QueueTable
 	 */
 	public ArrayList<String> load(int num) throws InaccessibleDbException
 	{
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 
 		ArrayList<String> ret = new ArrayList<String>();
@@ -122,7 +124,6 @@ public class QueueTable
 	 */
 	public void pop(int num) throws InaccessibleDbException 
 	{
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		try
 		{
@@ -147,7 +148,6 @@ public class QueueTable
 	// Get the number of entries in this table
 	public int getCount() throws InaccessibleDbException
 	{
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		int ret = 0;
 

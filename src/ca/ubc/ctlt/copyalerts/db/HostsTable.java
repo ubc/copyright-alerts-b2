@@ -21,7 +21,6 @@ import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
 
 import com.google.gson.Gson;
 
-import blackboard.db.BbDatabase;
 import blackboard.db.ConnectionManager;
 import blackboard.db.ConnectionNotAvailableException;
 import blackboard.platform.vxi.service.VirtualSystemException;
@@ -48,6 +47,8 @@ public class HostsTable
 	// which node should run the file indexing job
 	private HashMap<String, Boolean> hosts = new HashMap<String, Boolean>();
 	
+	private ConnectionManager cm = DbInit.getConnectionManager();
+
 	public HostsTable() throws InaccessibleDbException
 	{
 		loadHosts();
@@ -66,7 +67,6 @@ public class HostsTable
 		{ // entry already exists
 			return;
 		}
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		String query = "insert into "+ TABLENAME +" (pk1, host, leader) values ("+ TABLENAME +"_seq.nextval, ?, ?)";
 		PreparedStatement stmt;
@@ -111,7 +111,6 @@ public class HostsTable
 	 */
 	public void deleteHost(String host) throws InaccessibleDbException
 	{
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		String query = "delete from "+ TABLENAME +" where host = ?";
 		PreparedStatement stmt;
@@ -142,7 +141,6 @@ public class HostsTable
 	 */
 	public void loadHosts() throws InaccessibleDbException
 	{
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		try 
 		{
@@ -204,7 +202,6 @@ public class HostsTable
 		String formerLeader = getLeader();
 		// demote the current leader
 		// promote the new leader
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		String query = "UPDATE "+ TABLENAME +" SET leader=? WHERE host=?";
 		PreparedStatement stmt;
@@ -260,7 +257,6 @@ public class HostsTable
 		{ // invalid entry
 			return;
 		}
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		String query = "update "+ TABLENAME +" set "+ STATUS_RUNNING_KEY +"=?, "+ STATUS_START_KEY +"=?, "+ STATUS_END_KEY +"=? where host='" + host + "'";
 		PreparedStatement stmt;
@@ -295,7 +291,6 @@ public class HostsTable
 	 */
 	public String loadConfig() throws InaccessibleDbException
 	{
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		try 
 		{
@@ -327,7 +322,6 @@ public class HostsTable
 	
 	public void saveConfig(String config) throws InaccessibleDbException
 	{
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		String query = "UPDATE "+ TABLENAME +" SET config = ?";
 		PreparedStatement stmt;
@@ -368,7 +362,6 @@ public class HostsTable
 	
 	public String toStatusJson() throws InaccessibleDbException
 	{
-		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
 		try 
 		{
