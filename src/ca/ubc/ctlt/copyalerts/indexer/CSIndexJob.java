@@ -143,7 +143,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		} catch(Exception e)
 		{
 			logger.error("Indexer threw unexpected exception.");
-			throw new JobExecutionException(e);
+			throw cleanUpOnException(e);
 		}
 		
 		// Remove execution time limit now that we're done
