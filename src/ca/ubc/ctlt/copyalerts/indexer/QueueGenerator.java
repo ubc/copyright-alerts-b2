@@ -63,6 +63,14 @@ public class QueueGenerator
 			CSEntry curEntry = frontier.pop();
 			if (curEntry instanceof CSFile)
 			{
+				// skip files that start with xid- since the BB API for some reason
+				// translate them to other files
+				String filename = curEntry.getBaseName();
+				if (filename.startsWith("xid-")) 
+				{
+					logger.debug("Skipping xid: " + curEntry.getFullPath());
+					continue;
+				}
 				paths.add(curEntry.getFullPath());
 			}
 			else if (curEntry instanceof CSDirectory)

@@ -298,13 +298,22 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			{
 				CSContext ctx = CSContext.getContext();
 				// Give ourself permission to do anything in the Content Collections.
-				// Must do this cause we don't have a real request contest that many of the CS API calls
+				// Must do this cause we don't have a real request context that many of the CS API calls
 				// require when you're not a superuser.
 				ctx.isSuperUser(true);
 				// Retrieve file entry
 				CSEntry entry = ctx.findEntry(p);
 				if (entry == null)
 				{
+					logger.warn("A non-existent file somehow made it onto the queue.");
+					logger.debug("\tRecorded Path: " + p);
+					continue;
+				}
+				if (!(entry instanceof CSFile))
+				{
+					logger.warn("A directory somehow made it onto the queue.");
+					logger.debug("\tRecorded Path: " + p);
+					logger.debug("\tActual Path: " + entry.getFullPath());
 					continue;
 				}
 				CSFile file = (CSFile) entry;
