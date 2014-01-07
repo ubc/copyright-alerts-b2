@@ -1,8 +1,14 @@
 package ca.ubc.ctlt.copyalerts.indexer;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.quartz.DateBuilder.IntervalUnit;
 import org.quartz.DisallowConcurrentExecution;
@@ -19,6 +25,7 @@ import org.quartz.UnableToInterruptJobException;
 import org.quartz.jobs.NoOpJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import static org.quartz.JobBuilder.*;
 import static org.quartz.TriggerBuilder.*;
 import static org.quartz.DateBuilder.*;
@@ -27,12 +34,14 @@ import static org.quartz.impl.matchers.GroupMatcher.*;
 import blackboard.cms.filesystem.CSContext;
 import blackboard.cms.filesystem.CSEntry;
 import blackboard.cms.filesystem.CSFile;
+import blackboard.db.ConnectionManager;
 import blackboard.db.ConnectionNotAvailableException;
 import blackboard.persist.PersistenceException;
 import blackboard.platform.vxi.service.VirtualSystemException;
 
 import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
 import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
+import ca.ubc.ctlt.copyalerts.db.DbInit;
 import ca.ubc.ctlt.copyalerts.db.FilesTable;
 import ca.ubc.ctlt.copyalerts.db.HostsTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
@@ -228,16 +237,10 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			paths = queue.load();
 			if (paths.isEmpty())
 			{
-				QueueGenerator generator = new QueueGenerator();
-				// put files into the queue, 500 at a time, making sure to check if we need to stop
-				while (generator.hasNext())
+				// load data into the queue table
+				if (generateQueue(queue))
 				{
-					paths = generator.next();
-					queue.add(paths);
-					if (syncStop())
-					{
-						return true;
-					}
+					return true;
 				}
 				// now we can process the paths from the start
 				paths = queue.load();
@@ -253,10 +256,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		{
 			logger.error("Could not access database, stopping index job.", e1);
 			throw new JobExecutionException(e1);
-		} catch (PersistenceException e)
-		{
-			logger.error("Persistence Exception.", e);
-			throw new JobExecutionException(e);
 		}
 		// make sure not to execute next part if we're supposed to halt
 		logger.info("Queue Generation Done");
@@ -311,9 +310,8 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				}
 				if (!(entry instanceof CSFile))
 				{
-					logger.warn("A directory somehow made it onto the queue.");
-					logger.debug("\tRecorded Path: " + p);
-					logger.debug("\tActual Path: " + entry.getFullPath());
+					logger.info("Skipping directory.");
+					logger.info("\tRecorded Path: " + p);
 					continue;
 				}
 				CSFile file = (CSFile) entry;
@@ -349,6 +347,94 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			}
 		}
 		logger.info("Check Metadata Done");
+		return false;
+	}
+	
+	/**
+	 * Generate the list of files to check for indexing.
+	 * Using the API to iterate through the content system turns out to be too memory consuming
+	 * so let's try reading the database directly.
+	 * @return
+	 * @throws JobExecutionException 
+	 */
+	private boolean generateQueue(QueueTable queue) throws JobExecutionException
+	{
+		logger.debug("New Queue Generation method");
+		ConnectionManager cm = DbInit.getConnectionManager();
+		Connection conn = null;
+
+		try
+		{
+			conn = cm.getConnection();
+			logger.debug("Enabling cursor usage in resultset");
+			conn.setAutoCommit(false); // need to disable autocommit to enable
+										// fetching only a small number of rows
+										// at once
+										// necessary to keep memory usage low
+			String query = "SELECT full_path FROM bblearn_cms_doc.xyf_urls";
+			PreparedStatement queryCompiled = conn.prepareStatement(query);
+			queryCompiled.setFetchSize(50); // we'll only fetch 50 rows at a
+											// time
+			ResultSet res = queryCompiled.executeQuery();
+			logger.debug("Going through the data");
+			// single regex to check the filepath to make sure that we're only
+			// picking up course files
+			// the general format for course files is: /courses/course name/file
+			Pattern courseFilePattern = Pattern.compile("^/courses/[^/]+?/.+$");
+			Matcher courseFileMatcher = courseFilePattern.matcher("");
+			// stores a batch of file paths to be put into the queue
+			ArrayList<String> paths = new ArrayList<String>();
+			long count = 0;
+			int batchSize = 500;
+			while (res.next())
+			{
+				String path = res.getString(1);
+				// make sure that we only have course files and no xid- files
+				// it seems that xid- files are not listed in the xyf_urls table, 
+				// but better be safe with an explicit check
+				if (courseFileMatcher.reset(path).matches() &&
+					!path.contains("xid-"))
+				{
+					paths.add(path);
+				}
+				// store the current batch into the queue when we've got enough
+				if (paths.size() >= batchSize)
+				{
+					logger.debug("Added to queue: " + path);
+					queue.add(paths);
+					paths.clear(); // empty the current batch now that they're safely stored
+				}
+				// only check for interrupt if we've processed batchSize entries already
+				if (count >= batchSize) 
+				{ // execution interrupt was requested
+					if (syncStop())
+					{
+						break;
+					}
+					count = 0;
+				}
+				count++;
+			}
+			res.close();
+			queryCompiled.close();
+		} catch (SQLException e)
+		{
+			logger.error(e.getMessage(), e);
+			throw new JobExecutionException(e);
+		} catch (ConnectionNotAvailableException e)
+		{
+			logger.error(e.getMessage(), e);
+			throw new JobExecutionException(e);
+		} catch (InaccessibleDbException e)
+		{
+			logger.error("Could not access database, stopping index job.", e);
+			throw new JobExecutionException(e);
+		} finally
+		{
+			if (conn != null)
+				cm.releaseConnection(conn);
+		}
+		if (syncStop()) return true;
 		return false;
 	}
 	

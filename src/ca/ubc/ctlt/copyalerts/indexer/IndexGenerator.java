@@ -3,6 +3,9 @@ package ca.ubc.ctlt.copyalerts.indexer;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import ca.ubc.ctlt.copyalerts.db.FilesTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 import blackboard.cms.filesystem.CSAccessControlEntry;
@@ -17,6 +20,7 @@ import blackboard.persist.course.CourseMembershipDbLoader;
 
 public class IndexGenerator
 {
+	private final static Logger logger = LoggerFactory.getLogger(IndexGenerator.class);
 	// class to retrieve file ownership information and prep it for output into sql database
 	private ArrayList<String> attributes;
 	private FilesTable ft = new FilesTable();
