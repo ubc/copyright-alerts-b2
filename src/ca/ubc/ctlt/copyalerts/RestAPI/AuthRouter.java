@@ -7,6 +7,8 @@ import org.restlet.routing.TemplateRoute;
 import org.restlet.Request;
 import org.restlet.Response;
 import org.restlet.routing.Filter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import blackboard.data.user.User;
 import blackboard.platform.context.Context;
@@ -14,6 +16,7 @@ import blackboard.platform.context.ContextManagerFactory;
 
 public class AuthRouter extends Router
 {
+	private final static Logger logger = LoggerFactory.getLogger(AuthRouter.class);
 
 	private class AuthFilter extends Filter
 	{
@@ -23,15 +26,13 @@ public class AuthRouter extends Router
 			int result = STOP;
 			
 			Context ctx = ContextManagerFactory.getInstance().getContext();
-			User user = ctx.getUser();
-			
-			if (user == null)
+			if (ctx.getSession().isAuthenticated())
 			{
-				response.setStatus(Status.CLIENT_ERROR_FORBIDDEN);
+				result = CONTINUE;
 			}
 			else
 			{
-				result = CONTINUE;
+				response.setStatus(Status.CLIENT_ERROR_FORBIDDEN);
 			}
 			
 			return result;

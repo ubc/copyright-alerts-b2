@@ -72,8 +72,12 @@ public class ProcessFilesResource extends ServerResource
 			return null;
 		}
 		FilesTable ft = new FilesTable();
+
+		if (pf.files.size() > 500) return null; // only allow real time update if <100 files
+
 		for (String file : pf.files)
 		{
+			if (file.contains("xid-")) continue; // make sure to skip special xid files
 			CSEntry entry = csCtx.findEntry(file);
 			if (entry == null) continue; // didn't find the file
 			if (entry instanceof CSFile)
