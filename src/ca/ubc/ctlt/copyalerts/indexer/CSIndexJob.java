@@ -190,6 +190,10 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	 */
 	private JobExecutionException cleanUpOnException(Exception e)
 	{
+		// Must log first, or additional exceptions during the rest of the cleanup can hide the original exception
+		logger.error(e.getMessage(), e);
+
+		// Remove the execution time limit, if any, that were placed on indexing
 		Scheduler sched = context.getScheduler();
 		try
 		{
@@ -202,14 +206,21 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			logger.error("Exception clean up failed, unable to remove time limit trigger.");
 		}
 
+		// Update the execution status
 		try
 		{
-			ht.saveRunStats(hostname, HostsTable.STATUS_ERROR, started, ended);
+			if (ht != null)
+			{
+				ht.saveRunStats(hostname, HostsTable.STATUS_ERROR, started, ended);
+			}
+			else
+			{
+				logger.error("Exception clean up occured before hosts table was read.");
+			}
 		} catch (InaccessibleDbException e1)
 		{
 			logger.error("Exception clean up failed, unable to update execution status.");
 		}
-		logger.error(e.getMessage(), e);
 		return new JobExecutionException(e);
 	}
 	
