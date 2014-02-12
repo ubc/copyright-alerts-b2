@@ -4,7 +4,22 @@
 <bbNG:includedPage ctxId="ctx">
 <div id="ubc_ctlt_ca_angular_div">
 <div id="ubc_ctlt_ca_app" class="hideInitially" ng-controller="FileListCtrl">
-	<p>These courses have files that needs to be copyright tagged.</p>
+	<p>
+	Please review the copyright status attribution on files in Connect for which
+	you are responsible. The number at the end of each course link corresponds to
+	files without attribution that you have uploaded or files that you have the
+	permission to manage. You can review the list of files by expanding the
+	drop-down icon or clicking on the course link. To update the copyright status
+	attribution in bulk, click on the (view) link next to the course.  For
+	assistance with updating copyright status attribution, please contact your <a
+	href="https://connect.ubc.ca/bbcswebdav/xid-7093945_1" title="List of support
+	for administration of copyright status attribution in Connect">local
+	support</a>. For assistance with understanding each copyright status category,
+	please refer to the <a href="http://copyright.ubc.ca/" title="UBC Copyright
+	website">UBC copyright website</a> or contact the <a
+	href="http://copyright.ubc.ca/help-and-resources/vancouver-contacts/"
+	title="UBC Copyright Contacts">Copyright Office</a>.
+	</p>
 	<div ng-repeat="(cid, course) in courseFiles.courses">
 		<h4 class="moduleTitle">
 			<a ng-click="course.show=!course.show" href="" >

@@ -44,7 +44,7 @@
 
 <!-- Portal Module Definitions -->
         <module-defs>
-        	<module-type ext-ref="ubc-copyright-alerts" title="Copyright Alerts" uicreatable="true">
+        	<module-type ext-ref="ubc-copyright-alerts" title="Copyright Attribution Alerts" uicreatable="true">
 				<jsp-dir>alertsmodule-static</jsp-dir>
 				<jsp>
 					<view>view.jsp</view>
@@ -53,8 +53,8 @@
 				</jsp>
 			</module-type>
 			<module type="ubc-copyright-alerts" isadmin="true" useraddable="true"
-				isdeletable="true" title="Copyright Alerts">
-				<description>Copyright Alerts</description>
+				isdeletable="true" title="Copyright Attribution Alerts">
+				<description>Copyright Attribution Alerts</description>
 				<module-groups>
 					<module-group id="Everyone" />
 				</module-groups>
