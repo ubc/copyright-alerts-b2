@@ -73,7 +73,7 @@ public class ProcessFilesResource extends ServerResource
 		}
 		FilesTable ft = new FilesTable();
 
-		if (pf.files.size() > 500) return null; // only allow real time update if <100 files
+		if (pf.files.size() > 500) return null; // only allow real time update if <500 files
 
 		for (String file : pf.files)
 		{

@@ -36,7 +36,7 @@
 		</h4>
 		<ul ng-show="course.show">
 			<li ng-repeat="file in course.files">
-			<a class="main-link" href="/webapps/ubc-metadata-BBLEARN//metadata/list?path={{file.encodedPath}}">{{file.name}}</a>
+			<a class="main-link" href="/webapps/ubc-metadata-BBLEARN//metadata/list?file0={{file.encodedPath}}">{{file.name}}</a>
 			<a class="side-controls" href="/bbcswebdav{{file.rawPath}}">(view)</a>
 			</li>
 			<li ng-if="course.numPages > 1" class="rumble inventory_paging">
