@@ -8,6 +8,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +60,7 @@ public class FilesTable
 		return null;
 	}
 
-	public void add(CSFile file, ArrayList<Id> users) throws InaccessibleDbException
+	public void add(CSFile file, Set<Id> users) throws InaccessibleDbException
 	{
 		// first, make sure that we're using a valid course
 		String courseName = parseCourseName(file.getFullPath());

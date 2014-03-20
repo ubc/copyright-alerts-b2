@@ -1,7 +1,9 @@
 package ca.ubc.ctlt.copyalerts.indexer;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +40,12 @@ public class IndexGenerator
 		}
 		// the file has not been copyright tagged, store it in the database
 		CSAccessControlEntry[] accesses = file.getAccessControlEntries();
-		ArrayList<Id> names = new ArrayList<Id>();
+		// Use a set to ensure that we end up with no duplicate users or a user might
+		// end up with multiple entries for a single file. This might happen if a file
+		// is shared by two or more courses taught by the same instructor, and so we
+		// grab the instructors for both courses, ending up with the same instructor
+		// twice.
+		HashSet<Id> names = new HashSet<Id>();
 		for (CSAccessControlEntry e : accesses)
 		{
 			if (!e.canWrite())
