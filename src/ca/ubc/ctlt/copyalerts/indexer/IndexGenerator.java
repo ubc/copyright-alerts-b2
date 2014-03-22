@@ -1,8 +1,10 @@
 package ca.ubc.ctlt.copyalerts.indexer;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -32,49 +34,54 @@ public class IndexGenerator
 		this.attributes = attributes;
 	}
 	
-	public void process(CSFile file) throws PersistenceException, InaccessibleDbException
+	public void process(List<CSFile> files) throws PersistenceException, InaccessibleDbException
 	{
-		if (fileIsTagged(file))
+		Map<CSFile, Set<Id>> filesAndUsers = new HashMap<CSFile, Set<Id>>();
+		for (CSFile file : files)
 		{
-			return;
-		}
-		// the file has not been copyright tagged, store it in the database
-		CSAccessControlEntry[] accesses = file.getAccessControlEntries();
-		// Use a set to ensure that we end up with no duplicate users or a user might
-		// end up with multiple entries for a single file. This might happen if a file
-		// is shared by two or more courses taught by the same instructor, and so we
-		// grab the instructors for both courses, ending up with the same instructor
-		// twice.
-		HashSet<Id> names = new HashSet<Id>();
-		for (CSAccessControlEntry e : accesses)
-		{
-			if (!e.canWrite())
-			{ // skip if can't write
-				continue;
-			}
-			String pid = e.getPrincipalID();
-			// Some sample principal IDs:
-			// This is for course instructors, I'm assuming that CR stands for Course Role
-			// G:CR:CL.UBC.MATH.101.201.2012W2.13204:INSTRUCTOR
-			// This is for system admins, I'm assuming that SR stands for System Role
-			// G:SR:SYSTEM_ADMIN
-			// This is for a single user assigned permission to the file
-			// BB:U:_81_1
-			
-			// Since we only want Instructors and ISS role
-			if (pid.startsWith("G:CR"))
+			if (fileIsTagged(file))
 			{
-				String[] pidArr = pid.split(":");
-				String courseName = pidArr[2];
-				Course course = CourseDbLoader.Default.getInstance().loadByCourseId(courseName);
-				// We only want Instructor users for now
-				if (pid.matches(".+(?i)instructor.*"))
+				return;
+			}
+			// the file has not been copyright tagged, store it in the database
+			CSAccessControlEntry[] accesses = file.getAccessControlEntries();
+			// Use a set to ensure that we end up with no duplicate users or a user might
+			// end up with multiple entries for a single file. This might happen if a file
+			// is shared by two or more courses taught by the same instructor, and so we
+			// grab the instructors for both courses, ending up with the same instructor
+			// twice.
+			HashSet<Id> names = new HashSet<Id>();
+			for (CSAccessControlEntry e : accesses)
+			{
+				if (!e.canWrite())
+				{ // skip if can't write
+					continue;
+				}
+				String pid = e.getPrincipalID();
+				// Some sample principal IDs:
+				// This is for course instructors, I'm assuming that CR stands for Course Role
+				// G:CR:CL.UBC.MATH.101.201.2012W2.13204:INSTRUCTOR
+				// This is for system admins, I'm assuming that SR stands for System Role
+				// G:SR:SYSTEM_ADMIN
+				// This is for a single user assigned permission to the file
+				// BB:U:_81_1
+				
+				// Since we only want Instructors and ISS role
+				if (pid.startsWith("G:CR"))
 				{
-					names.addAll(getInstructors(course.getId()));
+					String[] pidArr = pid.split(":");
+					String courseName = pidArr[2];
+					Course course = CourseDbLoader.Default.getInstance().loadByCourseId(courseName);
+					// We only want Instructor users for now
+					if (pid.matches(".+(?i)instructor.*"))
+					{
+						names.addAll(getInstructors(course.getId()));
+					}
 				}
 			}
+			filesAndUsers.put(file, names);
 		}
-		ft.add(file, names);
+		ft.add(filesAndUsers);
 	}
 	
 	public boolean fileIsTagged(CSFile file)

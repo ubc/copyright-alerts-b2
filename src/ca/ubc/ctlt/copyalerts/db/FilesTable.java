@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -59,40 +60,38 @@ public class FilesTable
 		}
 		return null;
 	}
-
-	public void add(CSFile file, Set<Id> users) throws InaccessibleDbException
+	
+	/**
+	 * Adding files to the database in a batch operation in order to get some performance gains from compiled
+	 * statements.
+	 * 
+	 * @param filesAndUsers
+	 * @throws InaccessibleDbException
+	 */
+	public void add(Map<CSFile, Set<Id>> filesAndUsers) throws InaccessibleDbException
 	{
-		// first, make sure that we're using a valid course
-		String courseName = parseCourseName(file.getFullPath());
-		if (courseName.isEmpty()) return; // failed to parse course name, so must be invalid
-		boolean validCourse;
-		try
-		{
-			validCourse = courses.addIfValidCourse(courseName);
-			if (!validCourse) return; // couldn't retrieve course from cache or database, so must be invalid
-		} catch (PersistenceException e)
-		{
-			throw new InaccessibleDbException("Unable to read from db", e);
-		}
-		
-		// write to database
 		Connection conn = null;
-		String query = "insert into "+ TABLENAME +" (pk1, userid, course, filepath) values ("+ TABLENAME +"_seq.nextval, ?, ?, ?)";
-		PreparedStatement stmt;
+		String insertQuery = "insert into "+ TABLENAME +" (pk1, userid, course, filepath, fileid) " +
+				"values ("+ TABLENAME +"_seq.nextval, ?, ?, ?, ?)";
+		String checkDupQuery = "SELECT pk1 FROM "+ TABLENAME +" WHERE fileid = ? AND userid = ?";
 		try
 		{
 			conn = cm.getConnection();
-			// convert the query string into a compiled statement for faster execution
-			stmt = conn.prepareStatement(query);
-			
-			for (Id e : users)
+			// convert the query string into a compiled statement for faster
+			// execution
+			PreparedStatement insertStmt;
+			PreparedStatement checkDupStmt;
+			insertStmt = conn.prepareStatement(insertQuery);
+			checkDupStmt = conn.prepareStatement(checkDupQuery);
+			// process each file
+			for (Entry<CSFile, Set<Id>> entry : filesAndUsers.entrySet())
 			{
-				stmt.setString(1, e.toExternalString());
-				stmt.setString(2, courses.getCourseTitle(courseName));
-				stmt.setString(3, file.getFullPath());
-				stmt.executeUpdate();
+				addFile(entry.getKey(), entry.getValue(), checkDupStmt, insertStmt);
 			}
-			stmt.close();
+			// add all the entries all at once, hopefully it improves performance since it's one query
+			insertStmt.executeBatch();
+			insertStmt.close();
+			checkDupStmt.close();
 		} catch (SQLException e)
 		{
 			throw new InaccessibleDbException("Couldn't execute query", e);
@@ -102,10 +101,60 @@ public class FilesTable
 		} catch (PersistenceException e)
 		{
 			throw new InaccessibleDbException("Unable to read from db", e);
-		} 
-		finally
+		} finally
 		{
-			if (conn != null) cm.releaseConnection(conn); // MUST release connection or we'll exhaust connection pool
+			if (conn != null)
+				cm.releaseConnection(conn); // MUST release connection or we'll
+											// exhaust connection pool
+		}
+	}
+
+	/**
+	 * Does the actual queries that adds new files into the database.
+	 * @param file
+	 * @param users
+	 * @param checkDupStmt
+	 * @param insertStmt
+	 * @throws PersistenceException
+	 * @throws SQLException
+	 */
+	private void addFile(CSFile file, Set<Id> users, PreparedStatement checkDupStmt, PreparedStatement insertStmt)
+			throws PersistenceException, SQLException
+	{
+		// first, make sure that we're using a valid course
+		String courseName = parseCourseName(file.getFullPath());
+		if (courseName.isEmpty())
+			return; // failed to parse course name, so must be invalid
+		boolean validCourse;
+		validCourse = courses.addIfValidCourse(courseName);
+		if (!validCourse)
+			return; // couldn't retrieve course from cache or
+					// database,
+					// so must be invalid
+		String fileId = file.getFileSystemEntry().getEntryID();
+
+		for (Id userId : users)
+		{
+			String userIdStr = userId.toExternalString();
+			// Check to make sure that this entry isn't a duplicate
+			// before saving it. Note that while there is an Oracle "hint" mechanism similar
+			// to MySQL's insert if not exists mechanism, it doesn't perform as well as
+			// checking for existence and then inserting.
+			checkDupStmt.setString(1, fileId);
+			checkDupStmt.setString(2, userIdStr);
+			ResultSet res = checkDupStmt.executeQuery();
+			if (res.next())
+			{ // entry already exists, skip it
+				res.close();
+				continue;
+			}
+			res.close();
+			// entry doesn't exist, so enter it into the database
+			insertStmt.setString(1, userIdStr);
+			insertStmt.setString(2, courses.getCourseTitle(courseName));
+			insertStmt.setString(3, file.getFullPath());
+			insertStmt.setString(4, fileId);
+			insertStmt.addBatch(); // not in database yet! Need to execute batch later.
 		}
 	}
 	

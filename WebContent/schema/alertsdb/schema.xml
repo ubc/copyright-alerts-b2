@@ -16,9 +16,18 @@ no way to get the raw primary key for entries. You have to manually parse the pr
 	<column name="course" data-type="varchar(255)" nullable="false" comment="course which this file belongs to" />
 	<!-- William mentioned that Bb stores path in full_path nvarchar2(2000 char), Note: Oracle db limits nvarchar to 4000 bytes max -->
 	<column name="filepath" data-type="nvarchar(2000)" nullable="false" comment="identifies a file" />
+	<column name="fileid" data-type="varchar(32)" nullable="false" identity="true" 
+		comment="The unique id for the file given by the Content System, used to check for duplicates." />
 	<primary-key name="ubc_ctlt_ca_files_pk1" comment="Unique primary key">
 		<columnref name="pk1" />
 	</primary-key>
+	<index name="ubc_ctlt_ca_files_fileid" comment="Put an index on fileid for fast
+		access. We use this to check for duplicate entries">
+		<columnref name="fileid" />
+	</index>
+	<index name="ubc_ctlt_ca_files_userid" comment="Put an index on userid for fast access. We use this to retrieve all files for a user.">
+		<columnref name="userid" />
+	</index>
 </table>
 
 <!-- Stores list of nodes running this building block -->

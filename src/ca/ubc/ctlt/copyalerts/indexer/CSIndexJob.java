@@ -248,7 +248,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		ArrayList<String> paths = new ArrayList<String>();
 		// we're either going to continue processing a previously generated queue or have to generate a new queue entirely.
 		// assume that we're continuing processing a previously generated queue for now
-		boolean newQueue = false;
 		try
 		{
 			queue = new QueueTable();
@@ -264,8 +263,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				}
 				// now we can process the paths from the start
 				paths = queue.load();
-				// we just generated a new queue, so definitely not loading leftovers from the last run
-				newQueue = true;
 				logger.debug("Generated new queue.");
 			}
 			else
@@ -294,17 +291,9 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			logger.error("Could not get metadata template attributes.", e);
 			throw new JobExecutionException(e);
 		}
-		// clear the database
+		// update running status
 		try
 		{
-			// only clear the database if it's a new run
-			// and we're not finishing up the last run
-			if (newQueue)
-			{
-				logger.debug("Removing all previous file records.");
-				FilesTable ft = new FilesTable();
-				ft.deleteAll();
-			}
 			updateRunningStatus(HostsTable.STATUS_RUNNING_NEWFILES);
 		} catch (InaccessibleDbException e)
 		{
@@ -314,6 +303,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		while (!paths.isEmpty())
 		{
 			logger.debug("Copyright Alerts Indexing: " + paths.get(0));
+			ArrayList<CSFile> filesBatch = new ArrayList<CSFile>();
 			for (String p : paths)
 			{
 				CSContext ctx = CSContext.getContext();
@@ -336,10 +326,30 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 					continue;
 				}
 				CSFile file = (CSFile) entry;
+				filesBatch.add(file);
 				// Retrieve metadata
 				try
 				{
-					indexGen.process(file);
+					if (filesBatch.size() >= BATCHSIZE)
+					{
+						indexGen.process(filesBatch);
+						filesBatch.clear();
+					}
+				} catch (PersistenceException e)
+				{
+					logger.error("Could not access BB database, stopping index job.", e);
+					throw new JobExecutionException(e);
+				} catch (InaccessibleDbException e)
+				{
+					logger.error("Could not access database, stopping index job.", e);
+					throw new JobExecutionException(e);
+				}
+			}
+			if (!filesBatch.isEmpty())
+			{
+				try
+				{
+					indexGen.process(filesBatch);
 				} catch (PersistenceException e)
 				{
 					logger.error("Could not access BB database, stopping index job.", e);
@@ -420,8 +430,8 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			
 			
 			logger.debug("Queue Offset: " + queueOffset);
-			// if queueOffset is 0, the 0 gets filtered out by the query compilation process, so can only add OFFSET if we need it
 			String query = "";
+			// complex query for resume, simpler for generating a new queue
 			if (queueOffset > 0)
 			{ // resuming from an interrupted queue generation
 				query = "SELECT rn, full_path, file_id FROM " +
