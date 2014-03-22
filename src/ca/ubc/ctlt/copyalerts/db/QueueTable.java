@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
+
 import blackboard.db.ConnectionManager;
 import blackboard.db.ConnectionNotAvailableException;
 
@@ -17,7 +19,6 @@ public class QueueTable
 	private final static Logger logger = LoggerFactory.getLogger(QueueTable.class);
 	
 	private final static String TABLENAME = "ubc_ctlt_ca_queue";
-	public final static int LOADNUM = 1000;
 	
 	private ConnectionManager cm = DbInit.getConnectionManager();
 
@@ -64,7 +65,7 @@ public class QueueTable
 
 	public ArrayList<String> load() throws InaccessibleDbException 
 	{
-		return load(LOADNUM);
+		return load(CSIndexJob.BATCHSIZE);
 	}
 
 	/**
@@ -114,7 +115,7 @@ public class QueueTable
 	
 	public void pop() throws InaccessibleDbException
 	{
-		pop(LOADNUM);
+		pop(CSIndexJob.BATCHSIZE);
 	}
 
 	/**

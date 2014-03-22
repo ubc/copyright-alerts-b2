@@ -50,10 +50,12 @@ import ca.ubc.ctlt.copyalerts.db.QueueTable;
 @DisallowConcurrentExecution
 public class CSIndexJob implements InterruptableJob, TriggerListener
 {
+	public final static int BATCHSIZE = 100;
+
 	private final static Logger logger = LoggerFactory.getLogger(CSIndexJob.class);
 	
 	private final static String JOBGROUP = "CSIndexJobGroup";
-
+	
 	// Execute will check this variable periodically. If true, it'll immediately stop execution.
 	public Boolean stop = false;
 	// this job does nothing, but we use the trigger to tell us if the job's time limit has been reached
@@ -391,8 +393,8 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 										// necessary to keep memory usage low
 			String query = "SELECT full_path FROM bblearn_cms_doc.xyf_urls";
 			PreparedStatement queryCompiled = conn.prepareStatement(query);
-			queryCompiled.setFetchSize(50); // we'll only fetch 50 rows at a
-											// time
+			queryCompiled.setFetchSize(BATCHSIZE); // limit the number of rows we're pre-fetching
+
 			ResultSet res = queryCompiled.executeQuery();
 			logger.debug("Going through the data");
 			// single regex to check the filepath to make sure that we're only
@@ -403,7 +405,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			// stores a batch of file paths to be put into the queue
 			ArrayList<String> paths = new ArrayList<String>();
 			long count = 0;
-			int batchSize = 500;
 			while (res.next())
 			{
 				String path = res.getString(1);
@@ -416,14 +417,14 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 					paths.add(path);
 				}
 				// store the current batch into the queue when we've got enough
-				if (paths.size() >= batchSize)
+				if (paths.size() >= BATCHSIZE)
 				{
 					logger.debug("Added to queue: " + path);
 					queue.add(paths);
 					paths.clear(); // empty the current batch now that they're safely stored
 				}
-				// only check for interrupt if we've processed batchSize entries already
-				if (count >= batchSize) 
+				// only check for interrupt if we've processed BATCHSIZE entries already
+				if (count >= BATCHSIZE) 
 				{ // execution interrupt was requested
 					if (syncStop())
 					{
