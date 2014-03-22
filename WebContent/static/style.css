@@ -26,9 +26,9 @@
   vertical-align: top;
   width: 33%; }
 #alertsysconfig h3.running, #alertsysconfig h3.notrunning, #alertsysconfig h3.runerror, #alertsysconfig h3.unavailable, #alertsysconfig h3.limit {
-  width: 12em;
+  width: 15em;
   margin-top: 0em;
-  margin-left: 2em;
+  margin-left: 1em;
   padding-top: 0.3em;
   padding-bottom: 0.3em;
   color: white;

@@ -23,7 +23,9 @@ jQuery.noConflict();
 	<div class="section" ng-controller="StatusCtrl">
 		<h1>Status</h1>
 		<div ng-switch on="status.status">
-		<h3 class="running" ng-switch-when="running">Running</h3>
+		<h3 class="running" ng-switch-when="running queue stage">Running: Generating Queue</h3>
+		<h3 class="running" ng-switch-when="running newfiles stage">Running: Adding New Files</h3>
+		<h3 class="running" ng-switch-when="running update stage">Running: Updating Existing Files</h3>
 		<h3 class="limit" ng-switch-when="limit">Time Limit Reached</h3>
 		<h3 class="notrunning" ng-switch-when="stopped">Stopped</h3>
 		<h3 class="runerror" ng-switch-when="error">Error During Run</h3>

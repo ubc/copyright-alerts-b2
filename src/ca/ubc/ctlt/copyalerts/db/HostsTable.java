@@ -29,17 +29,21 @@ public class HostsTable
 {
 	private final static Logger logger = LoggerFactory.getLogger(HostsTable.class);
 	
-	public final static String STATUS_RUNNING = "running";
+	// all the possible values for the "status" field
+	public final static String STATUS_RUNNING_QUEUE = "running queue stage";
+	public final static String STATUS_RUNNING_NEWFILES = "running newfiles stage";
+	public final static String STATUS_RUNNING_UPDATE = "running update stage";
 	public final static String STATUS_STOPPED = "stopped";
 	public final static String STATUS_LIMIT = "limit";
 	public final static String STATUS_ERROR = "error";
 	
-	public final static String STATUS_RUNNING_KEY = "status";
-	public final static String STATUS_RUNTIME_KEY = "runtime";
-	public final static String STATUS_START_KEY = "runstart";
-	public final static String STATUS_END_KEY = "runend";
-	public final static String STATUS_CURHOST_KEY = "host";
-	public final static String STATUS_LEADHOST_KEY = "leader";
+	// the column names for the hosts table
+	public final static String STATUS_RUNNING_KEY = "status"; // running status of this host
+	public final static String STATUS_RUNTIME_KEY = "runtime"; // how long did the last run take
+	public final static String STATUS_START_KEY = "runstart"; // when did the last run start
+	public final static String STATUS_END_KEY = "runend"; // when did the last run end
+	public final static String STATUS_CURHOST_KEY = "host"; // the host name that we use to identify this node
+	public final static String STATUS_LEADHOST_KEY = "leader"; // whether this host is selected to run alerts generation
 
 	private final static String TABLENAME = "ubc_ctlt_ca_hosts";
 	
@@ -135,7 +139,7 @@ public class HostsTable
 	}
 	
 	/**
-	 * Load existing hosts into the database.
+	 * Load existing hosts from the database.
 	 * 
 	 * @throws InaccessibleDbException
 	 */
@@ -145,16 +149,15 @@ public class HostsTable
 		try 
 		{
 			conn = cm.getConnection();
-			String query = "SELECT * FROM "+ TABLENAME;
+			String query = "SELECT host, leader FROM "+ TABLENAME;
 	        PreparedStatement queryCompiled = conn.prepareStatement(query);
 	        ResultSet res = queryCompiled.executeQuery();
 	        hosts.clear();
 	
-	        while(res.next())
-	        { // 1: pk1, 2: host, 3: leader, should be order of the columns returned
-
-	        	hosts.put(res.getString(2), res.getBoolean(3));
-	        }
+			while (res.next())
+			{
+				hosts.put(res.getString(1), res.getBoolean(2));
+			}
 	
 	        res.close();
 	

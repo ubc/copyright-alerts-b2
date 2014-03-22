@@ -98,11 +98,10 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		// Basically, we'll have a trigger that'll fire after the time limit has passed. We use the CSIndexJob object as a trigger listener
 		// and will trigger an interrupt when the time has passed.
 		SavedConfiguration config;
-		started = new Timestamp((new Date()).getTime());
 		try
 		{
 			// Save the fact that we've started running
-			ht.saveRunStats(hostname, HostsTable.STATUS_RUNNING, started, ended);
+			updateRunningStatus(HostsTable.STATUS_RUNNING_QUEUE);
 			// load configuration
 			config = SavedConfiguration.getInstance();
 		} catch (InaccessibleDbException e)
@@ -181,6 +180,13 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			}
 		}
 		logger.info("ubc.ctlt.copyalerts Done");
+	}
+	
+	private void updateRunningStatus(String status) throws InaccessibleDbException
+	{
+		started = new Timestamp((new Date()).getTime());
+		// Save the fact that we've started running
+		ht.saveRunStats(hostname, status, started, ended);
 	}
 	
 	/**
@@ -296,6 +302,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				FilesTable ft = new FilesTable();
 				ft.deleteAll();
 			}
+			updateRunningStatus(HostsTable.STATUS_RUNNING_NEWFILES);
 		} catch (InaccessibleDbException e)
 		{
 			logger.error("Could not reset the database.", e);
