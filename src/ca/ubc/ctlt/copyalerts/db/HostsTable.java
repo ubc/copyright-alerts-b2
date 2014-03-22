@@ -45,6 +45,10 @@ public class HostsTable
 	public final static String STATUS_CURHOST_KEY = "host"; // the host name that we use to identify this node
 	public final static String STATUS_LEADHOST_KEY = "leader"; // whether this host is selected to run alerts generation
 
+	public final static String QUEUE_OFFSET_KEY = "queue_offset"; // number of files the queue generation stage has gone through this run
+	public final static String LAST_QUEUE_FILEID_KEY = "last_queue_fileid"; // what was the last file the queue generator committed
+																			// if 0, then queue generation is finished
+
 	private final static String TABLENAME = "ubc_ctlt_ca_hosts";
 	
 	// keeps track of which nodes are running a copy of this building block so we can determine
@@ -456,5 +460,101 @@ public class HostsTable
 	public HashMap<String, Boolean> getHosts()
 	{
 		return hosts;
+	}
+	
+	/**
+	 * Save the data necessary for resuming from an interrupted queue generation.
+	 * @param queueOffset - How many table entries we've already processed
+	 * @param lastQueueFileid - The id of the last file we processed.
+	 * @throws InaccessibleDbException
+	 */
+	public void saveQueueData(int queueOffset, int lastQueueFileid) throws InaccessibleDbException
+	{
+		Connection conn = null;
+		String query = "UPDATE "+ TABLENAME +" SET " + QUEUE_OFFSET_KEY + "=?, " + LAST_QUEUE_FILEID_KEY + "=?";
+		PreparedStatement stmt;
+		try
+		{
+			conn = cm.getConnection();
+			// convert the query string into a compiled statement for faster execution
+			stmt = conn.prepareStatement(query);
+			stmt.setInt(1, queueOffset);
+			stmt.setInt(2, lastQueueFileid);
+			stmt.executeUpdate();
+			stmt.close();
+		} catch (SQLException e)
+		{
+			logger.error(e.getMessage(), e);
+			throw new InaccessibleDbException("Couldn't execute query", e);
+		} catch (ConnectionNotAvailableException e)
+		{
+			throw new InaccessibleDbException("Unable to connect to db", e);
+		}
+		finally
+		{
+			if (conn != null) cm.releaseConnection(conn); // MUST release connection or we'll exhaust connection pool
+		}
+	}
+	
+	public int getQueueOffset() throws InaccessibleDbException
+	{
+		Connection conn = null;
+		String query = "SELECT "+ QUEUE_OFFSET_KEY + " FROM " + TABLENAME +" WHERE host=?";
+		PreparedStatement stmt;
+		int ret = 0;
+		try
+		{
+			conn = cm.getConnection();
+			// convert the query string into a compiled statement for faster execution
+			stmt = conn.prepareStatement(query);
+			stmt.setString(1, getLeader());
+			ResultSet res = stmt.executeQuery();
+			res.next();
+			ret = res.getInt(1);
+			stmt.close();
+		} catch (SQLException e)
+		{
+			logger.error(e.getMessage(), e);
+			throw new InaccessibleDbException("Couldn't execute query", e);
+		} catch (ConnectionNotAvailableException e)
+		{
+			throw new InaccessibleDbException("Unable to connect to db", e);
+		}
+		finally
+		{
+			if (conn != null) cm.releaseConnection(conn); // MUST release connection or we'll exhaust connection pool
+		}
+		return ret;
+	}
+
+	public int getLastQueueFileid() throws InaccessibleDbException
+	{
+		Connection conn = null;
+		String query = "SELECT "+ LAST_QUEUE_FILEID_KEY + " FROM " + TABLENAME +" WHERE host=?";
+		PreparedStatement stmt;
+		int ret = 0;
+		try
+		{
+			conn = cm.getConnection();
+			// convert the query string into a compiled statement for faster execution
+			stmt = conn.prepareStatement(query);
+			stmt.setString(1, getLeader());
+			ResultSet res = stmt.executeQuery();
+			res.next();
+			ret = res.getInt(1);
+			stmt.close();
+		} catch (SQLException e)
+		{
+			logger.error(e.getMessage(), e);
+			throw new InaccessibleDbException("Couldn't execute query", e);
+		} catch (ConnectionNotAvailableException e)
+		{
+			throw new InaccessibleDbException("Unable to connect to db", e);
+		}
+		finally
+		{
+			if (conn != null) cm.releaseConnection(conn); // MUST release connection or we'll exhaust connection pool
+		}
+		return ret;
 	}
 }

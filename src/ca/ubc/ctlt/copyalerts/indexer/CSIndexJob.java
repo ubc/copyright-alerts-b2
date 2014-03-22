@@ -253,8 +253,9 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		{
 			queue = new QueueTable();
 
+			int lastQueueFileid = ht.getLastQueueFileid(); // should be greater than 0 if queue generation got interrupted
 			paths = queue.load();
-			if (paths.isEmpty())
+			if (paths.isEmpty() || lastQueueFileid > 0)
 			{
 				// load data into the queue table
 				if (generateQueue(queue))
@@ -379,24 +380,62 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	 */
 	private boolean generateQueue(QueueTable queue) throws JobExecutionException
 	{
-		logger.debug("New Queue Generation method");
 		ConnectionManager cm = DbInit.getConnectionManager();
 		Connection conn = null;
 
 		try
 		{
 			conn = cm.getConnection();
-			logger.debug("Enabling cursor usage in resultset");
 			conn.setAutoCommit(false); // need to disable autocommit to enable
 										// fetching only a small number of rows
 										// at once
 										// necessary to keep memory usage low
-			String query = "SELECT full_path FROM bblearn_cms_doc.xyf_urls";
+			
+			int lastQueueFileid = ht.getLastQueueFileid();
+			int queueOffset = 0; 
+			if (lastQueueFileid != 0)
+			{ // queue generation was interrupted, let's try to resume
+				// find out where the last file id we saw is at
+				String query = 
+					"SELECT * FROM (SELECT rownum, file_id FROM bblearn_cms_doc.xyf_urls ORDER BY file_id) WHERE file_id=?";
+				PreparedStatement stmt = conn.prepareStatement(query);
+				stmt.setInt(1, lastQueueFileid);
+
+				long endTime = System.currentTimeMillis();
+				ResultSet res = stmt.executeQuery();
+				if (res.next())
+				{ // good, file wasn't deleted, set our offset to it
+					queueOffset = res.getInt(1);
+				}
+				else
+				{ // file was deleted! have to use the fall back option
+					// just using the stored offset means that we might miss some files, but hopefully this isn't a common occurrence 
+					queueOffset = ht.getQueueOffset();
+				}
+				long startTime = System.currentTimeMillis();
+				long interval = endTime - startTime;
+				logger.debug("Queue Generator Resume Offset Query Time: " + interval / 1000.0 + " seconds");
+				res.close();
+			}
+			
+			
+			logger.debug("Queue Offset: " + queueOffset);
+			// if queueOffset is 0, the 0 gets filtered out by the query compilation process, so can only add OFFSET if we need it
+			String query = "";
+			if (queueOffset > 0)
+			{ // resuming from an interrupted queue generation
+				query = "SELECT rn, full_path, file_id FROM " +
+						"(SELECT full_path, file_id, ROW_NUMBER() OVER (ORDER BY file_id) rn FROM BBLEARN_CMS_DOC.xyf_urls) " +
+						"WHERE rn > " + queueOffset;
+			}
+			else
+			{ // starting a new queue generation
+				query = "SELECT rownum, full_path, file_id FROM bblearn_cms_doc.xyf_urls ORDER BY file_id";
+			}
 			PreparedStatement queryCompiled = conn.prepareStatement(query);
 			queryCompiled.setFetchSize(BATCHSIZE); // limit the number of rows we're pre-fetching
 
 			ResultSet res = queryCompiled.executeQuery();
-			logger.debug("Going through the data");
 			// single regex to check the filepath to make sure that we're only
 			// picking up course files
 			// the general format for course files is: /courses/course name/file
@@ -405,9 +444,13 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			// stores a batch of file paths to be put into the queue
 			ArrayList<String> paths = new ArrayList<String>();
 			long count = 0;
+			int rownum = 0;
+			int fileid = 0;
 			while (res.next())
 			{
-				String path = res.getString(1);
+				rownum = res.getInt(1);
+				String path = res.getString(2);
+				fileid = res.getInt(3);
 				// make sure that we only have course files and no xid- files
 				// it seems that xid- files are not listed in the xyf_urls table, 
 				// but better be safe with an explicit check
@@ -426,6 +469,8 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				// only check for interrupt if we've processed BATCHSIZE entries already
 				if (count >= BATCHSIZE) 
 				{ // execution interrupt was requested
+					// make sure to save queue resume data
+					ht.saveQueueData(rownum, fileid);
 					if (syncStop())
 					{
 						break;
@@ -433,6 +478,21 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 					count = 0;
 				}
 				count++;
+			}
+			// make sure the last batch of files are added
+			if (!paths.isEmpty())
+			{
+				logger.debug("Added last batch to queue");
+				queue.add(paths);
+				if (!syncStop())
+				{ // make sure to reset queue resume data if we've gone a full run without problems
+					ht.saveQueueData(0, 0);
+				}
+				else
+				{ // save resume data otherwise
+					ht.saveQueueData(rownum, fileid);
+				}
+				paths.clear(); // empty the current batch now that they're safely stored
 			}
 			res.close();
 			queryCompiled.close();
