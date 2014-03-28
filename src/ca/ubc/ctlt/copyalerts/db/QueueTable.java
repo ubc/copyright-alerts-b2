@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +18,7 @@ import blackboard.db.ConnectionNotAvailableException;
 public class QueueTable
 {
 	private final static Logger logger = LoggerFactory.getLogger(QueueTable.class);
-	
+
 	private final static String TABLENAME = "ubc_ctlt_ca_queue";
 	
 	private ConnectionManager cm = DbInit.getConnectionManager();
@@ -27,7 +28,7 @@ public class QueueTable
 	 * @param paths
 	 * @throws InaccessibleDbException 
 	 */
-	public void add(ArrayList<String> paths) throws InaccessibleDbException
+	public void add(List<String> paths) throws InaccessibleDbException
 	{
 		// Not sure if cm can be made into a private field, but it looks like connections have to be released or Oracle
 		// will not be happy

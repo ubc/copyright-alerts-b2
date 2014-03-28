@@ -1,15 +1,9 @@
 package ca.ubc.ctlt.copyalerts.indexer;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import java.util.List;
 import org.quartz.DateBuilder.IntervalUnit;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.InterruptableJob;
@@ -34,18 +28,19 @@ import static org.quartz.impl.matchers.GroupMatcher.*;
 import blackboard.cms.filesystem.CSContext;
 import blackboard.cms.filesystem.CSEntry;
 import blackboard.cms.filesystem.CSFile;
-import blackboard.db.ConnectionManager;
 import blackboard.db.ConnectionNotAvailableException;
 import blackboard.persist.PersistenceException;
 import blackboard.platform.vxi.service.VirtualSystemException;
 
 import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
 import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
-import ca.ubc.ctlt.copyalerts.db.DbInit;
-import ca.ubc.ctlt.copyalerts.db.FilesTable;
 import ca.ubc.ctlt.copyalerts.db.HostsTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 import ca.ubc.ctlt.copyalerts.db.QueueTable;
+import ca.ubc.ctlt.copyalerts.db.operations.QueueScanProcessor;
+import ca.ubc.ctlt.copyalerts.db.operations.ResumableScan;
+import ca.ubc.ctlt.copyalerts.db.operations.ResumableScanInfo;
+import ca.ubc.ctlt.copyalerts.db.operations.ScanProcessor;
 
 @DisallowConcurrentExecution
 public class CSIndexJob implements InterruptableJob, TriggerListener
@@ -257,7 +252,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			if (paths.isEmpty() || lastQueueFileid > 0)
 			{
 				// load data into the queue table
-				if (generateQueue(queue))
+				if (generateQueue())
 				{
 					return true;
 				}
@@ -315,14 +310,12 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				CSEntry entry = ctx.findEntry(p);
 				if (entry == null)
 				{
-					logger.warn("A non-existent file somehow made it onto the queue.");
-					logger.debug("\tRecorded Path: " + p);
+					logger.info("Non-existent file: " + p);
 					continue;
 				}
 				if (!(entry instanceof CSFile))
 				{
-					logger.info("Skipping directory.");
-					logger.info("\tRecorded Path: " + p);
+					logger.info("Skipping directory, Path: " + p);
 					continue;
 				}
 				CSFile file = (CSFile) entry;
@@ -388,142 +381,65 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	 * @return
 	 * @throws JobExecutionException 
 	 */
-	private boolean generateQueue(QueueTable queue) throws JobExecutionException
+	private boolean generateQueue() throws JobExecutionException
 	{
-		ConnectionManager cm = DbInit.getConnectionManager();
-		Connection conn = null;
-
+		ScanProcessor processor = new QueueScanProcessor(ht);
+		// set the column names for the data that the processor wants
+		List<String> dataKeys = new ArrayList<String>();
+		dataKeys.add("full_path");
+		
+		// load queue resume data
+		int lastQueueFileid = 0;
+		int queueOffset = 0;
 		try
 		{
-			conn = cm.getConnection();
-			conn.setAutoCommit(false); // need to disable autocommit to enable
-										// fetching only a small number of rows
-										// at once
-										// necessary to keep memory usage low
-			
-			int lastQueueFileid = ht.getLastQueueFileid();
-			int queueOffset = 0; 
-			if (lastQueueFileid != 0)
-			{ // queue generation was interrupted, let's try to resume
-				// find out where the last file id we saw is at
-				String query = 
-					"SELECT * FROM (SELECT rownum, file_id FROM bblearn_cms_doc.xyf_urls ORDER BY file_id) WHERE file_id=?";
-				PreparedStatement stmt = conn.prepareStatement(query);
-				stmt.setInt(1, lastQueueFileid);
-
-				long endTime = System.currentTimeMillis();
-				ResultSet res = stmt.executeQuery();
-				if (res.next())
-				{ // good, file wasn't deleted, set our offset to it
-					queueOffset = res.getInt(1);
-				}
-				else
-				{ // file was deleted! have to use the fall back option
-					// just using the stored offset means that we might miss some files, but hopefully this isn't a common occurrence 
-					queueOffset = ht.getQueueOffset();
-				}
-				long startTime = System.currentTimeMillis();
-				long interval = endTime - startTime;
-				logger.debug("Queue Generator Resume Offset Query Time: " + interval / 1000.0 + " seconds");
-				res.close();
-			}
-			
-			
-			logger.debug("Queue Offset: " + queueOffset);
-			String query = "";
-			// complex query for resume, simpler for generating a new queue
-			if (queueOffset > 0)
-			{ // resuming from an interrupted queue generation
-				query = "SELECT rn, full_path, file_id FROM " +
-						"(SELECT full_path, file_id, ROW_NUMBER() OVER (ORDER BY file_id) rn FROM BBLEARN_CMS_DOC.xyf_urls) " +
-						"WHERE rn > " + queueOffset;
-			}
-			else
-			{ // starting a new queue generation
-				query = "SELECT rownum, full_path, file_id FROM bblearn_cms_doc.xyf_urls ORDER BY file_id";
-			}
-			PreparedStatement queryCompiled = conn.prepareStatement(query);
-			queryCompiled.setFetchSize(BATCHSIZE); // limit the number of rows we're pre-fetching
-
-			ResultSet res = queryCompiled.executeQuery();
-			// single regex to check the filepath to make sure that we're only
-			// picking up course files
-			// the general format for course files is: /courses/course name/file
-			Pattern courseFilePattern = Pattern.compile("^/courses/[^/]+?/.+$");
-			Matcher courseFileMatcher = courseFilePattern.matcher("");
-			// stores a batch of file paths to be put into the queue
-			ArrayList<String> paths = new ArrayList<String>();
-			long count = 0;
-			int rownum = 0;
-			int fileid = 0;
-			while (res.next())
-			{
-				rownum = res.getInt(1);
-				String path = res.getString(2);
-				fileid = res.getInt(3);
-				// make sure that we only have course files and no xid- files
-				// it seems that xid- files are not listed in the xyf_urls table, 
-				// but better be safe with an explicit check
-				if (courseFileMatcher.reset(path).matches() &&
-					!path.contains("xid-"))
-				{
-					paths.add(path);
-				}
-				// store the current batch into the queue when we've got enough
-				if (paths.size() >= BATCHSIZE)
-				{
-					logger.debug("Added to queue: " + path);
-					queue.add(paths);
-					paths.clear(); // empty the current batch now that they're safely stored
-				}
-				// only check for interrupt if we've processed BATCHSIZE entries already
-				if (count >= BATCHSIZE) 
-				{ // execution interrupt was requested
-					// make sure to save queue resume data
-					ht.saveQueueData(rownum, fileid);
-					if (syncStop())
-					{
-						break;
-					}
-					count = 0;
-				}
-				count++;
-			}
-			// make sure the last batch of files are added
-			if (!paths.isEmpty())
-			{
-				logger.debug("Added last batch to queue");
-				queue.add(paths);
-				if (!syncStop())
-				{ // make sure to reset queue resume data if we've gone a full run without problems
-					ht.saveQueueData(0, 0);
-				}
-				else
-				{ // save resume data otherwise
-					ht.saveQueueData(rownum, fileid);
-				}
-				paths.clear(); // empty the current batch now that they're safely stored
-			}
-			res.close();
-			queryCompiled.close();
-		} catch (SQLException e)
-		{
-			logger.error(e.getMessage(), e);
-			throw new JobExecutionException(e);
-		} catch (ConnectionNotAvailableException e)
-		{
-			logger.error(e.getMessage(), e);
-			throw new JobExecutionException(e);
+			lastQueueFileid = ht.getLastQueueFileid();
+			queueOffset = ht.getQueueOffset();
+			logger.debug("Queue Resume Offset: " + queueOffset + " File ID: " + lastQueueFileid);
 		} catch (InaccessibleDbException e)
 		{
-			logger.error("Could not access database, stopping index job.", e);
+			logger.error("Unable to get queue resume data.", e);
 			throw new JobExecutionException(e);
-		} finally
-		{
-			if (conn != null)
-				cm.releaseConnection(conn);
 		}
-		if (syncStop()) return true;
+
+		// spawn the thread that scans all files to generate the queue
+		ResumableScanInfo info = new ResumableScanInfo("bblearn_cms_doc.xyf_urls", dataKeys, "file_id", lastQueueFileid, queueOffset);
+		ResumableScan scanner = new ResumableScan(info, processor);
+		
+		Thread genQueueThread = new Thread(scanner);
+		genQueueThread.start();
+		
+		// monitor the thread for errors and notify it if the job needs to stop
+		while (genQueueThread.isAlive())
+		{
+			try
+			{
+				Thread.sleep(1000); // check for error every second
+				if (scanner.hasError())
+				{
+					throw new JobExecutionException(scanner.getError());
+				}
+				if (syncStop())
+				{ // notify the job that we need to stop
+					genQueueThread.interrupt();
+					genQueueThread.join();
+					return true;
+				}
+			} catch (InterruptedException e)
+			{
+				logger.debug("Interrupt Exception", e);
+			}
+		}
+		return false;
+	}
+	
+	/**
+	 * Scans existing entries in the files database, remove those that have been tagged.
+	 * @return true if stopped by interrupt, false otherwise
+	 * @throws JobExecutionException 
+	 */
+	private boolean updateIndex() throws JobExecutionException
+	{
 		return false;
 	}
 	
