@@ -41,7 +41,7 @@ public class IndexGenerator
 		{
 			if (fileIsTagged(file))
 			{
-				return;
+				continue;
 			}
 			// the file has not been copyright tagged, store it in the database
 			CSAccessControlEntry[] accesses = file.getAccessControlEntries();
