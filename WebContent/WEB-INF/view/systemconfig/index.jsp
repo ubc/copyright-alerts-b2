@@ -15,8 +15,8 @@
 jQuery.noConflict();
 </script>
 <script src="${ctx.request.contextPath}/static/jqcron/jqCron.min.js"></script>
-<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.0-rc.2/angular.min.js"></script>
-<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.0-rc.2/angular-resource.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular-resource.min.js"></script>
 <script src="${ctx.request.contextPath}/static/systemconfig/systemconfig.js"></script>
 
 <div id="alertsysconfig" ng-app="SystemConfigModule">
