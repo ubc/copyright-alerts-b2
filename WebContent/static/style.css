@@ -65,3 +65,11 @@
   list-style: decimal inside; }
 #alertsysconfig .templateform {
   margin-top: 0.5em; }
+#alertsysconfig .resetDatabase {
+  margin-top: 70%;
+  font-size: 80%;
+  text-align: right; }
+  #alertsysconfig .resetDatabase input {
+    margin-bottom: 1em; }
+  #alertsysconfig .resetDatabase p {
+    color: red; }

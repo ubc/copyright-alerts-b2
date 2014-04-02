@@ -2,10 +2,25 @@ package ca.ubc.ctlt.copyalerts.JsonIntermediate;
 
 public class ScheduleConfiguration
 {
-	public String enable = "false";
-	public String cron = "0 1 * * 6";
-	public boolean limit = false;
-	public int hours = 1;
-	public int minutes = 0;
-	public SyncStatus syncstatus = new SyncStatus();
+	public String enable;
+	public String cron;
+	public boolean limit;
+	public int hours;
+	public int minutes;
+	public SyncStatus syncstatus;
+	
+	public ScheduleConfiguration()
+	{
+		reset();
+	}
+	
+	public void reset()
+	{
+		enable = "false";
+		cron = "0 1 * * 6";
+		limit = false;
+		hours = 1;
+		minutes = 0;
+		syncstatus = new SyncStatus();
+	}
 }

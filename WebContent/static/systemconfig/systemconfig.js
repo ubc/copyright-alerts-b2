@@ -36,6 +36,31 @@ Services.factory('Host',
 
 var SystemConfigModule = angular.module('SystemConfigModule', ['SystemConfigServices']);
 
+Services.controller(
+	"ResetDatabaseController",
+	function ResetDatabaseController($scope, $timeout, $resource)
+	{
+		$scope.resetdbconfirm = false;
+		$scope.resetmsg = "";
+		$scope.resetService = $resource('/webapps/ubc-copyright-alerts-BBLEARN/systemconfig/resetdb');
+		$scope.resetdb = function()
+		{
+			$scope.resetmsg = "reset";
+			$scope.resetService.get().$promise.then(
+				function(ret)
+				{
+					$timeout(function() { $scope.resetmsg = "success"; }, 500);
+				},
+				function(error)
+				{
+					$timeout(function() { $scope.resetmsg = "error"; }, 500);
+					$timeout(function() { $scope.resetmsg = ""; }, 5000);
+				}
+			);
+		};
+	}
+);
+
 function ScheduleCtrl($scope, $timeout, $http, Schedule, Host) 
 {
 	$scope.loading = true;
@@ -106,7 +131,8 @@ function StatusCtrl($scope, $timeout, Status, Host)
 
 function MetadataIdCtrl($scope, $timeout, MetadataAttributes)
 {
-	$scope.config = MetadataAttributes.get();
+	$scope.loading = true;
+	$scope.config = MetadataAttributes.get(function() { $scope.loading = false; });
 	$scope.saving = "";
 
 	$scope.remove = function (attr) 

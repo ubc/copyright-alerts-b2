@@ -76,6 +76,7 @@ jQuery.noConflict();
 				<span class="savemsg saving" ng-show='saving == "saving"'>Saving...</span>
 				<span class="savemsg success" ng-show="saving == 'success'">Save Successful!</span>
 				<span class="savemsg error" ng-show="saving == 'error'">Error Saving</span>
+				<span class="savemsg error" ng-show="!loading && host.leader == ''">Please Select a Host.</span>
 			</div>
 		</form>
 	</div>
@@ -93,10 +94,36 @@ jQuery.noConflict();
 			<select ng-model="config.selected" ng-options="templateId as templateName for (templateId, templateName) in config.templatesList">
 			</select>
 			<input type="button" ng-click="submit()" value="Set Template" />
+		</form>
+		<div class="savesection">
 			<span class="savemsg saving" ng-show='saving == "saving"'>Saving...</span>
 			<span class="savemsg success" ng-show="saving == 'success'">Save Successful!</span>
 			<span class="savemsg error" ng-show="saving == 'error'">Error Saving</span>
-		</form>
+			<span class="savemsg error" ng-show="!loading && !config.selected">Please Select a Metadata Template.</span>
+		</div>
+
+		<div class="resetDatabase" ng-controller="ResetDatabaseController">
+			<h2>Reset Database</h2>
+			<form>
+				<input type="button" value="Reset Database" ng-click="resetdbconfirm=!resetdbconfirm;"/>
+			</form>
+			<p ng-show="resetdbconfirm">
+				Do you really want to reset the database? 
+				<a ng-click="resetdb(); resetdbconfirm=false;" href="">Yes</a> / 
+				<a ng-click="resetdbconfirm=false;" href="">No</a>
+			</p>
+			<p>
+				<span class="savemsg saving" ng-show='resetmsg == "reset"'>
+					Resetting...
+				</span>
+				<span class="savemsg success" ng-show="resetmsg == 'success'">
+					Reset successful, <strong>please refresh page!</strong>
+				</span>
+				<span class="savemsg error" ng-show="resetmsg == 'error'">
+					Error resetting database.
+				</span>
+			</p>
+		</div>
 	</div>
 </div>
 

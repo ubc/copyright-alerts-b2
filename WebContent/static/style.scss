@@ -139,5 +139,21 @@
 		margin-top: 0.5em;
 	}
 
+	.resetDatabase
+	{
+		margin-top: 70%;
+		font-size: 80%;
+		text-align: right;
+
+		& input
+		{
+			margin-bottom: 1em;
+		}
+		& p
+		{
+			color: red;
+		}
+	}
+
 }
 

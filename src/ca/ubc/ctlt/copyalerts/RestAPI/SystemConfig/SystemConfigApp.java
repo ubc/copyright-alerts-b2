@@ -5,6 +5,7 @@ import org.restlet.Restlet;
 import ca.ubc.ctlt.copyalerts.RestAPI.AuthRouter;
 import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.HostResource;
 import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.MetadataResource;
+import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.ResetResource;
 import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.ScheduleResource;
 import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.StatusResource;
 
@@ -23,6 +24,7 @@ public class SystemConfigApp extends Application
         router.attach("/metadata", MetadataResource.class);
         router.attach("/host", HostResource.class);
         router.attach("/schedule", ScheduleResource.class);
+        router.attach("/resetdb", ResetResource.class);
 
         return router;
     }

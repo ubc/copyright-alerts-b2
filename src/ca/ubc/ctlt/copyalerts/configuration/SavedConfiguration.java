@@ -44,7 +44,6 @@ public class SavedConfiguration
 	
 	private Properties prop = new Properties();
 	private Gson gson = new Gson();
-	private String metadataTemplate = "";
 	private HostsTable hostsTable;
 	
 	// allows easy serialization to json for schedule configurations
@@ -53,8 +52,20 @@ public class SavedConfiguration
 	
 	private SavedConfiguration() 
 	{
+		reset();
+	}
+	
+	public static SavedConfiguration getInstance()
+	{
+		return instance;
+	}
+	
+	public void reset()
+	{
 		try
 		{
+			prop.clear();
+			config.reset();
 			hostsTable = new HostsTable();
 			load();
 		} catch (InaccessibleDbException e)
@@ -68,11 +79,6 @@ public class SavedConfiguration
 			logger.error(e.getMessage(), e);
 			throw new RuntimeException(e);
 		}
-	}
-	
-	public static SavedConfiguration getInstance()
-	{
-		return instance;
 	}
 	
 	/**
@@ -100,7 +106,6 @@ public class SavedConfiguration
 			config.limit = Boolean.parseBoolean(prop.getProperty(LIMIT_CONFIG));
 			config.hours = Integer.parseInt(prop.getProperty(HOURS_CONFIG));
 			config.minutes = Integer.parseInt(prop.getProperty(MINUTES_CONFIG));
-			metadataTemplate = prop.getProperty(TEMPLATE_CONFIG);
 		}
 	}
 	
@@ -112,9 +117,6 @@ public class SavedConfiguration
 	 */
 	private void save() throws InaccessibleDbException, IOException
 	{
-		// need to save it here cause otherwise, the value will be lost when we reserialize prop from schedule json
-		prop.setProperty(TEMPLATE_CONFIG, metadataTemplate);
-
 		StringWriter writer = new StringWriter();
 		prop.store(writer, "Copyright Alerts Configuration");
 		hostsTable.saveConfig(writer.toString());
@@ -132,7 +134,6 @@ public class SavedConfiguration
 		prop.setProperty(LIMIT_CONFIG, Boolean.toString(config.limit));
 		prop.setProperty(HOURS_CONFIG, Integer.toString(config.hours));
 		prop.setProperty(MINUTES_CONFIG, Integer.toString(config.minutes));
-		prop.setProperty(TEMPLATE_CONFIG, "");
 	}
 	
 	/**
@@ -171,7 +172,7 @@ public class SavedConfiguration
 	
 	public String getMetadataTemplate()
 	{
-		return metadataTemplate;
+		return prop.getProperty(TEMPLATE_CONFIG);
 	}
 	
 	/**
@@ -183,7 +184,7 @@ public class SavedConfiguration
 	 */
 	public void saveMetadataTemplate(String template) throws InaccessibleDbException, IOException
 	{
-		metadataTemplate = template;
+		prop.setProperty(TEMPLATE_CONFIG, template);
 		save();
 	}
 	
@@ -263,7 +264,7 @@ public class SavedConfiguration
 	public ArrayList<String> getAttributes() throws PersistenceException
 	{
 		// find form by form ID
-		Id formId = Id.generateId(Form.DATA_TYPE, metadataTemplate);
+		Id formId = Id.generateId(Form.DATA_TYPE, prop.getProperty(TEMPLATE_CONFIG));
 		Form form = CSFormManagerFactory.getInstance().loadFormById(formId);
 
 		ArrayList<String> ret = new ArrayList<String>();
