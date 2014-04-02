@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import org.restlet.data.Status;
 import org.restlet.ext.json.JsonRepresentation;
-import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ServerResource;
 import org.slf4j.Logger;
@@ -14,6 +13,7 @@ import ca.ubc.ctlt.copyalerts.JsonIntermediate.ProcessFiles;
 import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
 import ca.ubc.ctlt.copyalerts.db.FilesTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
+import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
 import ca.ubc.ctlt.copyalerts.indexer.IndexGenerator;
 
 import com.google.gson.Gson;
@@ -21,23 +21,11 @@ import com.google.gson.Gson;
 import blackboard.cms.filesystem.CSContext;
 import blackboard.cms.filesystem.CSEntry;
 import blackboard.cms.filesystem.CSFile;
-import blackboard.data.user.User;
 import blackboard.persist.PersistenceException;
-import blackboard.platform.context.Context;
-import blackboard.platform.context.ContextManagerFactory;
 
 public class ProcessFilesResource extends ServerResource
 {
 	private final static Logger logger = LoggerFactory.getLogger(ProcessFilesResource.class);
-	
-	@Get("json")
-	public JsonRepresentation uselessGet()
-	{
-		Context ctx = ContextManagerFactory.getInstance().getContext();
-		User user = ctx.getUser();
-		logger.debug("UID: " + user.getId().toExternalString());
-		return new JsonRepresentation("hello");
-	}
 	
 	@Post("json")
 	public JsonRepresentation processFiles(JsonRepresentation data)
@@ -73,7 +61,7 @@ public class ProcessFilesResource extends ServerResource
 		}
 		FilesTable ft = new FilesTable();
 
-		if (pf.files.size() > 500) return null; // only allow real time update if <500 files
+		if (pf.files.size() > CSIndexJob.BATCHSIZE) return null; // only allow real time updates if they're not too large
 
 		for (String file : pf.files)
 		{
@@ -88,7 +76,7 @@ public class ProcessFilesResource extends ServerResource
 					try
 					{
 						ft.deleteFile(file);
-						logger.debug("File removed " + file);
+						logger.debug("OnDemandIndexer - File removed " + file);
 					} catch (InaccessibleDbException e)
 					{
 						logger.error(e.getMessage(), e);
