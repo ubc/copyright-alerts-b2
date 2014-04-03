@@ -28,7 +28,7 @@ public class FilesTable
 {
 	private final static Logger logger = LoggerFactory.getLogger(FilesTable.class);
 
-	private final static String TABLENAME = "ubc_ctlt_ca_files";
+	public final static String TABLENAME = "ubc_ctlt_ca_files";
 	private final static int ENTRYPERPAGE = 25;
 	
 	// store mapping of course names to course title, names are id like, title is human readable
@@ -181,6 +181,46 @@ public class FilesTable
 		}
 	}
 	
+	/**
+	 * Given a list of primary keys, remove all files with those primary keys from the table.
+	 * @param filesToRemove
+	 * @throws InaccessibleDbException
+	 */
+	public void deleteFilesByPk1(Set<Long> filesToRemove) throws InaccessibleDbException
+	{
+		Connection conn = null;
+		String deleteQuery = "DELETE FROM "+ TABLENAME +" WHERE pk1=?";
+		try
+		{
+			logger.debug("Batch Deleting Files From Index.");
+			conn = cm.getConnection();
+			// convert the query string into a compiled statement for faster
+			// execution
+			PreparedStatement deleteStmt;
+			deleteStmt = conn.prepareStatement(deleteQuery);
+			// process each file
+			for (long filePk1 : filesToRemove)
+			{
+				deleteStmt.setLong(1, filePk1);
+				deleteStmt.addBatch();
+			}
+			// add all the entries all at once, hopefully it improves performance since it's one query
+			deleteStmt.executeBatch();
+			deleteStmt.close();
+		} catch (SQLException e)
+		{
+			throw new InaccessibleDbException("Couldn't execute query", e);
+		} catch (ConnectionNotAvailableException e)
+		{
+			throw new InaccessibleDbException("Unable to connect to db", e);
+		} finally
+		{
+			if (conn != null)
+				cm.releaseConnection(conn); // MUST release connection or we'll
+											// exhaust connection pool
+		}
+	}
+	
 	public void deleteFile(String path) throws InaccessibleDbException
 	{
 		Connection conn = null;
@@ -205,10 +245,10 @@ public class FilesTable
 	}
 	
 	// Get the number of entries in this table
-	public int getCount() throws InaccessibleDbException
+	public long getCount() throws InaccessibleDbException
 	{
 		Connection conn = null;
-		int ret = 0;
+		long ret = 0;
 
 		try 
 		{
@@ -218,7 +258,7 @@ public class FilesTable
 	        ResultSet res = queryCompiled.executeQuery();
 
 	        res.next();
-        	ret = res.getInt(1);
+        	ret = res.getLong(1);
 
 	        res.close();
 	        queryCompiled.close();

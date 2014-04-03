@@ -30,15 +30,17 @@ public class HostsTable
 	private final static Logger logger = LoggerFactory.getLogger(HostsTable.class);
 	
 	// all the possible values for the "status" field
-	public final static String STATUS_RUNNING_QUEUE = "running queue stage";
-	public final static String STATUS_RUNNING_NEWFILES = "running newfiles stage";
-	public final static String STATUS_RUNNING_UPDATE = "running update stage";
+	public final static String STATUS_RUNNING = "running";
+	public final static String STATUS_STAGE_QUEUE = "queue";
+	public final static String STATUS_STAGE_NEWFILES = "newfiles";
+	public final static String STATUS_STAGE_UPDATE = "update";
 	public final static String STATUS_STOPPED = "stopped";
 	public final static String STATUS_LIMIT = "limit";
 	public final static String STATUS_ERROR = "error";
 	
 	// the column names for the hosts table
 	public final static String STATUS_RUNNING_KEY = "status"; // running status of this host
+	public final static String STATUS_STAGE_KEY = "stage"; // at which stage we're at
 	public final static String STATUS_RUNTIME_KEY = "runtime"; // how long did the last run take
 	public final static String STATUS_START_KEY = "runstart"; // when did the last run start
 	public final static String STATUS_END_KEY = "runend"; // when did the last run end
@@ -48,6 +50,8 @@ public class HostsTable
 	public final static String QUEUE_OFFSET_KEY = "queue_offset"; // number of files the queue generation stage has gone through this run
 	public final static String LAST_QUEUE_FILEID_KEY = "last_queue_fileid"; // what was the last file the queue generator committed
 																			// if 0, then queue generation is finished
+	public final static String FILES_OFFSET_KEY = "files_offset";
+	public final static String LAST_FILES_PK1_KEY = "last_files_pk1";
 
 	private final static String TABLENAME = "ubc_ctlt_ca_hosts";
 	
@@ -377,12 +381,13 @@ public class HostsTable
 			String status = STATUS_STOPPED;
 			Timestamp start = new Timestamp(0);
 			Timestamp end = new Timestamp(0);
+			String stage = STATUS_STAGE_QUEUE;
 
 			// note that there's no order guarantee from just select rownum statements, so have to use the order by subquery
 			// to impose a repeatable order on the return results
 			if (!hostname.isEmpty())
 			{
-				String query = "SELECT "+ STATUS_RUNNING_KEY +", "+ STATUS_START_KEY +", "+ STATUS_END_KEY +" FROM "+ TABLENAME + " WHERE host = ?"; 
+				String query = "SELECT "+ STATUS_RUNNING_KEY +", "+ STATUS_START_KEY +", "+ STATUS_END_KEY + ", " + STATUS_STAGE_KEY + " FROM "+ TABLENAME + " WHERE host = ?"; 
 		        PreparedStatement queryCompiled = conn.prepareStatement(query);
 		        queryCompiled.setString(1, hostname);
 		        ResultSet res = queryCompiled.executeQuery();
@@ -392,6 +397,7 @@ public class HostsTable
 		        	status = res.getString(1);
 		        	start = res.getTimestamp(2);
 		        	end = res.getTimestamp(3);
+		        	stage = res.getString(4);
 		        }
 		        res.close();
 		        queryCompiled.close();
@@ -403,6 +409,7 @@ public class HostsTable
 	        ret.put(STATUS_START_KEY, "-");
 	        ret.put(STATUS_RUNTIME_KEY, "-");
 	        ret.put(STATUS_END_KEY, "-");
+	        ret.put(STATUS_STAGE_KEY, stage);
 	        if (start != null && start.getTime() > 0)
 	        {
 		        ret.put(STATUS_START_KEY, dateFormat.format(start));
@@ -483,17 +490,32 @@ public class HostsTable
 		return getResumeData(LAST_QUEUE_FILEID_KEY);
 	}
 	
+	public void saveFileResumeData(long offset, long pk1) throws InaccessibleDbException
+	{
+		saveResumeData(FILES_OFFSET_KEY, LAST_FILES_PK1_KEY, offset, pk1);
+	}
+	
+	public long getFilesOffset() throws InaccessibleDbException
+	{
+		return getResumeData(FILES_OFFSET_KEY);
+	}
+	
+	public long getLastFilesPk1() throws InaccessibleDbException
+	{
+		return getResumeData(LAST_FILES_PK1_KEY);
+	}
+	
+	public void saveStage(String stage) throws InaccessibleDbException
 	{
 		Connection conn = null;
-		String query = "UPDATE "+ TABLENAME +" SET " + QUEUE_OFFSET_KEY + "=?, " + LAST_QUEUE_FILEID_KEY + "=?";
+		String query = "UPDATE "+ TABLENAME +" SET " + STATUS_STAGE_KEY + "=?";
 		PreparedStatement stmt;
 		try
 		{
 			conn = cm.getConnection();
 			// convert the query string into a compiled statement for faster execution
 			stmt = conn.prepareStatement(query);
-			stmt.setInt(1, queueOffset);
-			stmt.setInt(2, lastQueueFileid);
+			stmt.setString(1, stage);
 			stmt.executeUpdate();
 			stmt.close();
 		} catch (SQLException e)
@@ -510,21 +532,20 @@ public class HostsTable
 		}
 	}
 	
-	public int getQueueOffset() throws InaccessibleDbException
+	public String getStage() throws InaccessibleDbException
 	{
 		Connection conn = null;
-		String query = "SELECT "+ QUEUE_OFFSET_KEY + " FROM " + TABLENAME +" WHERE host=?";
+		String query = "SELECT "+ STATUS_STAGE_KEY + " FROM " + TABLENAME +" WHERE leader='1'";
 		PreparedStatement stmt;
-		int ret = 0;
+		String ret = "";
 		try
 		{
 			conn = cm.getConnection();
 			// convert the query string into a compiled statement for faster execution
 			stmt = conn.prepareStatement(query);
-			stmt.setString(1, getLeader());
 			ResultSet res = stmt.executeQuery();
 			res.next();
-			ret = res.getInt(1);
+			ret = res.getString(1);
 			stmt.close();
 		} catch (SQLException e)
 		{

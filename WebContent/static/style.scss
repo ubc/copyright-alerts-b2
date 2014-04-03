@@ -62,7 +62,7 @@
 	{
 		&.running, &.notrunning, &.runerror, &.unavailable, &.limit
 		{
-			width: 18em;
+			width: 15em;
 			margin-top: 0em;
 			margin-left: 1em;
 			padding-top: 0.3em;
@@ -90,6 +90,24 @@
 		&.limit
 		{
 			background: royalblue;
+		}
+	}
+
+	.stageIndicator
+	{
+		& li
+		{
+			width: 15em;
+			margin-left: 1em;
+			padding-top: 0.3em;
+			padding-bottom: 0.3em;
+			color: #aaa;
+			text-align: center;
+		}
+		& li.currentStage
+		{
+			color: #333;
+			font-weight: bold;
 		}
 	}
 

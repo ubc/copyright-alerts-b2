@@ -26,7 +26,6 @@ import static org.quartz.DateBuilder.*;
 import static org.quartz.impl.matchers.GroupMatcher.*;
 
 import blackboard.cms.filesystem.CSContext;
-import blackboard.cms.filesystem.CSEntry;
 import blackboard.cms.filesystem.CSFile;
 import blackboard.db.ConnectionNotAvailableException;
 import blackboard.persist.PersistenceException;
@@ -34,9 +33,11 @@ import blackboard.platform.vxi.service.VirtualSystemException;
 
 import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
 import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
+import ca.ubc.ctlt.copyalerts.db.FilesTable;
 import ca.ubc.ctlt.copyalerts.db.HostsTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 import ca.ubc.ctlt.copyalerts.db.QueueTable;
+import ca.ubc.ctlt.copyalerts.db.operations.FilesTableUpdateScanProcessor;
 import ca.ubc.ctlt.copyalerts.db.operations.QueueScanProcessor;
 import ca.ubc.ctlt.copyalerts.db.operations.ResumableScan;
 import ca.ubc.ctlt.copyalerts.db.operations.ResumableScanInfo;
@@ -45,7 +46,7 @@ import ca.ubc.ctlt.copyalerts.db.operations.ScanProcessor;
 @DisallowConcurrentExecution
 public class CSIndexJob implements InterruptableJob, TriggerListener
 {
-	public final static int BATCHSIZE = 100;
+	public final static int BATCHSIZE = 500;
 
 	private final static Logger logger = LoggerFactory.getLogger(CSIndexJob.class);
 	
@@ -98,7 +99,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		try
 		{
 			// Save the fact that we've started running
-			updateRunningStatus(HostsTable.STATUS_RUNNING_QUEUE);
+			updateRunningStatus(HostsTable.STATUS_RUNNING);
 			// load configuration
 			config = SavedConfiguration.getInstance();
 		} catch (InaccessibleDbException e)
@@ -235,142 +236,58 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	 */
 	private boolean indexer(SavedConfiguration config) throws JobExecutionException
 	{
-		// run actual job
-		// part 1, try generating the queue
-		QueueTable queue;
-		logger.info("Queue Generation Start");
-		
-		ArrayList<String> paths = new ArrayList<String>();
-		// we're either going to continue processing a previously generated queue or have to generate a new queue entirely.
-		// assume that we're continuing processing a previously generated queue for now
 		try
 		{
-			queue = new QueueTable();
-
-			int lastQueueFileid = ht.getLastQueueFileid(); // should be greater than 0 if queue generation got interrupted
-			paths = queue.load();
-			if (paths.isEmpty() || lastQueueFileid > 0)
+			String stage = ht.getStage();
+			// Stage 1: Queue Generation
+			if (stage.equals(HostsTable.STATUS_STAGE_QUEUE))
 			{
-				// load data into the queue table
-				if (generateQueue())
-				{
+				if (stageGenerateQueue())
+				{ // stopped by interrupt, so we stop here
 					return true;
 				}
-				// now we can process the paths from the start
-				paths = queue.load();
-				logger.debug("Generated new queue.");
+				else
+				{ // no interrupts encountered and queue generation completed successfully, advance to next stage.
+					ht.saveStage(HostsTable.STATUS_STAGE_NEWFILES);
+					stage = HostsTable.STATUS_STAGE_NEWFILES;
+				}
 			}
-			else
+			// the next two stages needs an index generator
+			IndexGenerator indexGen = new IndexGenerator(config.getAttributes());
+			// Stage 2: Add New Files From Queue
+			if (stage.equals(HostsTable.STATUS_STAGE_NEWFILES))
 			{
-				logger.debug("Continue with previously generated queue.");
+				if (stageAddNewFiles(indexGen))
+				{ // stopped by interrupt, halt here
+					return true;
+				}
+				else
+				{ // advance to next next stage
+					ht.saveStage(HostsTable.STATUS_STAGE_UPDATE);
+					stage = HostsTable.STATUS_STAGE_UPDATE;
+				}
 			}
-		} catch (InaccessibleDbException e1)
-		{
-			logger.error("Could not access database, stopping index job.", e1);
-			throw new JobExecutionException(e1);
-		}
-		// make sure not to execute next part if we're supposed to halt
-		logger.info("Queue Generation Done");
-		if (syncStop())
-		{
-			return true;
-		}
-		// part 2, go through the queue and check each file's metadata
-		logger.info("Check Metadata Start");
-		IndexGenerator indexGen;
-		try
-		{
-			indexGen = new IndexGenerator(config.getAttributes());
-		} catch (PersistenceException e)
-		{
-			logger.error("Could not get metadata template attributes.", e);
-			throw new JobExecutionException(e);
-		}
-		// update running status
-		try
-		{
-			updateRunningStatus(HostsTable.STATUS_RUNNING_NEWFILES);
+			// Stage 3: Update Existing Index
+			if (stage.equals(HostsTable.STATUS_STAGE_UPDATE))
+			{
+				if (stageUpdateIndex(indexGen))
+				{ // stopped by interrupt, halt here
+					return true;
+				}
+				else
+				{ // reset stage system back to first stage
+					ht.saveStage(HostsTable.STATUS_STAGE_QUEUE);
+				}
+			}
 		} catch (InaccessibleDbException e)
 		{
-			logger.error("Could not reset the database.", e);
+			logger.error("Could not access database, stopping index job.", e);
 			throw new JobExecutionException(e);
-		}
-		while (!paths.isEmpty())
+		} catch (PersistenceException e)
 		{
-			logger.debug("Copyright Alerts Indexing: " + paths.get(0));
-			ArrayList<CSFile> filesBatch = new ArrayList<CSFile>();
-			for (String p : paths)
-			{
-				CSContext ctx = CSContext.getContext();
-				// Give ourself permission to do anything in the Content Collections.
-				// Must do this cause we don't have a real request context that many of the CS API calls
-				// require when you're not a superuser.
-				ctx.isSuperUser(true);
-				// Retrieve file entry
-				CSEntry entry = ctx.findEntry(p);
-				if (entry == null)
-				{
-					logger.info("Non-existent file: " + p);
-					continue;
-				}
-				if (!(entry instanceof CSFile))
-				{
-					logger.info("Skipping directory, Path: " + p);
-					continue;
-				}
-				CSFile file = (CSFile) entry;
-				filesBatch.add(file);
-				// Retrieve metadata
-				try
-				{
-					if (filesBatch.size() >= BATCHSIZE)
-					{
-						indexGen.process(filesBatch);
-						filesBatch.clear();
-					}
-				} catch (PersistenceException e)
-				{
-					logger.error("Could not access BB database, stopping index job.", e);
-					throw new JobExecutionException(e);
-				} catch (InaccessibleDbException e)
-				{
-					logger.error("Could not access database, stopping index job.", e);
-					throw new JobExecutionException(e);
-				}
-			}
-			if (!filesBatch.isEmpty())
-			{
-				try
-				{
-					indexGen.process(filesBatch);
-				} catch (PersistenceException e)
-				{
-					logger.error("Could not access BB database, stopping index job.", e);
-					throw new JobExecutionException(e);
-				} catch (InaccessibleDbException e)
-				{
-					logger.error("Could not access database, stopping index job.", e);
-					throw new JobExecutionException(e);
-				}
-			}
-			
-
-			// load next batch of files
-			try
-			{
-				queue.pop();
-				paths = queue.load();
-			} catch (InaccessibleDbException e)
-			{
-				logger.error("Could not access database, stopping index job.", e);
-				throw new JobExecutionException(e);
-			}
-			if (syncStop())
-			{
-				return true;
-			}
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-		logger.info("Check Metadata Done");
 		return false;
 	}
 	
@@ -381,16 +298,17 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	 * @return
 	 * @throws JobExecutionException 
 	 */
-	private boolean generateQueue() throws JobExecutionException
+	private boolean stageGenerateQueue() throws JobExecutionException
 	{
+		logger.debug("Queue Generation Start");
 		ScanProcessor processor = new QueueScanProcessor(ht);
 		// set the column names for the data that the processor wants
 		List<String> dataKeys = new ArrayList<String>();
 		dataKeys.add("full_path");
 		
 		// load queue resume data
-		int lastQueueFileid = 0;
-		int queueOffset = 0;
+		long lastQueueFileid = 0;
+		long queueOffset = 0;
 		try
 		{
 			lastQueueFileid = ht.getLastQueueFileid();
@@ -430,6 +348,75 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				logger.debug("Interrupt Exception", e);
 			}
 		}
+		logger.debug("Queue Generation End");
+		return false;
+	}
+	
+	private boolean stageAddNewFiles(IndexGenerator indexGen) throws JobExecutionException
+	{
+		logger.info("Check Metadata Start");
+		List<String> paths;
+		QueueTable queue = new QueueTable();
+		try
+		{
+			paths = queue.load();
+			ArrayList<CSFile> filesBatch = new ArrayList<CSFile>();
+			while (!paths.isEmpty())
+			{
+				logger.debug("Copyright Alerts Indexing: " + paths.get(0));
+				for (String p : paths)
+				{
+					CSContext ctx = CSContext.getContext();
+					// Give ourself permission to do anything in the Content
+					// Collections.
+					// Must do this cause we don't have a real request context
+					// that many of the CS API calls
+					// require when you're not a superuser.
+					ctx.isSuperUser(true);
+					// Retrieve file entry
+					CSFile file = indexGen.getCSFileFromPath(p);
+					if (file == null)
+						continue; // skip, not a valid file path
+					filesBatch.add(file);
+					// Retrieve metadata
+					if (filesBatch.size() >= BATCHSIZE)
+					{
+						indexGen.process(filesBatch);
+						filesBatch.clear();
+						if (syncStop())
+						{
+							break;
+						}
+					}
+				}
+
+				// load next batch of files
+				queue.pop();
+				paths = queue.load();
+				if (syncStop())
+				{
+					break;
+				}
+			}
+			if (!filesBatch.isEmpty())
+			{
+				indexGen.process(filesBatch);
+				filesBatch.clear();
+			}
+			if (syncStop())
+			{
+				return true;
+			}
+		} catch (PersistenceException e)
+		{
+			logger.error("Could not save to database.", e);
+			throw new JobExecutionException(e);
+		} catch (InaccessibleDbException e)
+		{
+			logger.error("Could not read from database.", e);
+			throw new JobExecutionException(e);
+		}
+		logger.info("Check Metadata Done");
 		return false;
 	}
 	
@@ -438,8 +425,56 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	 * @return true if stopped by interrupt, false otherwise
 	 * @throws JobExecutionException 
 	 */
-	private boolean updateIndex() throws JobExecutionException
+	private boolean stageUpdateIndex(IndexGenerator indexGen) throws JobExecutionException
 	{
+		logger.debug("Starting Update Stage.");
+		ScanProcessor processor = new FilesTableUpdateScanProcessor(indexGen, ht);
+		// set the column names for the data that the processor wants
+		List<String> dataKeys = new ArrayList<String>();
+		dataKeys.add("filepath");
+		
+		// load queue resume data
+		long lastFilesPk1 = 0;
+		long filesOffset = 0;
+		try
+		{
+			lastFilesPk1 = ht.getLastFilesPk1();
+			filesOffset = ht.getFilesOffset();
+			logger.debug("Files Resume Offset: " + filesOffset + " File ID: " + lastFilesPk1);
+		} catch (InaccessibleDbException e)
+		{
+			logger.error("Unable to get queue resume data.", e);
+			throw new JobExecutionException(e);
+		}
+
+		// spawn the thread that scans all files to generate the queue
+		ResumableScanInfo info = new ResumableScanInfo(FilesTable.TABLENAME, dataKeys, "pk1", lastFilesPk1, filesOffset);
+		ResumableScan scanner = new ResumableScan(info, processor);
+		
+		Thread genQueueThread = new Thread(scanner);
+		genQueueThread.start();
+		
+		// monitor the thread for errors and notify it if the job needs to stop
+		while (genQueueThread.isAlive())
+		{
+			try
+			{
+				Thread.sleep(1000); // check for error every second
+				if (scanner.hasError())
+				{
+					throw new JobExecutionException(scanner.getError());
+				}
+				if (syncStop())
+				{ // notify the job that we need to stop
+					genQueueThread.interrupt();
+					genQueueThread.join();
+					return true;
+				}
+			} catch (InterruptedException e)
+			{
+				logger.debug("Interrupt Exception", e);
+			}
+		}
 		return false;
 	}
 	
@@ -477,7 +512,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		{
 			if (stop)
 			{
-				logger.info("Indexing stopping");
 				return true;
 			}
 		}

@@ -42,10 +42,16 @@ no way to get the raw primary key for entries. You have to manually parse the pr
 		</value-constraint>
 	</column>
 	<column name="status" data-type="varchar(255)" nullable="false" default="'stopped'" comment="whether the node is running the indexing job right now" />
+	<column name="stage" data-type="varchar(255)" nullable="false" default="'queue'" comment="which stage of the indexing job should be executing right now" />
+
 	<column name="queue_offset" data-type="int" nullable="false" default="0" comment="how many files did the queue generator go through before stopping" />
 	<column name="last_queue_fileid" data-type="int" nullable="false" default="0"
-		comment="the id of the file last processed by the queue generator, if 0, then
-		queue generator should start from beginning" />
+		comment="the id of the file last processed by the queue generator, if 0, then queue generator should start from beginning" />
+
+	<column name="files_offset" data-type="int" nullable="false" default="0" comment="how many files did the files updater go through before stopping" />
+	<column name="last_files_pk1" data-type="int" nullable="false" default="0"
+		comment="the id of the file last processed by the files updater, if 0, then files updater should start from beginning" />
+
 	<column name="runstart" data-type="timestamp" default="''" comment="when did the indexing job start" />
 	<column name="runend" data-type="timestamp" default="''" comment="when did the indexing job stop" />
 	<!-- B2 config files are NOT reliably shared across nodes, so, as a quick fix, we'll just dump the config file in the db -->

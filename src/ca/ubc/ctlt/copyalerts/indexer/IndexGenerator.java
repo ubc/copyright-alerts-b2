@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import ca.ubc.ctlt.copyalerts.db.FilesTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 import blackboard.cms.filesystem.CSAccessControlEntry;
+import blackboard.cms.filesystem.CSContext;
+import blackboard.cms.filesystem.CSEntry;
 import blackboard.cms.filesystem.CSEntryMetadata;
 import blackboard.cms.filesystem.CSFile;
 import blackboard.data.course.Course;
@@ -28,10 +30,12 @@ public class IndexGenerator
 	// class to retrieve file ownership information and prep it for output into sql database
 	private ArrayList<String> attributes;
 	private FilesTable ft = new FilesTable();
+	private CSContext ctx = CSContext.getContext();
 	
 	public IndexGenerator(ArrayList<String> attributes)
 	{
 		this.attributes = attributes;
+		ctx.isSuperUser(true);
 	}
 	
 	public void process(List<CSFile> files) throws PersistenceException, InaccessibleDbException
@@ -98,6 +102,29 @@ public class IndexGenerator
 			}
 		}
 		return false;
+	}
+	
+	/**
+	 * Given a path, return the CSFile entry if the path is a valid file.
+	 * 
+	 * @param path
+	 * @return CSFile if path is a valid file, null otherwise.
+	 */
+	public CSFile getCSFileFromPath(String path)
+	{
+		CSEntry entry = ctx.findEntry(path);
+		if (entry == null)
+		{
+			logger.info("Non-existent file: " + path);
+			return null;
+		}
+		if (!(entry instanceof CSFile))
+		{
+			logger.info("Skipping directory, Path: " + path);
+			return null;
+		}
+		CSFile file = (CSFile) entry;
+		return file;
 	}
 	
 	/**

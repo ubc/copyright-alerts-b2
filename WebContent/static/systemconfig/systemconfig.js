@@ -36,7 +36,7 @@ Services.factory('Host',
 
 var SystemConfigModule = angular.module('SystemConfigModule', ['SystemConfigServices']);
 
-Services.controller(
+SystemConfigModule.controller(
 	"ResetDatabaseController",
 	function ResetDatabaseController($scope, $timeout, $resource)
 	{
@@ -100,7 +100,7 @@ function StatusCtrl($scope, $timeout, Status, Host)
 		Status.get(
 			function(ret)
 			{
-				if ($scope.status === undefined || ret.status != $scope.status.status)
+				if ($scope.status === undefined || ret.status != $scope.status.status || ret.stage != $scope.status.stage)
 				{ // prevent flickering by only updating if there's a change
 					$scope.status = ret;
 				}

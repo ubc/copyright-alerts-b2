@@ -23,15 +23,18 @@ jQuery.noConflict();
 	<div class="section" ng-controller="StatusCtrl">
 		<h1>Status</h1>
 		<div ng-switch on="status.status">
-		<h3 class="running" ng-switch-when="running queue stage">Running: Generating Queue</h3>
-		<h3 class="running" ng-switch-when="running newfiles stage">Running: Adding New Files</h3>
-		<h3 class="running" ng-switch-when="running update stage">Running: Updating Existing Files</h3>
+		<h3 class="running" ng-switch-when="running">Running</h3>
 		<h3 class="limit" ng-switch-when="limit">Time Limit Reached</h3>
 		<h3 class="notrunning" ng-switch-when="stopped">Stopped</h3>
 		<h3 class="runerror" ng-switch-when="error">Error During Run</h3>
 		<h3 class="unavailable" ng-switch-default>Status Not Available</h3>
 		</div>
-		<!-- doesn't work in a multi-node environment
+		<ul class="stageIndicator">
+			<li ng-class="{currentStage: (status.stage == 'queue')}">Queue Generation Stage</li>
+			<li ng-class="{currentStage: (status.stage == 'newfiles')}">Adding New Files Stage</li>
+			<li ng-class="{currentStage: (status.stage == 'update')}">Update Existing Index Stage</li>
+		</ul>
+		<!-- doesn't work in a multi-node environment'
 		<input class="killjob" ng-show="status.status == 'running'" type="button" ng-click="stop()" value="Stop Current Running Job" />
 		-->
 		<h2>Progress</h2>
@@ -108,7 +111,7 @@ jQuery.noConflict();
 				<input type="button" value="Reset Database" ng-click="resetdbconfirm=!resetdbconfirm;"/>
 			</form>
 			<p ng-show="resetdbconfirm">
-				Do you really want to reset the database? 
+				Do you really want to reset the database?<br />
 				<a ng-click="resetdb(); resetdbconfirm=false;" href="">Yes</a> / 
 				<a ng-click="resetdbconfirm=false;" href="">No</a>
 			</p>

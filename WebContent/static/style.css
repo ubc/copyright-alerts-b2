@@ -44,6 +44,16 @@
   color: black; }
 #alertsysconfig h3.limit {
   background: royalblue; }
+#alertsysconfig .stageIndicator li {
+  width: 15em;
+  margin-left: 1em;
+  padding-top: 0.3em;
+  padding-bottom: 0.3em;
+  color: #aaa;
+  text-align: center; }
+#alertsysconfig .stageIndicator li.currentStage {
+  color: #333;
+  font-weight: bold; }
 #alertsysconfig .killjob {
   margin-left: 2em;
   padding: 0.2em; }
