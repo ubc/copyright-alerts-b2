@@ -20,12 +20,12 @@ public class ResumableScanInfo
 	/** The name of the column used as the unique id for identifying the last item. */
 	private String rowIdName;
 	/** The actual value of the unique id for identifying the last item. */
-	private int rowIdVal;
+	private long rowIdVal;
 	/** The location (offset from the first entry in the table) at the time of the last item */
-	private int rowOffset;
+	private long rowOffset;
 
 	public ResumableScanInfo(String tableName, List<String> dataKeys,
-			String rowIdName, int rowIdVal, int rowOffset)
+			String rowIdName, long rowIdVal, long rowOffset)
 	{
 		super();
 		this.tableName = tableName;
@@ -39,11 +39,11 @@ public class ResumableScanInfo
 	{
 		return rowIdName;
 	}
-	public int getRowIdVal()
+	public long getRowIdVal()
 	{
 		return rowIdVal;
 	}
-	public int getRowOffset()
+	public long getRowOffset()
 	{
 		return rowOffset;
 	}

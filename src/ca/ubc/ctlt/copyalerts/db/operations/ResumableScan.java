@@ -49,8 +49,8 @@ public class ResumableScan implements Runnable
 			conn.setAutoCommit(false); // need to disable autocommit to enable
 										// fetching only a small number of rows at once necessary to keep memory usage low
 			
-			int lastQueueFileid = info.getRowIdVal();
-			int queueOffset = 0; 
+			long lastQueueFileid = info.getRowIdVal();
+			long queueOffset = 0; 
 			if (lastQueueFileid != 0)
 			{ // queue generation was interrupted, let's try to resume
 				// find out where the last file id we saw is at
@@ -59,14 +59,14 @@ public class ResumableScan implements Runnable
 								" FROM "+ info.getTableName() +" ORDER BY "+ info.getRowIdKey() +
 								") WHERE "+ info.getRowIdKey() +"=?";
 				PreparedStatement stmt = conn.prepareStatement(query);
-				stmt.setInt(1, lastQueueFileid);
+				stmt.setLong(1, lastQueueFileid);
 
 				long startTime = System.currentTimeMillis();
 				ResultSet res = stmt.executeQuery();
 				if (res.next())
 				{ // good, file wasn't deleted, set our offset to it
 					logger.debug("Resuming from offset of last processed file.");
-					queueOffset = res.getInt(1);
+					queueOffset = res.getLong(1);
 				}
 				else
 				{ // file was deleted! have to use the fall back option
@@ -126,20 +126,21 @@ public class ResumableScan implements Runnable
 				}
 				processor.scan(result);
 				
-				// Note: The interrupted flag is cleared by calling interrupted(), so much store it
+				// Note: The interrupted flag is cleared by calling interrupted(), so must store it
 				isInterrupted = Thread.interrupted();
 				if (count >= CSIndexJob.BATCHSIZE && isInterrupted)
 				{
+					logger.debug("ResumableScan Interrupted.");
 					count = 0;
 					break;
 				}
 				count++;
 			}
 			// make sure the last batch of files are added
-			logger.debug("Interrupt Status: " + isInterrupted);
 			processor.cleanup(isInterrupted);
 			res.close();
 			queryCompiled.close();
+			conn.commit(); // we're running only selects, but just in case
 		} catch (SQLException e)
 		{
 			logger.error(e.getMessage(), e);

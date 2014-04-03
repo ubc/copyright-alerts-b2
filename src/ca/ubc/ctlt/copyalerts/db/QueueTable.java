@@ -33,10 +33,6 @@ public class QueueTable
 		// Not sure if cm can be made into a private field, but it looks like connections have to be released or Oracle
 		// will not be happy
 		Connection conn = null;
-		// WARNING:
-		// For some reason, batch operations instantly crashes the Oracle listener, so we're
-		// not going to use batch operations and hope that we don't lose too much speed over this.
-		// TODO: Revisit batch operations later when I have more time
 		String query = "insert into "+ TABLENAME +" (pk1, filepath) values ("+ TABLENAME +"_seq.nextval, ?)";
 		PreparedStatement stmt;
 		try
@@ -148,10 +144,10 @@ public class QueueTable
 	}
 	
 	// Get the number of entries in this table
-	public int getCount() throws InaccessibleDbException
+	public long getCount() throws InaccessibleDbException
 	{
 		Connection conn = null;
-		int ret = 0;
+		long ret = 0;
 
 		try 
 		{
@@ -161,7 +157,7 @@ public class QueueTable
 	        ResultSet res = queryCompiled.executeQuery();
 
 	        res.next();
-        	ret = res.getInt(1);
+        	ret = res.getLong(1);
 
 	        res.close();
 	        queryCompiled.close();

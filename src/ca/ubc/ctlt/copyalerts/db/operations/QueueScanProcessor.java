@@ -41,8 +41,8 @@ public class QueueScanProcessor extends ScanProcessor
 	 * Keeps track of resume data for this scan.
 	 * @param hoststable
 	 */
-	private int rownum = 0;
-	private int file_id = 0;
+	private long rownum = 0;
+	private long file_id = 0;
 	
 
 	public QueueScanProcessor(HostsTable hoststable)
@@ -60,8 +60,8 @@ public class QueueScanProcessor extends ScanProcessor
 	public void scan(Map<String, String> result) throws InaccessibleDbException
 	{
 		String path = result.get("full_path");
-		rownum = Integer.parseInt(result.get("rownum"));
-		file_id = Integer.parseInt(result.get("file_id"));
+		rownum = Long.parseLong(result.get("rownum"));
+		file_id = Long.parseLong(result.get("file_id"));
 		// make sure that we only have course files and no xid- files
 		// it seems that xid- files are not listed in the xyf_urls table, 
 		// but better be safe with an explicit check
@@ -79,7 +79,7 @@ public class QueueScanProcessor extends ScanProcessor
 		}
 		if (batchCount >= CSIndexJob.BATCHSIZE) 
 		{
-			hoststable.saveQueueData(rownum, file_id);
+			hoststable.saveQueueResumeData(rownum, file_id);
 			batchCount = 0;
 		}
 		batchCount++;
@@ -97,12 +97,12 @@ public class QueueScanProcessor extends ScanProcessor
 		if (wasInterrupted)
 		{ // save resume data since we weren't finished
 			logger.debug("Saving Resume Data - Offset: " + rownum + " File ID: " + file_id);
-			hoststable.saveQueueData(rownum, file_id);
+			hoststable.saveQueueResumeData(rownum, file_id);
 		}
 		else
 		{ // make sure to reset queue resume data if we've gone a full run without problems
 			logger.debug("Reset Resume Data - Offset: " + rownum + " File ID: " + file_id);
-			hoststable.saveQueueData(0, 0);
+			hoststable.saveQueueResumeData(0, 0);
 		}
 		
 	}

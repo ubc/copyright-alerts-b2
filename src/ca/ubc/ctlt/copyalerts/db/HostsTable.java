@@ -468,7 +468,21 @@ public class HostsTable
 	 * @param lastQueueFileid - The id of the last file we processed.
 	 * @throws InaccessibleDbException
 	 */
-	public void saveQueueData(int queueOffset, int lastQueueFileid) throws InaccessibleDbException
+	public void saveQueueResumeData(long queueOffset, long lastQueueFileid) throws InaccessibleDbException
+	{
+		saveResumeData(QUEUE_OFFSET_KEY, LAST_QUEUE_FILEID_KEY, queueOffset, lastQueueFileid);
+	}
+	
+	public long getQueueOffset() throws InaccessibleDbException
+	{
+		return getResumeData(QUEUE_OFFSET_KEY);
+	}
+
+	public long getLastQueueFileid() throws InaccessibleDbException
+	{
+		return getResumeData(LAST_QUEUE_FILEID_KEY);
+	}
+	
 	{
 		Connection conn = null;
 		String query = "UPDATE "+ TABLENAME +" SET " + QUEUE_OFFSET_KEY + "=?, " + LAST_QUEUE_FILEID_KEY + "=?";
@@ -526,22 +540,63 @@ public class HostsTable
 		}
 		return ret;
 	}
-
-	public int getLastQueueFileid() throws InaccessibleDbException
+	
+	/**
+	 * Generalized method for saving resume data.
+	 * @param offsetKey
+	 * @param idKey
+	 * @param offset
+	 * @param id
+	 * @throws InaccessibleDbException
+	 */
+	private void saveResumeData(String offsetKey, String idKey, long offset, long id) throws InaccessibleDbException
 	{
 		Connection conn = null;
-		String query = "SELECT "+ LAST_QUEUE_FILEID_KEY + " FROM " + TABLENAME +" WHERE host=?";
+		String query = "UPDATE "+ TABLENAME +" SET " + offsetKey + "=?, " + idKey + "=?";
 		PreparedStatement stmt;
-		int ret = 0;
 		try
 		{
 			conn = cm.getConnection();
 			// convert the query string into a compiled statement for faster execution
 			stmt = conn.prepareStatement(query);
-			stmt.setString(1, getLeader());
+			stmt.setLong(1, offset);
+			stmt.setLong(2, id);
+			stmt.executeUpdate();
+			stmt.close();
+		} catch (SQLException e)
+		{
+			logger.error(e.getMessage(), e);
+			throw new InaccessibleDbException("Couldn't execute query", e);
+		} catch (ConnectionNotAvailableException e)
+		{
+			throw new InaccessibleDbException("Unable to connect to db", e);
+		}
+		finally
+		{
+			if (conn != null) cm.releaseConnection(conn); // MUST release connection or we'll exhaust connection pool
+		}
+	}
+	
+	/**
+	 * Generalized method for retriving a single resume data file.
+	 * @param fieldKey - name of the column that holdes the data
+	 * @return
+	 * @throws InaccessibleDbException
+	 */
+	private long getResumeData(String fieldKey) throws InaccessibleDbException
+	{
+		Connection conn = null;
+		String query = "SELECT "+ fieldKey + " FROM " + TABLENAME +" WHERE leader='1'";
+		PreparedStatement stmt;
+		long ret = 0;
+		try
+		{
+			conn = cm.getConnection();
+			// convert the query string into a compiled statement for faster execution
+			stmt = conn.prepareStatement(query);
 			ResultSet res = stmt.executeQuery();
 			res.next();
-			ret = res.getInt(1);
+			ret = res.getLong(1);
 			stmt.close();
 		} catch (SQLException e)
 		{
