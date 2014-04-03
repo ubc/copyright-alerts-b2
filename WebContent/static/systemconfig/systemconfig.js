@@ -61,107 +61,124 @@ SystemConfigModule.controller(
 	}
 );
 
-function ScheduleCtrl($scope, $timeout, $http, Schedule, Host) 
-{
-	$scope.loading = true;
-	$scope.saving = "";
-	// the schedule get callback is a hack to get the jqCron plugin to update once the saved data is loaded
-	$scope.schedule = Schedule.get(function (data) { jQuery('#croninput').val(data.cron); jQuery('#croninput').blur(); $scope.loading = false; });
-	$scope.host = Host.get();
-	
-	// callback for saving schedule successful
-	$scope.saveSuccessful = function(ret)
+SystemConfigModule.controller(
+	"ScheduleCtrl",
+	function ScheduleCtrl($scope, $timeout, $http, Schedule, Host) 
 	{
-		if ($scope.saving == "error") return;
-		
-		$timeout(function() { $scope.saving = "success"; }, 500);
-		$timeout(function() { $scope.saving = ""; }, 5000);
-	};
-	
-	// callback for saving schedule failed
-	$scope.saveError = function()
-	{
-		$scope.saving = "error";
-	};
-
-	// save the current schedule to the database
-	$scope.saveSchedule = function() 
-	{
-		$scope.saving = "saving";
-		$scope.schedule.$save($scope.saveSuccessful, $scope.saveError);
-		$scope.host.$save(function() {},$scope.saveError);
-	};
-}
-
-function StatusCtrl($scope, $timeout, Status, Host)
-{
-	$scope.updateStatus = function()
-	{
-		Status.get(
-			function(ret)
+		$scope.loading = true;
+		$scope.saving = "";
+		// the schedule get callback is a hack to get the jqCron plugin to update once the saved data is loaded
+		$scope.schedule = Schedule.get(
+			function (data) 
 			{
-				if ($scope.status === undefined || ret.status != $scope.status.status || ret.stage != $scope.status.stage)
-				{ // prevent flickering by only updating if there's a change
-					$scope.status = ret;
-				}
+				jQuery('#croninput').val(data.cron); 
+				jQuery('#croninput').blur(); 
+				$scope.loading = false; 
 			}
 		);
-	};
-	
-	// poll for a new status update every 10 seconds
-	(function pollStatus() {
-		$scope.updateStatus();
-		$timeout(pollStatus, 10000);
-	})();
-	
-	$scope.host = Host.get();
+		$scope.host = Host.get();
+		
+		// callback for saving schedule successful
+		$scope.saveSuccessful = function(ret)
+		{
+			if ($scope.saving == "error") return;
+			
+			$timeout(function() { $scope.saving = "success"; }, 500);
+			$timeout(function() { $scope.saving = ""; }, 5000);
+		};
+		
+		// callback for saving schedule failed
+		$scope.saveError = function()
+		{
+			$scope.saving = "error";
+		};
 
-	$scope.stop = function()
-	{
-		Status.stop();
-	};
-	
-	$scope.getProgress = function()
-	{
-		$scope.progress = Status.progress();
-	};
-	
-	$scope.getProgress();
-}
+		// save the current schedule to the database
+		$scope.saveSchedule = function() 
+		{
+			$scope.saving = "saving";
+			$scope.schedule.$save($scope.saveSuccessful, $scope.saveError);
+			$scope.host.$save(function() {},$scope.saveError);
+		};
+	}
+);
 
-function MetadataIdCtrl($scope, $timeout, MetadataAttributes)
-{
-	$scope.loading = true;
-	$scope.config = MetadataAttributes.get(function() { $scope.loading = false; });
-	$scope.saving = "";
+SystemConfigModule.controller(
+	"StatusCtrl",
+	function StatusCtrl($scope, $timeout, Status, Host)
+	{
+		$scope.updateStatus = function()
+		{
+			Status.get(
+				function(ret)
+				{
+					if ($scope.status === undefined || ret.status != $scope.status.status || ret.stage != $scope.status.stage)
+					{ // prevent flickering by only updating if there's a change
+						$scope.status = ret;
+					}
+				}
+			);
+		};
+		
+		// poll for a new status update every 10 seconds
+		(function pollStatus() {
+			$scope.updateStatus();
+			$timeout(pollStatus, 10000);
+		})();
+		
+		$scope.host = Host.get();
 
-	$scope.remove = function (attr) 
+		$scope.stop = function()
+		{
+			Status.stop();
+		};
+		
+		$scope.getProgress = function()
+		{
+			$scope.progress = Status.progress();
+		};
+		
+		$scope.getProgress();
+	}
+);
+
+SystemConfigModule.controller(
+	"MetadataIdCtrl",
+	function MetadataIdCtrl($scope, $timeout, MetadataAttributes)
 	{
-		var i = $scope.config.attributes.indexOf(attr);
-		$scope.config.attributes.splice(i, 1);
-		$scope.config.$save();
-	};
-	
-	$scope.saveSuccessful = function()
-	{
-		if ($scope.saving == "error") return;
-		$timeout(function() { $scope.saving = "success"; }, 500);
-		$timeout(function() { $scope.saving = ""; }, 6000);
-	};
-	
-	$scope.saveError = function()
-	{
-		$scope.saving = "error";
-	};
-	
-	
-	$scope.submit = function() 
-	{
-		$scope.saving = "saving";
-		$scope.config.$save($scope.saveSuccessful, $scope.saveError);
-		return false;
-	};
-}
+		$scope.loading = true;
+		$scope.config = MetadataAttributes.get(
+			function() { $scope.loading = false; });
+		$scope.saving = "";
+
+		$scope.remove = function (attr) 
+		{
+			var i = $scope.config.attributes.indexOf(attr);
+			$scope.config.attributes.splice(i, 1);
+			$scope.config.$save();
+		};
+		
+		$scope.saveSuccessful = function()
+		{
+			if ($scope.saving == "error") return;
+			$timeout(function() { $scope.saving = "success"; }, 500);
+			$timeout(function() { $scope.saving = ""; }, 6000);
+		};
+		
+		$scope.saveError = function()
+		{
+			$scope.saving = "error";
+		};
+		
+		
+		$scope.submit = function() 
+		{
+			$scope.saving = "saving";
+			$scope.config.$save($scope.saveSuccessful, $scope.saveError);
+			return false;
+		};
+	}
+);
 
 // Convert the jqCron jQuery plugin into an angularjs directive
 SystemConfigModule.directive('jqcronui',
@@ -197,13 +214,13 @@ SystemConfigModule.directive('jqcronui',
 
 
 // data validation, make sure we're getting an integer
-var INTEGER_REGEXP = /^\-?\d*$/;
 SystemConfigModule.directive('integer',
 	function()
 	{
 		return {
 			link: function(scope, elm, attrs, ctrl)
 			{
+				var INTEGER_REGEXP = /^\-?\d*$/;
 				ctrl.$parsers.unshift(function(viewValue)
 				{
 					if (INTEGER_REGEXP.test(viewValue))

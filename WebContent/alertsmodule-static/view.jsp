@@ -134,56 +134,10 @@
 
 <bbNG:jsBlock>
 <script type="text/javascript">
-
-function FileListCtrl($scope, Files, Status, CourseFiles) 
-{
-	$scope.courseFiles = Files.get(
-		function(val)
-		{ // show the alerts if the user actually has untagged files
-			// workaround for checking if associative array not empty due to IE8
-			// not supporting the easier methods
-			var count = 0;
-			for (course in val.courses)
-			{
-				count++;
-				break;
-			}
-
-			if (count > 0)
-			{ 
-				$('ubc_ctlt_ca_app').removeClassName('hideInitially');
-			}
-		}
-	);
-	$scope.lastupdate = "Retrieving...";
-	$scope.status = Status.get(
-		function(val)
-		{
-			if (val.runend == '-')
-				$scope.lastupdate = "Currently Running";
-			else
-				$scope.lastupdate = val.runend;
-		}
-	);
-	$scope.getPage = function(course, desiredPage)
-	{
-		if (desiredPage < 1 || 
-			desiredPage > course.numPages ||
-			desiredPage == course.page)
-		{ // invalid page request, ignore
-			return;
-		}
-		CourseFiles.get(
-			{courseid: course.courseId, page: desiredPage},
-			function(c) 
-			{
-				c.show = true;
-				$scope.courseFiles.courses[c.courseId] = c;
-			}
-		);
-	};
-};
-
+// Need to keep the loader isolated so it doesn't interfere with other modules
+// built using the same template. To do this, we wrap the entire loader in an
+// anonymous function.
+(function() {
 // Need a separate function to start angularjs cause Blackboard's javascript
 // loader delays loading libraries until the entire page has been loaded.
 function startAngular() 
@@ -211,7 +165,59 @@ function startAngular()
 			return $resource('/webapps/ubc-copyright-alerts-BBLEARN/systemconfig/status/status');
 		}
 	);
-	angular.module('CopyAlertsModule', ['CopyAlertsModuleServices']);
+	var copyAlertsModule = angular.module('CopyAlertsModule', 
+			['CopyAlertsModuleServices']);
+	copyAlertsModule.controller(
+		"FileListCtrl",
+		function FileListCtrl($scope, Files, Status, CourseFiles) 
+		{
+			$scope.courseFiles = Files.get(
+				function(val)
+				{ // show the alerts if the user actually has untagged files
+					// workaround for checking if associative array not empty
+					// due to IE8 not supporting the easier methods
+					var count = 0;
+					for (course in val.courses)
+					{
+						count++;
+						break;
+					}
+
+					if (count > 0)
+					{ 
+						$('ubc_ctlt_ca_app').removeClassName('hideInitially');
+					}
+				}
+			);
+			$scope.lastupdate = "Retrieving...";
+			$scope.status = Status.get(
+				function(val)
+				{
+					if (val.runend == '-')
+						$scope.lastupdate = "Currently Running";
+					else
+						$scope.lastupdate = val.runend;
+				}
+			);
+			$scope.getPage = function(course, desiredPage)
+			{
+				if (desiredPage < 1 || 
+					desiredPage > course.numPages ||
+					desiredPage == course.page)
+				{ // invalid page request, ignore
+					return;
+				}
+				CourseFiles.get(
+					{courseid: course.courseId, page: desiredPage},
+					function(c) 
+					{
+						c.show = true;
+						$scope.courseFiles.courses[c.courseId] = c;
+					}
+				);
+			};
+		}
+	);
 
 	angular.bootstrap($("ubc_ctlt_ca_angular_div"), ['CopyAlertsModule']);
 }
@@ -267,7 +273,7 @@ function libLoader(libs, after)
 libLoader([
 	{
 	"loaded": function() { return typeof angular != 'undefined'}, 
-	"url": "//ajax.googleapis.com/ajax/libs/angularjs/1.2.0-rc.2/angular.js"
+	"url": "//ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular.js"
 	},
 	{
 	"loaded": function() { 
@@ -275,10 +281,12 @@ libLoader([
 			catch(e) { return false; } 
 			return true; 
 		}, 
-	"url": "//ajax.googleapis.com/ajax/libs/angularjs/1.2.0-rc.2/angular-resource.js",
+	"url": "//ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular-resource.js",
 	"after": partial(startAngular)
 	}
 ]);
+// end anonymous function wrapper
+})();
 	
 </script>
 </bbNG:jsBlock>
