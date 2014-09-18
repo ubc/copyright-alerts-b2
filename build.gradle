@@ -1,5 +1,6 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
+apply plugin: 'war'
 
 repositories {
     mavenCentral()
@@ -22,6 +23,10 @@ dependencies {
 			"org.restlet.jee:org.restlet.ext.net:${restletVersion}",
 			"org.restlet.jee:org.restlet.ext.servlet:${restletVersion}",
 			"org.restlet.jee:org.restlet.ext.ssl:${restletVersion}"
+}
+
+task wrapper(type: Wrapper) {
+	gradleVersion = '2.1'
 }
 
 // need to copy the jar files to lib
