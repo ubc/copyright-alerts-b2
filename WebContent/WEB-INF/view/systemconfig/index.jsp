@@ -2,7 +2,7 @@
 	pageEncoding="ISO-8859-1"%>
 <%@ taglib prefix="bbNG" uri="/bbNG"%>
 
-<bbNG:genericPage ctxId="ctx" >
+<bbNG:genericPage ctxId="ctx" entitlement="system.admin.VIEW">
 
 <bbNG:pageHeader instructions="Configure the Copyright Alerts building block.">
 	<bbNG:pageTitleBar >Copyright Alerts Settings</bbNG:pageTitleBar>

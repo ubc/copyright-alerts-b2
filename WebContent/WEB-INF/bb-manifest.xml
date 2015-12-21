@@ -5,7 +5,7 @@
         <name value="Copyright Alerts"/>
         <handle value="copyright-alerts"/>
         <description value= ""/>
-        <version value= "1.0.3"/>
+        <version value= "1.0.4"/>
         <requires>
             <bbversion value="9.1"/>
         </requires>
@@ -15,20 +15,20 @@
             <url value="http://www.ubc.ca/" />
             <description value="" />
         </vendor>
-        
+
 <!-- Admin Pages -->
-		<http-actions>
-			<config value="settings" />
-			<!-- These two JSPs are displayed when the "remove" and "properties" buttons are pressed on the Building Blocks administration page. -->
-<!--    
+        <http-actions>
+            <config value="settings" />
+            <!-- These two JSPs are displayed when the "remove" and "properties" buttons are pressed on the Building Blocks administration page. -->
+<!--
             <config value="admin/configure.jsp"/>
             <remove value="admin/remove.jsp"/>
- -->    
-		</http-actions>
+ -->
+        </http-actions>
 
 <!-- Application Pages -->
         <application-defs>
-            <application handle="copyright-alerts" type="shared" use-ssl="false" 
+            <application handle="copyright-alerts" type="shared" use-ssl="false"
             	name="Copyright Alerts" can-allow-guest="false">
                 <description lang="en_US">Generate copyright status alerts on files in Content Collections.</description>
                 <links>
@@ -44,47 +44,47 @@
 
 <!-- Portal Module Definitions -->
         <module-defs>
-        	<module-type ext-ref="ubc-copyright-alerts" title="Copyright Attribution Alerts" uicreatable="true">
-				<jsp-dir>alertsmodule-static</jsp-dir>
-				<jsp>
-					<view>view.jsp</view>
-					<!--<edit>edit</edit>
-					<admin>admin</admin>-->
-				</jsp>
-			</module-type>
-			<module type="ubc-copyright-alerts" isadmin="true" useraddable="true"
-				isdeletable="true" title="Copyright Attribution Alerts">
-				<description>Copyright Attribution Alerts</description>
-				<module-groups>
-					<module-group id="Everyone" />
-				</module-groups>
-				<ExtraInfo>
-					<property key="body.text" type="String">
-					Shows files belonging to you that needs to be copyright tagged.
-					</property>
-				</ExtraInfo>
-			</module>
+            <module-type ext-ref="ubc-copyright-alerts" title="Copyright Attribution Alerts" uicreatable="true">
+                <jsp-dir>alertsmodule-static</jsp-dir>
+                <jsp>
+                    <view>view.jsp</view>
+                    <!--<edit>edit</edit>
+                    <admin>admin</admin>-->
+                </jsp>
+            </module-type>
+            <module type="ubc-copyright-alerts" isadmin="true" useraddable="true"
+                isdeletable="true" title="Copyright Attribution Alerts">
+                <description>Copyright Attribution Alerts</description>
+                <module-groups>
+                    <module-group id="Everyone" />
+                </module-groups>
+                <ExtraInfo>
+                    <property key="body.text" type="String">
+                    Shows files belonging to you that needs to be copyright tagged.
+                    </property>
+                </ExtraInfo>
+            </module>
         </module-defs>
 <!--  Custom Content Types -->
         <content-handlers>
         </content-handlers>
 
 <!-- /WebContent/schema/<schema-dir> is where bbl looks for the database schema configuration -->
-		<schema-dirs>
-			<schema-dir dir-name="alertsdb" />
+        <schema-dirs>
+            <schema-dir dir-name="alertsdb" />
         </schema-dirs>
 
 <!-- code permissions required for proper operation -->
         <permissions>
-        	<!-- need these to access the currently logged in user's info for alerts -->
-			<permission type="attribute" name="user.authinfo" actions="get" /> 
-			<!-- need to be able to upgrade to content collection superadmin for file indexing -->
-			<permission type="attribute" name="user.personalinfo" actions="get"/>
+            <!-- need these to access the currently logged in user's info for alerts -->
+            <permission type="attribute" name="user.authinfo" actions="get" />
+            <!-- need to be able to upgrade to content collection superadmin for file indexing -->
+            <permission type="attribute" name="user.personalinfo" actions="get"/>
             <!-- database access -->
             <permission type="java.lang.RuntimePermission" name="db.connection.*" />
             <!-- required by Gson -->
             <permission type="java.lang.reflect.ReflectPermission" name="suppressAccessChecks" />
-			<!-- required by Restlet -->
+            <!-- required by Restlet -->
             <permission type="java.lang.RuntimePermission" name="createClassLoader" />
             <permission type="java.lang.RuntimePermission" name="modifyThread" />
             <!-- required to get hostname -->
