@@ -2,37 +2,43 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'war'
 
+// define the version for the project when publishing to maven
+group "ca.ubc"
+version "1.0.4"
+
+webAppDirName = file("WebContent")
+
 repositories {
     mavenCentral()
-	maven { url "http://maven.restlet.org" }
+    maven { url "http://maven.restlet.org" }
 }
 
 ext.restletVersion = "2.1.2"
 
 dependencies {
-	compile 'com.google.code.gson:gson:2.2.4',
-			'joda-time:joda-time:2.3',
-			'org.quartz-scheduler:quartz:2.2.1',
-			'org.quartz-scheduler:quartz-jobs:2.2.1',
-			'org.json:json:20090211',
-			'javax.servlet:servlet-api:2.4',
-			'ch.qos.logback:logback-classic:1.0.13',
-			"org.restlet.jee:org.restlet:${restletVersion}",
-			"org.restlet.jee:org.restlet.ext.httpclient:${restletVersion}",
-			"org.restlet.jee:org.restlet.ext.json:${restletVersion}",
-			"org.restlet.jee:org.restlet.ext.net:${restletVersion}",
-			"org.restlet.jee:org.restlet.ext.servlet:${restletVersion}",
-			"org.restlet.jee:org.restlet.ext.ssl:${restletVersion}"
+    compile 'com.google.code.gson:gson:2.2.4',
+            'joda-time:joda-time:2.3',
+            'org.quartz-scheduler:quartz:2.2.1',
+            'org.quartz-scheduler:quartz-jobs:2.2.1',
+            'org.json:json:20090211',
+            'javax.servlet:servlet-api:2.4',
+            'ch.qos.logback:logback-classic:1.0.13',
+            "org.restlet.jee:org.restlet:${restletVersion}",
+            "org.restlet.jee:org.restlet.ext.httpclient:${restletVersion}",
+            "org.restlet.jee:org.restlet.ext.json:${restletVersion}",
+            "org.restlet.jee:org.restlet.ext.net:${restletVersion}",
+            "org.restlet.jee:org.restlet.ext.servlet:${restletVersion}",
+            "org.restlet.jee:org.restlet.ext.ssl:${restletVersion}"
 }
 
 task wrapper(type: Wrapper) {
-	gradleVersion = '2.1'
+    gradleVersion = '2.7'
 }
 
 // need to copy the jar files to lib
 task copyToLib(type: Sync) {
-	into "WebContent/WEB-INF/lib"
-	from configurations.runtime
+    into "WebContent/WEB-INF/lib"
+    from configurations.runtime
 }
 
 build.dependsOn(copyToLib)
