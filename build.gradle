@@ -6,22 +6,51 @@ apply plugin: 'war'
 group "ca.ubc"
 version "1.0.4"
 
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
 webAppDirName = file("WebContent")
 
 repositories {
     mavenCentral()
     maven { url "http://maven.restlet.org" }
+    maven {
+        url "https://maven.blackboard.com/content/repositories/releases/"
+    }
 }
 
-ext.restletVersion = "2.1.2"
+sourceSets {
+    main {
+        java {
+            srcDir 'src'
+        }
+    }
+}
+
+
+ext {
+    learnVersion = "9.1.201410.160373"
+    deployServer = "127.0.0.1:9877"
+    deployInstance = "BBLEARN"
+    restletVersion = "2.1.2"
+}
 
 dependencies {
+    providedCompile "javax.servlet:servlet-api:2.5",
+            "javax.servlet.jsp:jsp-api:2.1"
+
+    // Dependencies are libraries needed to build, but should not be included in the B2 WAR.
+    // You should NEVER include Learn JARs (other than webapis) in your B2.
+    providedCompile("blackboard.platform:bb-platform:$learnVersion") { transitive = false }
+    providedCompile("blackboard.platform:bb-taglibs:$learnVersion") { transitive = false }
+    providedCompile("blackboard.platform:bb-bbxythos:$learnVersion") { transitive = false }
+    providedCompile("blackboard.platform:xsscore:$learnVersion") { transitive = false }
+
     compile 'com.google.code.gson:gson:2.2.4',
             'joda-time:joda-time:2.3',
             'org.quartz-scheduler:quartz:2.2.1',
             'org.quartz-scheduler:quartz-jobs:2.2.1',
             'org.json:json:20090211',
-            'javax.servlet:servlet-api:2.4',
             'ch.qos.logback:logback-classic:1.0.13',
             "org.restlet.jee:org.restlet:${restletVersion}",
             "org.restlet.jee:org.restlet.ext.httpclient:${restletVersion}",
