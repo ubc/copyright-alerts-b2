@@ -5,7 +5,7 @@
         <name value="Copyright Alerts"/>
         <handle value="copyright-alerts"/>
         <description value= ""/>
-        <version value= "1.0.5"/>
+        <version value= "1.0.6"/>
         <requires>
             <bbversion value="9.1"/>
         </requires>
