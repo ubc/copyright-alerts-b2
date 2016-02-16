@@ -162,7 +162,7 @@ function startAngular()
 	services.factory('Status', 
 		function($resource) 
 		{
-			return $resource('/webapps/ubc-copyright-alerts-BBLEARN/systemconfig/status/status');
+			return $resource('/webapps/ubc-copyright-alerts-BBLEARN/alertsmodule/status');
 		}
 	);
 	var copyAlertsModule = angular.module('CopyAlertsModule', 

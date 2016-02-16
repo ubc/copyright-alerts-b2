@@ -30,7 +30,7 @@ public class StatusResource extends ServerResource
 	public Representation getStatusDisplay()
 	{
 		String action = (String) getRequestAttributes().get("action");
-		if (action.equals("status"))
+		if (null == action || action.equals("status"))
 		{ // return the current execution status
 			try
 			{

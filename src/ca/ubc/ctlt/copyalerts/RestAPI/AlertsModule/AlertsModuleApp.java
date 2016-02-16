@@ -6,6 +6,7 @@ import org.restlet.routing.Router;
 
 import ca.ubc.ctlt.copyalerts.RestAPI.AuthRouter;
 import ca.ubc.ctlt.copyalerts.RestAPI.AlertsModule.resources.FileListResource;
+import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.StatusResource;
 
 public class AlertsModuleApp extends Application
 {
@@ -20,6 +21,7 @@ public class AlertsModuleApp extends Application
         // Defines only one route
         router.attach("/files", FileListResource.class);
         router.attach("/files/{course}/{page}", FileListResource.class);
+        router.attach("/status", StatusResource.class);
 
         return router;
     }
