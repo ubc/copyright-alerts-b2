@@ -21,3 +21,6 @@ build/
 .project
 .classpath
 .settings/
+
+.idea
+copyright-alerts-b2.iml

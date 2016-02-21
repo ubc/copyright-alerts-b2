@@ -5,21 +5,50 @@
 <div id="ubc_ctlt_ca_angular_div">
 <div id="ubc_ctlt_ca_app" class="hideInitially" ng-controller="FileListCtrl">
 	<p>
-	Please review the copyright status attribution on files in Connect for which
-	you are responsible. The number at the end of each course link corresponds to
-	files without attribution that you have uploaded or files that you have the
-	permission to manage. You can review the list of files by expanding the
-	drop-down icon or clicking on the course link. To update the copyright status
-	attribution in bulk, click on the (view) link next to the course.  For
-	assistance with updating copyright status attribution, please contact your <a
-	href="https://connect.ubc.ca/bbcswebdav/xid-7093945_1" title="List of support
-	for administration of copyright status attribution in Connect">local
-	support</a>. For assistance with understanding each copyright status category,
-	please refer to the <a href="http://copyright.ubc.ca/" title="UBC Copyright
-	website">UBC copyright website</a> or contact the <a
-	href="http://copyright.ubc.ca/help-and-resources/vancouver-contacts/"
-	title="UBC Copyright Contacts">Copyright Office</a>.
-	</p>
+        When you upload files into Connect, you have the option to fill out a
+        copyright status form, which confirms the copyright permissions you
+        are relying upon. For example, if you are uploading your own work,
+        you can designate that you own the copyright in that work. If you’ve
+        taken a short excerpt from a text, you can designate that you are
+        exercising fair dealing.
+    </p><br />
+    <p>
+		This information is a useful memory-aid and reference for you and your
+        department, and will assist you and the University should you and the
+        University be challenged by a copyright holder.
+        <a ng-click="showDetail=!showDetail" href="">...More</a>
+    </p><br />
+    <div ng-show="showDetail">
+        <p>
+            Below, you will see the number of files you have uploaded (or have
+            been uploaded on your behalf), for which you have not entered copyright
+            information. You can review the list of files by expanding the drop-down
+            icon or clicking on the course name. To update the copyright status
+            attribution in bulk, click on the “view” link next to the course.  For
+            assistance with updating copyright status attribution, please contact
+            your
+            <a href="http://wiki.ubc.ca/Documentation:LTHub/Faculty_Support_Copyright_Alert" target="_blank">
+                local support
+            </a>.
+        </p><br />
+        <p>
+            Please note – when you are uploading copies of copyrighted materials
+            (articles, papers, pages from textbooks etc.), consider using LOCR –
+            the Library Online Course Reserves.  Materials requested through LOCR
+            are processed by the Library’s Copyright Office, who will take care
+            of the copyright status of materials on your behalf, including paying
+            for transactional licences if necessary.
+        </p><br />
+        <p>
+            Click <a href="http://services.library.ubc.ca/borrowing-services/course-reserves/" target="_blank">here</a>
+            for more information about LOCR.
+        </p><br />
+        <p>
+            If you have any questions or concerns about copyright or LOCR please
+            contact the
+            <a href="http://copyright.ubc.ca/help-and-resources/vancouver-contacts/" target="_blank">Copyright Office</a>.
+        </p>
+    </div>
 	<div ng-repeat="(cid, course) in courseFiles.courses">
 		<h4 class="moduleTitle">
 			<a ng-click="course.show=!course.show" href="" >
@@ -190,6 +219,7 @@ function startAngular()
 				}
 			);
 			$scope.lastupdate = "Retrieving...";
+            $scope.showDetail = false;
 			$scope.status = Status.get(
 				function(val)
 				{
