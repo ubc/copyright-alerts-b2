@@ -30,11 +30,11 @@ public class FilesTable
 
 	public final static String TABLENAME = "ubc_ctlt_ca_files";
 	private final static int ENTRYPERPAGE = 25;
-	
+
 	// store mapping of course names to course title, names are id like, title is human readable
 	private CourseCache courses = new CourseCache();
 	private ConnectionManager cm = DbInit.getConnectionManager();
-	
+
 	// have to load paging specially as each course can be paged
 	// have a loadCourseFiles or getCourseFiles
 	public FileList load(String userid) throws InaccessibleDbException
@@ -46,10 +46,10 @@ public class FilesTable
 			cf = splitToPage(cf, 1);
 			ret.put(e.getKey(), cf);
 		}
-		
+
 		return new FileList(ret, 1, 1);
 	}
-	
+
 	public CourseFiles loadCourseFiles(String userid, String courseId, int page) throws InaccessibleDbException
 	{
 		HashMap<String, CourseFiles> list = loadAll(userid);
@@ -60,11 +60,11 @@ public class FilesTable
 		}
 		return null;
 	}
-	
+
 	/**
 	 * Adding files to the database in a batch operation in order to get some performance gains from compiled
 	 * statements.
-	 * 
+	 *
 	 * @param filesAndUsers
 	 * @throws InaccessibleDbException
 	 */
@@ -157,7 +157,7 @@ public class FilesTable
 			insertStmt.addBatch(); // not in database yet! Need to execute batch later.
 		}
 	}
-	
+
 	public void deleteAll() throws InaccessibleDbException
 	{
 		Connection conn = null;
@@ -180,7 +180,7 @@ public class FilesTable
 			if (conn != null) cm.releaseConnection(conn); // MUST release connection or we'll exhaust connection pool
 		}
 	}
-	
+
 	/**
 	 * Given a list of primary keys, remove all files with those primary keys from the table.
 	 * @param filesToRemove
@@ -220,7 +220,7 @@ public class FilesTable
 											// exhaust connection pool
 		}
 	}
-	
+
 	public void deleteFile(String path) throws InaccessibleDbException
 	{
 		Connection conn = null;
@@ -243,14 +243,14 @@ public class FilesTable
 			if (conn != null) cm.releaseConnection(conn); // MUST release connection or we'll exhaust connection pool
 		}
 	}
-	
+
 	// Get the number of entries in this table
 	public long getCount() throws InaccessibleDbException
 	{
 		Connection conn = null;
 		long ret = 0;
 
-		try 
+		try
 		{
 			conn = cm.getConnection();
 			String query = "SELECT COUNT(*) FROM " + TABLENAME;
@@ -276,8 +276,8 @@ public class FilesTable
 
         return ret;
 	}
-	
-	
+
+
 	/**
 	 * Parse out the course name from the full content system path.
 	 * @param path
@@ -300,7 +300,7 @@ public class FilesTable
 		courseName = courseName.substring(0, courseName.indexOf("/"));
 		return courseName;
 	}
-	
+
 	/**
 	 * Load all files that the given user needs to tag.
 	 * @param userid
@@ -312,20 +312,25 @@ public class FilesTable
 		Connection conn = null;
 
 		HashMap<String, CourseFiles> ret = new HashMap<String, CourseFiles>();
-		try 
+		try
 		{
 			conn = cm.getConnection();
 			String query = "SELECT course, filepath FROM "+ TABLENAME +" WHERE userid=?";
 	        PreparedStatement stmt = conn.prepareStatement(query);
 			stmt.setString(1, userid);
 	        ResultSet res = stmt.executeQuery();
-	
+
 	        while(res.next())
 	        {
 	        	String courseTitle = res.getString(1);
 	        	String path = res.getString(2);
         		String courseName = parseCourseName(path);
 	        	String id = courses.getCourseId(courseName);
+	        	if (null == id) {
+	        		// course could be deleted after cache is generated, so skip them for now
+	        		// a clean up process could be in place to clear out the outdated caches
+	        		continue;
+	        	}
 	        	// STORE PATH FOR RETURN
 	        	if (ret.containsKey(id))
 	        	{ // add to existing entry
@@ -337,9 +342,9 @@ public class FilesTable
 	        		ret.put(id, cf);
 	        	}
 	        }
-	
+
 	        res.close();
-	
+
 	        stmt.close();
 		} catch (SQLException e)
 		{
@@ -355,13 +360,13 @@ public class FilesTable
 		{
 			if (conn != null) cm.releaseConnection(conn);
 		}
-		
+
 		return ret;
 	}
-	
+
 	/**
 	 * Pagination helper to split up an ArrayList of FilePaths into pages.
-	 * 
+	 *
 	 * @param cf
 	 * @param page
 	 * @return
@@ -369,24 +374,24 @@ public class FilesTable
 	private CourseFiles splitToPage(CourseFiles cf, int page)
 	{
 		int numPages = (int) Math.ceil(cf.files.size() / (double) ENTRYPERPAGE);
-		
+
 		if (page < 1 || page > numPages)
 		{ // trying to get a non-existent page, just return the first page
 			return splitToPage(cf, 1);
 		}
-		
+
 		int toIndex = (page * ENTRYPERPAGE);
 		int fromIndex = toIndex - ENTRYPERPAGE;
-		
+
 		if (toIndex > cf.files.size())
 		{ // prevent out of bounds exceptions
 			toIndex = cf.files.size();
 		}
-		
+
 		cf.files = new ArrayList<FilePath>(cf.files.subList(fromIndex, toIndex));
 		cf.page = page;
 		cf.numPages = numPages;
-		
+
 		return cf;
 	}
 }

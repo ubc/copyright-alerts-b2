@@ -14,16 +14,16 @@ public class CourseCache
 		public String courseId;
 		public String courseTitle;
 	}
-	
+
 	private HashMap<String, CourseInfo> courses = new HashMap<String, CourseInfo>();
-	
+
 	public boolean addIfValidCourse(String courseName) throws PersistenceException
-	{	
+	{
 		if (courses.containsKey(courseName))
 		{
 			return true;
 		}
-		
+
 		try
 		{
 			CourseDbLoader cload = CourseDbLoader.Default.getInstance();
@@ -38,21 +38,25 @@ public class CourseCache
 			return false;
 		}
 	}
-	
+
 	public String getCourseTitle(String courseName) throws PersistenceException
 	{
 		if (!courses.containsKey(courseName))
 		{
-			addIfValidCourse(courseName);
+			if(!addIfValidCourse(courseName)) {
+				return null;
+			}
 		}
 		return courses.get(courseName).courseTitle;
 	}
-	
+
 	public String getCourseId(String courseName) throws PersistenceException
 	{
 		if (!courses.containsKey(courseName))
 		{
-			addIfValidCourse(courseName);
+			if(addIfValidCourse(courseName)) {
+				return null;
+			}
 		}
 		return courses.get(courseName).courseId;
 	}
