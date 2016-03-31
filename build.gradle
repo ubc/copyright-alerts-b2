@@ -4,7 +4,7 @@ apply plugin: 'war'
 
 // define the version for the project when publishing to maven
 group "ca.ubc"
-version "1.0.6"
+version "1.0.7"
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
