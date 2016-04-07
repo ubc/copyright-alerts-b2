@@ -54,7 +54,7 @@ public class CourseCache
 	{
 		if (!courses.containsKey(courseName))
 		{
-			if(addIfValidCourse(courseName)) {
+			if(!addIfValidCourse(courseName)) {
 				return null;
 			}
 		}
