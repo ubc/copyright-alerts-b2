@@ -45,6 +45,7 @@ dependencies {
     providedCompile("blackboard.platform:bb-taglibs:$learnVersion") { transitive = false }
     providedCompile("blackboard.platform:bb-bbxythos:$learnVersion") { transitive = false }
     providedCompile("blackboard.platform:xsscore:$learnVersion") { transitive = false }
+    providedCompile("com.google.guava:guava:19.0") { transitive = false }
 
     compile 'com.google.code.gson:gson:2.2.4',
             'joda-time:joda-time:2.3',

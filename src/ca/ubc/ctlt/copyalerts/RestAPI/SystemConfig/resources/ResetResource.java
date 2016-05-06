@@ -24,15 +24,10 @@ public class ResetResource extends ServerResource
 {
 	private final static Logger logger = LoggerFactory.getLogger(ServerResource.class);
 	
-	public ResetResource()
-	{
-		// TODO Auto-generated constructor stub
-	}
-
 	@Get("json")
 	public JsonRepresentation resetDatabase()
 	{
-		String[] tables = {"ubc_ctlt_ca_files", "ubc_ctlt_ca_hosts", "ubc_ctlt_ca_queue"};
+		String[] tables = {"ubc_ctlt_ca_files", "ubc_ctlt_ca_hosts", "ubc_ctlt_ca_queue", "ubc_ctlt_ca_status"};
 		// delete all entries from all our custom tables
 		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;

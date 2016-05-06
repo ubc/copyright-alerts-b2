@@ -2,6 +2,9 @@ package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources;
 
 import java.io.IOException;
 
+import blackboard.persist.PersistenceRuntimeException;
+import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
+import ca.ubc.ctlt.copyalerts.db.StatusTable;
 import org.restlet.data.Status;
 import org.restlet.ext.json.JsonRepresentation;
 import org.restlet.resource.Get;
@@ -21,12 +24,14 @@ public class HostResource extends ServerResource
 {
 	private final static Logger logger = LoggerFactory.getLogger(HostResource.class);
 	private HostsTable hostTable = null;
+	private StatusTable statusTable = null;
 	@Override
 	protected void doInit() throws ResourceException
 	{
 		try
 		{
 			hostTable = new HostsTable();
+			statusTable = new StatusTable();
 		} catch (InaccessibleDbException e)
 		{
 			logger.error(e.getMessage(), e);
@@ -40,13 +45,13 @@ public class HostResource extends ServerResource
 		try
 		{
 			hostTable.loadHosts();
-		} catch (InaccessibleDbException e)
+		} catch (PersistenceRuntimeException e)
 		{
 			logger.error(e.getMessage(), e);
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 			return null;
 		}
-		return new JsonRepresentation(hostTable.toOptionsJson());
+		return new JsonRepresentation(toOptionsJson());
 	}
 	
 	@Post("json")
@@ -59,11 +64,6 @@ public class HostResource extends ServerResource
 	    	Gson gson = new Gson();
 	    	HostOptions host = gson.fromJson(json, HostOptions.class);
 			hostTable.setLeader(host.leader);
-		} catch (InaccessibleDbException e)
-		{
-			logger.error(e.getMessage(), e);
-			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
-			return null;
 		} catch (IOException e)
 		{
 			logger.error(e.getMessage(), e);
@@ -71,5 +71,19 @@ public class HostResource extends ServerResource
 			return null;
 		}
 		return getHosts();
+	}
+
+	/**
+	 * Return a json map that lists all the hosts available and the name of the current leader.
+	 * @return JSON string of the options for hosts
+	 */
+	public String toOptionsJson()
+	{
+		Gson gson = new Gson();
+		HostOptions ret = new HostOptions();
+		ret.leader = hostTable.getLeader();
+		ret.current = HostResolver.getHostname();
+		ret.options = hostTable.getHosts().keySet();
+		return gson.toJson(ret);
 	}
 }

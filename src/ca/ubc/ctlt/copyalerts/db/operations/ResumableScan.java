@@ -36,7 +36,6 @@ public class ResumableScan implements Runnable
 	 * Using the API to iterate through the content system turns out to be too memory consuming
 	 * so let's try reading the database directly.
 	 * @return
-	 * @throws JobExecutionException 
 	 */
 	public void run()
 	{

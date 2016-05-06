@@ -4,6 +4,9 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import ca.ubc.ctlt.copyalerts.db.*;
+import ca.ubc.ctlt.copyalerts.db.entities.Status;
 import org.quartz.DateBuilder.IntervalUnit;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.InterruptableJob;
@@ -33,10 +36,6 @@ import blackboard.platform.vxi.service.VirtualSystemException;
 
 import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
 import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
-import ca.ubc.ctlt.copyalerts.db.FilesTable;
-import ca.ubc.ctlt.copyalerts.db.HostsTable;
-import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
-import ca.ubc.ctlt.copyalerts.db.QueueTable;
 import ca.ubc.ctlt.copyalerts.db.operations.FilesTableUpdateScanProcessor;
 import ca.ubc.ctlt.copyalerts.db.operations.QueueScanProcessor;
 import ca.ubc.ctlt.copyalerts.db.operations.ResumableScan;
@@ -59,6 +58,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	
 	// needed to be made class vars for use by cleanUpOnException
 	private HostsTable ht = null;
+	private StatusTable st = null;
 	private JobExecutionContext context = null;
 	private Timestamp started = new Timestamp(0);
 	private Timestamp ended = new Timestamp(0);
@@ -79,6 +79,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		try
 		{
 			ht = new HostsTable();
+			st = new StatusTable();
 			if (!ht.getLeader().equals(hostname))
 			{
 				logger.info("We're not selected as the alert generation host, stopping.");
@@ -99,7 +100,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		try
 		{
 			// Save the fact that we've started running
-			updateRunningStatus(HostsTable.STATUS_RUNNING);
+			updateRunningStatus(Status.STATUS_RUNNING);
 			// load configuration
 			config = SavedConfiguration.getInstance();
 		} catch (InaccessibleDbException e)
@@ -135,16 +136,12 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			{
 				ended = new Timestamp((new Date()).getTime());
 				logger.debug("Finished by time limit");
-				ht.saveRunStats(hostname, HostsTable.STATUS_LIMIT, started, ended);
+				st.saveRunStats(Status.STATUS_LIMIT, started, ended);
 				limitReached = true;
 			}
 		} catch (JobExecutionException e)
 		{
 			logger.error("Indexer failed during execution.");
-			throw cleanUpOnException(e);
-		} catch (InaccessibleDbException e)
-		{
-			logger.error("Indexer could not access database.");
 			throw cleanUpOnException(e);
 		} catch(Exception e)
 		{
@@ -169,13 +166,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		if (!limitReached)
 		{
 			Timestamp ended = new Timestamp((new Date()).getTime());
-			try
-			{
-				ht.saveRunStats(hostname, HostsTable.STATUS_STOPPED, started, ended);
-			} catch (InaccessibleDbException e)
-			{
-				logger.warn("Unable to save run stats.", e);
-			}
+			st.saveRunStats(Status.STATUS_STOPPED, started, ended);
 		}
 		logger.info("ubc.ctlt.copyalerts Done");
 	}
@@ -184,7 +175,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	{
 		started = new Timestamp((new Date()).getTime());
 		// Save the fact that we've started running
-		ht.saveRunStats(hostname, status, started, ended);
+		st.saveRunStats(status, started, ended);
 	}
 	
 	/**
@@ -199,31 +190,19 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 
 		// Remove the execution time limit, if any, that were placed on indexing
 		Scheduler sched = context.getScheduler();
-		try
-		{
-			if (sched.checkExists(noopJob.getKey()))
-			{
+		try {
+			if (sched.checkExists(noopJob.getKey())) {
 				sched.deleteJob(noopJob.getKey());
 			}
-		} catch (SchedulerException e1)
-		{
+		} catch (SchedulerException e1) {
 			logger.error("Exception clean up failed, unable to remove time limit trigger.");
 		}
 
 		// Update the execution status
-		try
-		{
-			if (ht != null)
-			{
-				ht.saveRunStats(hostname, HostsTable.STATUS_ERROR, started, ended);
-			}
-			else
-			{
-				logger.error("Exception clean up occured before hosts table was read.");
-			}
-		} catch (InaccessibleDbException e1)
-		{
-			logger.error("Exception clean up failed, unable to update execution status.");
+		if (ht != null) {
+			st.saveRunStats(Status.STATUS_ERROR, started, ended);
+		} else {
+			logger.error("Exception clean up occured before hosts table was read.");
 		}
 		return new JobExecutionException(e);
 	}
@@ -238,9 +217,9 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	{
 		try
 		{
-			String stage = ht.getStage();
+			String stage = st.getStage();
 			// Stage 1: Queue Generation
-			if (stage.equals(HostsTable.STATUS_STAGE_QUEUE))
+			if (stage.equals(Status.STATUS_STAGE_QUEUE))
 			{
 				if (stageGenerateQueue())
 				{ // stopped by interrupt, so we stop here
@@ -248,14 +227,14 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				}
 				else
 				{ // no interrupts encountered and queue generation completed successfully, advance to next stage.
-					ht.saveStage(HostsTable.STATUS_STAGE_NEWFILES);
-					stage = HostsTable.STATUS_STAGE_NEWFILES;
+					st.saveStage(Status.STATUS_STAGE_NEWFILES);
+					stage = Status.STATUS_STAGE_NEWFILES;
 				}
 			}
 			// the next two stages needs an index generator
 			IndexGenerator indexGen = new IndexGenerator(config.getAttributes());
 			// Stage 2: Add New Files From Queue
-			if (stage.equals(HostsTable.STATUS_STAGE_NEWFILES))
+			if (stage.equals(Status.STATUS_STAGE_NEWFILES))
 			{
 				if (stageAddNewFiles(indexGen))
 				{ // stopped by interrupt, halt here
@@ -263,12 +242,12 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				}
 				else
 				{ // advance to next next stage
-					ht.saveStage(HostsTable.STATUS_STAGE_UPDATE);
-					stage = HostsTable.STATUS_STAGE_UPDATE;
+					st.saveStage(Status.STATUS_STAGE_UPDATE);
+					stage = Status.STATUS_STAGE_UPDATE;
 				}
 			}
 			// Stage 3: Update Existing Index
-			if (stage.equals(HostsTable.STATUS_STAGE_UPDATE))
+			if (stage.equals(Status.STATUS_STAGE_UPDATE))
 			{
 				if (stageUpdateIndex(indexGen))
 				{ // stopped by interrupt, halt here
@@ -276,7 +255,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				}
 				else
 				{ // reset stage system back to first stage
-					ht.saveStage(HostsTable.STATUS_STAGE_QUEUE);
+					st.saveStage(Status.STATUS_STAGE_QUEUE);
 				}
 			}
 		} catch (InaccessibleDbException e)
@@ -301,7 +280,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	private boolean stageGenerateQueue() throws JobExecutionException
 	{
 		logger.debug("Queue Generation Start");
-		ScanProcessor processor = new QueueScanProcessor(ht);
+		ScanProcessor processor = new QueueScanProcessor(st);
 		// set the column names for the data that the processor wants
 		List<String> dataKeys = new ArrayList<String>();
 		dataKeys.add("full_path");
@@ -311,8 +290,8 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		long queueOffset = 0;
 		try
 		{
-			lastQueueFileid = ht.getLastQueueFileid();
-			queueOffset = ht.getQueueOffset();
+			lastQueueFileid = st.getLastQueueFileid();
+			queueOffset = st.getQueueOffset();
 			logger.debug("Queue Resume Offset: " + queueOffset + " File ID: " + lastQueueFileid);
 		} catch (InaccessibleDbException e)
 		{
@@ -428,7 +407,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	private boolean stageUpdateIndex(IndexGenerator indexGen) throws JobExecutionException
 	{
 		logger.debug("Starting Update Stage.");
-		ScanProcessor processor = new FilesTableUpdateScanProcessor(indexGen, ht);
+		ScanProcessor processor = new FilesTableUpdateScanProcessor(indexGen, st);
 		// set the column names for the data that the processor wants
 		List<String> dataKeys = new ArrayList<String>();
 		dataKeys.add("filepath");
@@ -438,8 +417,8 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		long filesOffset = 0;
 		try
 		{
-			lastFilesPk1 = ht.getLastFilesPk1();
-			filesOffset = ht.getFilesOffset();
+			lastFilesPk1 = st.getLastFilesPk1();
+			filesOffset = st.getFilesOffset();
 			logger.debug("Files Resume Offset: " + filesOffset + " File ID: " + lastFilesPk1);
 		} catch (InaccessibleDbException e)
 		{

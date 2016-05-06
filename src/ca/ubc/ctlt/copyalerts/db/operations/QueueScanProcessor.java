@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ca.ubc.ctlt.copyalerts.db.HostsTable;
+import ca.ubc.ctlt.copyalerts.db.StatusTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 import ca.ubc.ctlt.copyalerts.db.QueueTable;
 import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
@@ -27,27 +27,26 @@ public class QueueScanProcessor extends ScanProcessor
 	/**
 	 * Stores a batch of file paths to be put into the queue
 	 */
-	private List<String> paths = new ArrayList<String>();
+	private List<String> paths = new ArrayList<>();
 	/**
-	 * Database access 
+	 * Database access
 	 */
 	private QueueTable queuetable = new QueueTable();
-	private HostsTable hoststable;
+	private StatusTable statusTable;
 	/**
 	 * Keeps track of how many files we've processed for this batch
 	 */
 	private int batchCount = 0;
 	/**
 	 * Keeps track of resume data for this scan.
-	 * @param hoststable
 	 */
 	private long rownum = 0;
 	private long file_id = 0;
-	
 
-	public QueueScanProcessor(HostsTable hoststable)
+
+	public QueueScanProcessor(StatusTable statusTable)
 	{
-		this.hoststable = hoststable;
+		this.statusTable = statusTable;
 	}
 
 	/**
@@ -79,7 +78,7 @@ public class QueueScanProcessor extends ScanProcessor
 		}
 		if (batchCount >= CSIndexJob.BATCHSIZE) 
 		{
-			hoststable.saveQueueResumeData(rownum, file_id);
+			statusTable.saveQueueResumeData(rownum, file_id);
 			batchCount = 0;
 		}
 		batchCount++;
@@ -97,12 +96,12 @@ public class QueueScanProcessor extends ScanProcessor
 		if (wasInterrupted)
 		{ // save resume data since we weren't finished
 			logger.debug("Saving Resume Data - Offset: " + rownum + " File ID: " + file_id);
-			hoststable.saveQueueResumeData(rownum, file_id);
+			statusTable.saveQueueResumeData(rownum, file_id);
 		}
 		else
 		{ // make sure to reset queue resume data if we've gone a full run without problems
 			logger.debug("Reset Resume Data - Offset: " + rownum + " File ID: " + file_id);
-			hoststable.saveQueueResumeData(0, 0);
+			statusTable.saveQueueResumeData(0, 0);
 		}
 		
 	}

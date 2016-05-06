@@ -37,10 +37,18 @@ no way to get the raw primary key for entries. You have to manually parse the pr
 	<column name="host" data-type="varchar(255)" nullable="false" comment="the hostname of this node" />
 	<column name="leader" data-type="char(1)" nullable="false" default="'0'" comment="whether this node is running the indexing job">
 		<value-constraint name="ubc_leaderconstraintyn">
-			<accepted-value value="0" />
-			<accepted-value value="1" />
+			<accepted-value value="N" />
+			<accepted-value value="Y" />
 		</value-constraint>
 	</column>
+	<primary-key name="ubc_ctlt_ca_hosts_pk1" comment="Unique primary key">
+		<columnref name="pk1" />
+	</primary-key>
+</table>
+
+<table name="ubc_ctlt_ca_status">
+	<column name="pk1" data-type="int" nullable="false" identity="true"
+			comment="This is the primary key for the table" />
 	<column name="status" data-type="varchar(255)" nullable="false" default="'stopped'" comment="whether the node is running the indexing job right now" />
 	<column name="stage" data-type="varchar(255)" nullable="false" default="'queue'" comment="which stage of the indexing job should be executing right now" />
 
@@ -56,7 +64,7 @@ no way to get the raw primary key for entries. You have to manually parse the pr
 	<column name="runend" data-type="timestamp" nullable="true" default="null" comment="when did the indexing job stop" />
 	<!-- B2 config files are NOT reliably shared across nodes, so, as a quick fix, we'll just dump the config file in the db -->
 	<column name="config" data-type="nvarchar(2000)" comment="stores building block configuration" />
-	<primary-key name="ubc_ctlt_ca_hosts_pk1" comment="Unique primary key">
+	<primary-key name="ubc_ctlt_ca_status_pk1" comment="Unique primary key">
 		<columnref name="pk1" />
 	</primary-key>
 </table>

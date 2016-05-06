@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import blackboard.cms.filesystem.CSFile;
 
 import ca.ubc.ctlt.copyalerts.db.FilesTable;
-import ca.ubc.ctlt.copyalerts.db.HostsTable;
+import ca.ubc.ctlt.copyalerts.db.StatusTable;
 import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
 import ca.ubc.ctlt.copyalerts.indexer.IndexGenerator;
@@ -19,18 +19,18 @@ public class FilesTableUpdateScanProcessor extends ScanProcessor
 {
 	private final static Logger logger = LoggerFactory.getLogger(FilesTableUpdateScanProcessor.class);
 	
-	private Set<Long> filesToRemove = new HashSet<Long>();
+	private Set<Long> filesToRemove = new HashSet<>();
 	private long rownum;
 	private long file_pk1;
 	private int batchCount;
 	private IndexGenerator indexGen;
 	private FilesTable filestable;
-	private HostsTable hoststable;
+	private StatusTable statustable;
 	
-	public FilesTableUpdateScanProcessor(IndexGenerator indexGen, HostsTable hoststable)
+	public FilesTableUpdateScanProcessor(IndexGenerator indexGen, StatusTable statustable)
 	{
 		this.indexGen = indexGen;
-		this.hoststable = hoststable;
+		this.statustable = statustable;
 		this.filestable = new FilesTable();
 	}
 	
@@ -64,7 +64,7 @@ public class FilesTableUpdateScanProcessor extends ScanProcessor
 		}
 		if (batchCount >= CSIndexJob.BATCHSIZE) 
 		{
-			hoststable.saveFileResumeData(rownum, file_pk1);
+			statustable.saveFileResumeData(rownum, file_pk1);
 			batchCount = 0;
 		}
 		batchCount++;
@@ -82,12 +82,12 @@ public class FilesTableUpdateScanProcessor extends ScanProcessor
 		if (wasInterrupted)
 		{ // save resume data since we weren't finished
 			logger.debug("Saving Resume Data - Offset: " + rownum + " File ID: " + file_pk1);
-			hoststable.saveFileResumeData(rownum, file_pk1);
+			statustable.saveFileResumeData(rownum, file_pk1);
 		}
 		else
 		{ // make sure to reset queue resume data if we've gone a full run without problems
 			logger.debug("Reset Resume Data - Offset: " + rownum + " File ID: " + file_pk1);
-			hoststable.saveFileResumeData(0, 0);
+			statustable.saveFileResumeData(0, 0);
 		}
 	}
 

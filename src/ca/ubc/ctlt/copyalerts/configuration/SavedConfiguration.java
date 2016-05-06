@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Set;
 
+import ca.ubc.ctlt.copyalerts.db.StatusTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,20 +33,20 @@ public class SavedConfiguration
 	private static final SavedConfiguration instance = new SavedConfiguration();
 
 	// Cron scheduler configuration, time to start executing
-	public final static String ENABLE_CONFIG = "enable"; // whether the scheduler is enabled
-	public final static String CRON_CONFIG = "cron"; // when to start the alert generation
-	public final static String LIMIT_CONFIG = "limit"; // whether we should limit how much time alerts generation gets to run
-	public final static String HOURS_CONFIG = "hours"; // the limiting hours
-	public final static String MINUTES_CONFIG = "minutes"; // the limiting minutes
-	public final static String TEMPLATE_CONFIG = "metadata_template_id";	// key to access the stored attribute ids
+	private final static String ENABLE_CONFIG = "enable"; // whether the scheduler is enabled
+	private final static String CRON_CONFIG = "cron"; // when to start the alert generation
+	private final static String LIMIT_CONFIG = "limit"; // whether we should limit how much time alerts generation gets to run
+	private final static String HOURS_CONFIG = "hours"; // the limiting hours
+	private final static String MINUTES_CONFIG = "minutes"; // the limiting minutes
+	private final static String TEMPLATE_CONFIG = "metadata_template_id";	// key to access the stored attribute ids
 	
 	// cause properties are always string, we're going to have to need a delimiter for array conversion for attributes
 	public final static String DELIM = "	";
 	
 	private Properties prop = new Properties();
 	private Gson gson = new Gson();
-	private HostsTable hostsTable;
-	
+	private StatusTable statusTable;
+
 	// allows easy serialization to json for schedule configurations
 	private ScheduleConfiguration config = new ScheduleConfiguration();
 
@@ -66,7 +67,7 @@ public class SavedConfiguration
 		{
 			prop.clear();
 			config.reset();
-			hostsTable = new HostsTable();
+			statusTable = new StatusTable();
 			load();
 		} catch (InaccessibleDbException e)
 		{
@@ -89,7 +90,7 @@ public class SavedConfiguration
 	 */
 	public void load() throws InaccessibleDbException, IOException
 	{
-		String configString = hostsTable.loadConfig();
+		String configString = statusTable.loadConfig();
 		if (configString == null) configString = "";
 		StringReader input = new StringReader(configString);
 		prop.load(input);
@@ -119,7 +120,7 @@ public class SavedConfiguration
 	{
 		StringWriter writer = new StringWriter();
 		prop.store(writer, "Copyright Alerts Configuration");
-		hostsTable.saveConfig(writer.toString());
+		statusTable.saveConfig(writer.toString());
 		
 		load();
 	}
@@ -177,7 +178,7 @@ public class SavedConfiguration
 	
 	/**
 	 * Parse and store configuration values from a json string
-	 * @param json
+	 * @param template metadata template
 	 * @throws InaccessibleDbException 
 	 * @throws IOException 
 	 * @throws PlugInException 
