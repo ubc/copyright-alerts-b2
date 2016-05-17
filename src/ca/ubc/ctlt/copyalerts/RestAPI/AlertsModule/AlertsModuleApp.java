@@ -1,12 +1,11 @@
 package ca.ubc.ctlt.copyalerts.RestAPI.AlertsModule;
 
+import ca.ubc.ctlt.copyalerts.RestAPI.AlertsModule.resources.FileListResource;
+import ca.ubc.ctlt.copyalerts.RestAPI.AuthRouter;
+import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.StatusResource;
 import org.restlet.Application;
 import org.restlet.Restlet;
 import org.restlet.routing.Router;
-
-import ca.ubc.ctlt.copyalerts.RestAPI.AuthRouter;
-import ca.ubc.ctlt.copyalerts.RestAPI.AlertsModule.resources.FileListResource;
-import ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources.StatusResource;
 
 public class AlertsModuleApp extends Application
 {

@@ -1,29 +1,23 @@
 package ca.ubc.ctlt.copyalerts.configuration;
 
+import blackboard.cms.metadata.CSFormManagerFactory;
+import blackboard.persist.Id;
+import blackboard.persist.PersistenceException;
+import blackboard.persist.metadata.AttributeDefinition;
+import blackboard.platform.forms.Form;
+import ca.ubc.ctlt.copyalerts.JsonIntermediate.ScheduleConfiguration;
+import ca.ubc.ctlt.copyalerts.JsonIntermediate.SyncStatus;
+import ca.ubc.ctlt.copyalerts.db.StatusTable;
+import com.google.gson.Gson;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Set;
-
-import ca.ubc.ctlt.copyalerts.db.StatusTable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import ca.ubc.ctlt.copyalerts.JsonIntermediate.ScheduleConfiguration;
-import ca.ubc.ctlt.copyalerts.JsonIntermediate.SyncStatus;
-import ca.ubc.ctlt.copyalerts.db.HostsTable;
-import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
-
-import com.google.gson.Gson;
-
-import blackboard.cms.metadata.CSFormManagerFactory;
-import blackboard.persist.Id;
-import blackboard.persist.PersistenceException;
-import blackboard.persist.metadata.AttributeDefinition;
-import blackboard.platform.forms.Form;
-import blackboard.platform.plugin.PlugInException;
 
 public class SavedConfiguration
 {
@@ -39,10 +33,10 @@ public class SavedConfiguration
 	private final static String HOURS_CONFIG = "hours"; // the limiting hours
 	private final static String MINUTES_CONFIG = "minutes"; // the limiting minutes
 	private final static String TEMPLATE_CONFIG = "metadata_template_id";	// key to access the stored attribute ids
-	
+
 	// cause properties are always string, we're going to have to need a delimiter for array conversion for attributes
-	public final static String DELIM = "	";
-	
+//	public final static String DELIM = "	";
+
 	private Properties prop = new Properties();
 	private Gson gson = new Gson();
 	private StatusTable statusTable;
@@ -50,17 +44,17 @@ public class SavedConfiguration
 	// allows easy serialization to json for schedule configurations
 	private ScheduleConfiguration config = new ScheduleConfiguration();
 
-	
-	private SavedConfiguration() 
+
+	private SavedConfiguration()
 	{
 		reset();
 	}
-	
+
 	public static SavedConfiguration getInstance()
 	{
 		return instance;
 	}
-	
+
 	public void reset()
 	{
 		try
@@ -69,32 +63,24 @@ public class SavedConfiguration
 			config.reset();
 			statusTable = new StatusTable();
 			load();
-		} catch (InaccessibleDbException e)
-		{
-			// not reading the configuration is serious enough that the building block
-			// shouldn't start up
-			logger.error(e.getMessage(), e);
-			throw new RuntimeException(e);
 		} catch (IOException e)
 		{
 			logger.error(e.getMessage(), e);
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	/**
 	 * Load config settings from the configuration file.
-	 * @throws InaccessibleDbException 
-	 * @throws PlugInException 
-	 * @throws IOException 
+	 * @throws IOException
 	 */
-	public void load() throws InaccessibleDbException, IOException
+	public void load() throws IOException
 	{
 		String configString = statusTable.loadConfig();
 		if (configString == null) configString = "";
 		StringReader input = new StringReader(configString);
 		prop.load(input);
-		
+
 		if (prop.getProperty(ENABLE_CONFIG) == null)
 		{ // no prior configuration saved, establish defaults first
 			loadFromConfig();
@@ -109,22 +95,20 @@ public class SavedConfiguration
 			config.minutes = Integer.parseInt(prop.getProperty(MINUTES_CONFIG));
 		}
 	}
-	
+
 	/**
 	 * Save config settings to the configuration file.
-	 * @throws InaccessibleDbException 
-	 * @throws PlugInException 
-	 * @throws IOException 
+	 * @throws IOException
 	 */
-	private void save() throws InaccessibleDbException, IOException
+	private void save() throws IOException
 	{
 		StringWriter writer = new StringWriter();
 		prop.store(writer, "Copyright Alerts Configuration");
 		statusTable.saveConfig(writer.toString());
-		
+
 		load();
 	}
-	
+
 	/**
 	 * Take the values from config and put it into the properties file
 	 */
@@ -136,20 +120,20 @@ public class SavedConfiguration
 		prop.setProperty(HOURS_CONFIG, Integer.toString(config.hours));
 		prop.setProperty(MINUTES_CONFIG, Integer.toString(config.minutes));
 	}
-	
+
 	/**
 	 * Convert the configuration values into a json string with empty syncstatus
-	 * @return
+	 * @return json string
 	 */
 	public String toJson()
 	{
 		config.syncstatus = new SyncStatus();
 		return gson.toJson(config);
 	}
-	
+
 	/**
 	 * Convert the configuration values into a json string, includes a syncstatus message
-	 * @return
+	 * @return json string
 	 */
 	public String toJson(SyncStatus status)
 	{
@@ -159,44 +143,39 @@ public class SavedConfiguration
 
 	/**
 	 * Parse and store configuration values from a json string
-	 * @param json
-	 * @throws InaccessibleDbException 
-	 * @throws IOException 
-	 * @throws PlugInException 
+	 * @param json json string
+	 * @throws IOException
 	 */
-	public void fromJson(String json) throws InaccessibleDbException, IOException
+	public void fromJson(String json) throws IOException
 	{
 		config = gson.fromJson(json, config.getClass());
 		loadFromConfig();
 		save();
 	}
-	
+
 	public String getMetadataTemplate()
 	{
 		return prop.getProperty(TEMPLATE_CONFIG);
 	}
-	
+
 	/**
 	 * Parse and store configuration values from a json string
 	 * @param template metadata template
-	 * @throws InaccessibleDbException 
-	 * @throws IOException 
-	 * @throws PlugInException 
+	 * @throws IOException
 	 */
-	public void saveMetadataTemplate(String template) throws InaccessibleDbException, IOException
+	public void saveMetadataTemplate(String template) throws IOException
 	{
 		prop.setProperty(TEMPLATE_CONFIG, template);
 		save();
 	}
-	
+
 	/**
 	 * Indicates whether the scheduler is enabled.
 	 * @return the enable
 	 */
 	public boolean isEnable()
 	{
-		if (config.enable.equals("true")) return true;
-		return false;
+		return config.enable.equals("true");
 	}
 
 	/**
@@ -260,7 +239,7 @@ public class SavedConfiguration
 
 	/**
 	 * @return the attributes
-	 * @throws PersistenceException 
+	 * @throws PersistenceException
 	 */
 	public ArrayList<String> getAttributes() throws PersistenceException
 	{
@@ -268,17 +247,17 @@ public class SavedConfiguration
 		Id formId = Id.generateId(Form.DATA_TYPE, prop.getProperty(TEMPLATE_CONFIG));
 		Form form = CSFormManagerFactory.getInstance().loadFormById(formId);
 
-		ArrayList<String> ret = new ArrayList<String>();
+		ArrayList<String> ret = new ArrayList<>();
 		// get all attributes in the form
 		Set<AttributeDefinition> adSet = form.getAttributeDefinitions();
-		for (AttributeDefinition ad : adSet) 
+		for (AttributeDefinition ad : adSet)
 		{
 			if (ad.getValueTypeLabel().equals("Boolean"))
 			{
 				ret.add(ad.getName());
 			}
 		}
-		
+
 		return ret;
 	}
 }

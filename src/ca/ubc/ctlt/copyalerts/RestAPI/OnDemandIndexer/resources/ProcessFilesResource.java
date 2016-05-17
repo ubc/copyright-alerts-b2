@@ -73,16 +73,8 @@ public class ProcessFilesResource extends ServerResource
 				CSFile csf = (CSFile) entry;
 				if (gen.fileIsTagged(csf))
 				{ // the file is now tagged, so remove it from the database
-					try
-					{
-						ft.deleteFile(file);
-						logger.debug("OnDemandIndexer - File removed " + file);
-					} catch (InaccessibleDbException e)
-					{
-						logger.error(e.getMessage(), e);
-						getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
-						return null;
-					}
+					ft.deleteFile(file);
+					logger.debug("OnDemandIndexer - File removed " + file);
 				}
 			}
 		}

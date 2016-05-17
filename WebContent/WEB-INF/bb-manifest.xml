@@ -95,6 +95,8 @@
             <permission type="java.lang.RuntimePermission" name="setFactory" />
             <!-- used by Quartz, gives a warning if not here, but seems to work without it -->
             <permission type="java.util.PropertyPermission" name="*" actions="read,write" />
+            <!-- required for dev VM running postgres. Limiting to 127.0.0.1:5432 doesn't seem to work -->
+            <permission type="java.net.SocketPermission" name="*" actions="connect,resolve" />
         </permissions>
 
     </plugin>

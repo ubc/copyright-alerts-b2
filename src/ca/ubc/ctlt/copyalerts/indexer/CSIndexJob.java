@@ -1,46 +1,30 @@
 package ca.ubc.ctlt.copyalerts.indexer;
 
+import blackboard.cms.filesystem.CSContext;
+import blackboard.cms.filesystem.CSFile;
+import blackboard.persist.PersistenceException;
+import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
+import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
+import ca.ubc.ctlt.copyalerts.db.*;
+import ca.ubc.ctlt.copyalerts.db.entities.QueueItem;
+import ca.ubc.ctlt.copyalerts.db.entities.Status;
+import ca.ubc.ctlt.copyalerts.db.operations.*;
+import org.quartz.DateBuilder.IntervalUnit;
+import org.quartz.*;
+import org.quartz.Trigger.CompletedExecutionInstruction;
+import org.quartz.jobs.NoOpJob;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import ca.ubc.ctlt.copyalerts.db.*;
-import ca.ubc.ctlt.copyalerts.db.entities.Status;
-import org.quartz.DateBuilder.IntervalUnit;
-import org.quartz.DisallowConcurrentExecution;
-import org.quartz.InterruptableJob;
-import org.quartz.JobDetail;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.Trigger;
-import org.quartz.Trigger.CompletedExecutionInstruction;
-import org.quartz.TriggerListener;
-import org.quartz.UnableToInterruptJobException;
-import org.quartz.jobs.NoOpJob;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static org.quartz.JobBuilder.*;
-import static org.quartz.TriggerBuilder.*;
-import static org.quartz.DateBuilder.*;
-import static org.quartz.impl.matchers.GroupMatcher.*;
-
-import blackboard.cms.filesystem.CSContext;
-import blackboard.cms.filesystem.CSFile;
-import blackboard.db.ConnectionNotAvailableException;
-import blackboard.persist.PersistenceException;
-import blackboard.platform.vxi.service.VirtualSystemException;
-
-import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
-import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
-import ca.ubc.ctlt.copyalerts.db.operations.FilesTableUpdateScanProcessor;
-import ca.ubc.ctlt.copyalerts.db.operations.QueueScanProcessor;
-import ca.ubc.ctlt.copyalerts.db.operations.ResumableScan;
-import ca.ubc.ctlt.copyalerts.db.operations.ResumableScanInfo;
-import ca.ubc.ctlt.copyalerts.db.operations.ScanProcessor;
+import static org.quartz.DateBuilder.futureDate;
+import static org.quartz.JobBuilder.newJob;
+import static org.quartz.TriggerBuilder.newTrigger;
+import static org.quartz.impl.matchers.GroupMatcher.triggerGroupEquals;
 
 @DisallowConcurrentExecution
 public class CSIndexJob implements InterruptableJob, TriggerListener
@@ -48,65 +32,88 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	public final static int BATCHSIZE = 500;
 
 	private final static Logger logger = LoggerFactory.getLogger(CSIndexJob.class);
-	
+
 	private final static String JOBGROUP = "CSIndexJobGroup";
-	
+
 	// Execute will check this variable periodically. If true, it'll immediately stop execution.
-	public Boolean stop = false;
+	private Boolean stop = false;
+	private final Object stopLock = new Object();
 	// this job does nothing, but we use the trigger to tell us if the job's time limit has been reached
 	private JobDetail noopJob = newJob(NoOpJob.class).withIdentity("CSIndexJobNoOp", JOBGROUP).build();
-	
-	// needed to be made class vars for use by cleanUpOnException
-	private HostsTable ht = null;
+
 	private StatusTable st = null;
 	private JobExecutionContext context = null;
 	private Timestamp started = new Timestamp(0);
 	private Timestamp ended = new Timestamp(0);
 	private String hostname = HostResolver.getHostname();
-	
-	public CSIndexJob() throws ConnectionNotAvailableException
+
+	public CSIndexJob()
 	{
 	}
 
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException
 	{
-		logger.info("Indexing Start");
-		
 		this.context = context;
 
 		// only 1 of the servers should be running indexing, check if this is us
-		try
+		HostsTable ht = new HostsTable();
+		if (!ht.isLeader(hostname))
 		{
-			ht = new HostsTable();
-			st = new StatusTable();
-			if (!ht.getLeader().equals(hostname))
-			{
-				logger.info("We're not selected as the alert generation host, stopping.");
-				return;
-			}
-		} catch (VirtualSystemException e)
-		{
-			throw cleanUpOnException(e);
-		} catch (InaccessibleDbException e)
-		{
+			logger.info("We're not selected as the alert generation host, stopping.");
+			return;
+		}
+
+		st = new StatusTable();
+		started = new Timestamp((new Date()).getTime());
+
+		logger.info("Indexing start at " + started + " with " + st.toString());
+		updateRunningStatus(Status.STATUS_RUNNING, started, ended);
+
+		// load configuration
+		SavedConfiguration config = SavedConfiguration.getInstance();
+
+		// Implement execution time limit (if needed)
+		// Basically, we'll have a trigger that will fire after the time limit has passed.
+		// We use the CSIndexJob object as a trigger listener
+		// and will trigger an interrupt when the time has passed.
+		try {
+			setupTrigger(config);
+		} catch (SchedulerException e) {
 			throw cleanUpOnException(e);
 		}
 
-		// Implement execution time limit (if needed)
-		// Basically, we'll have a trigger that'll fire after the time limit has passed. We use the CSIndexJob object as a trigger listener
-		// and will trigger an interrupt when the time has passed.
-		SavedConfiguration config;
-		try
-		{
-			// Save the fact that we've started running
-			updateRunningStatus(Status.STATUS_RUNNING);
-			// load configuration
-			config = SavedConfiguration.getInstance();
-		} catch (InaccessibleDbException e)
-		{
+		// run indexing
+		boolean limitReached = false;
+		try {
+			boolean ret = indexer(config);
+			if (ret) {
+				ended = new Timestamp((new Date()).getTime());
+				logger.debug("Finished by time limit");
+				updateRunningStatus(Status.STATUS_LIMIT, started, ended);
+				limitReached = true;
+			}
+		} catch (JobExecutionException e) {
+			logger.error("Indexer failed during execution.");
+			throw cleanUpOnException(e);
+		} catch(Exception e) {
+			logger.error("Indexer threw unexpected exception.");
 			throw cleanUpOnException(e);
 		}
+
+		// Remove execution time limit now that we're done
+		removeTrigger();
+
+		// Save the fact that we've finished running only if we didn't finish by time limit
+		if (!limitReached)
+		{
+			ended = new Timestamp((new Date()).getTime());
+			updateRunningStatus(Status.STATUS_STOPPED, started, ended);
+		}
+		logger.info("Indexing ended at " + ended + " with " + st.toString());
+	}
+
+	private void setupTrigger(SavedConfiguration config) throws SchedulerException {
 		Scheduler sched = context.getScheduler();
 		Trigger trigger;
 		if (config.isLimited())
@@ -117,99 +124,56 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 					.withIdentity("CSIndexJobStopTrigger", JOBGROUP)
 					.startAt(futureDate(minutes, IntervalUnit.MINUTE))
 					.build();
-			try
-			{
-				sched.scheduleJob(noopJob, trigger);
-				sched.getListenerManager().addTriggerListener(this, triggerGroupEquals(JOBGROUP));
-			} catch (SchedulerException e)
-			{
-				throw cleanUpOnException(e);
-			}
+			sched.scheduleJob(noopJob, trigger);
+			sched.getListenerManager().addTriggerListener(this, triggerGroupEquals(JOBGROUP));
 		}
-		
-		// run indexing
-		boolean limitReached = false;
-		try
-		{
-			boolean ret = indexer(config);
-			if (ret)
-			{
-				ended = new Timestamp((new Date()).getTime());
-				logger.debug("Finished by time limit");
-				st.saveRunStats(Status.STATUS_LIMIT, started, ended);
-				limitReached = true;
-			}
-		} catch (JobExecutionException e)
-		{
-			logger.error("Indexer failed during execution.");
-			throw cleanUpOnException(e);
-		} catch(Exception e)
-		{
-			logger.error("Indexer threw unexpected exception.");
-			throw cleanUpOnException(e);
-		}
-		
-		// Remove execution time limit now that we're done
-		if (config.isLimited())
-		{
-			try
-			{
+	}
+
+	private void removeTrigger() {
+		Scheduler sched = context.getScheduler();
+		try {
+			if (sched.checkExists(noopJob.getKey())) {
 				logger.debug("Removing limit trigger");
 				sched.deleteJob(noopJob.getKey());
-			} catch (SchedulerException e)
-			{
-				logger.warn("Unable to remove limit trigger listener.", e);
 			}
+		} catch (SchedulerException e) {
+			logger.warn("Unable to remove limit trigger listener.", e);
 		}
-
-		// Save the fact that we've finished running only if we didn't finish by time limit
-		if (!limitReached)
-		{
-			Timestamp ended = new Timestamp((new Date()).getTime());
-			st.saveRunStats(Status.STATUS_STOPPED, started, ended);
-		}
-		logger.info("ubc.ctlt.copyalerts Done");
 	}
-	
-	private void updateRunningStatus(String status) throws InaccessibleDbException
+
+	private void updateRunningStatus(String status, Timestamp started, Timestamp ended)
 	{
-		started = new Timestamp((new Date()).getTime());
 		// Save the fact that we've started running
 		st.saveRunStats(status, started, ended);
+		logger.info("Updated status to " + status);
 	}
-	
+
 	/**
 	 * Need to remove the limit trigger if we've set it and need to update status with error
-	 * @param e
+	 * @param e exception
 	 * @throws JobExecutionException
 	 */
-	private JobExecutionException cleanUpOnException(Exception e)
+	private JobExecutionException cleanUpOnException(Exception e) throws JobExecutionException
 	{
 		// Must log first, or additional exceptions during the rest of the cleanup can hide the original exception
 		logger.error(e.getMessage(), e);
 
 		// Remove the execution time limit, if any, that were placed on indexing
-		Scheduler sched = context.getScheduler();
-		try {
-			if (sched.checkExists(noopJob.getKey())) {
-				sched.deleteJob(noopJob.getKey());
-			}
-		} catch (SchedulerException e1) {
-			logger.error("Exception clean up failed, unable to remove time limit trigger.");
-		}
+		removeTrigger();
 
 		// Update the execution status
-		if (ht != null) {
+		if (st != null) {
 			st.saveRunStats(Status.STATUS_ERROR, started, ended);
 		} else {
-			logger.error("Exception clean up occured before hosts table was read.");
+			logger.error("Exception clean up occurred before status table was read.");
 		}
+
 		return new JobExecutionException(e);
 	}
-	
+
 	/**
 	 * The actual indexing operation
-	 * @param config
+	 * @param config saved configuration
 	 * @return true if stopped by time limit, false otherwise
 	 * @throws JobExecutionException
 	 */
@@ -258,56 +222,22 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 					st.saveStage(Status.STATUS_STAGE_QUEUE);
 				}
 			}
-		} catch (InaccessibleDbException e)
-		{
-			logger.error("Could not access database, stopping index job.", e);
+		} catch (PersistenceException e) {
+			logger.error("Could not persist. Stop index job", e);
 			throw new JobExecutionException(e);
-		} catch (PersistenceException e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 		return false;
 	}
-	
-	/**
-	 * Generate the list of files to check for indexing.
-	 * Using the API to iterate through the content system turns out to be too memory consuming
-	 * so let's try reading the database directly.
-	 * @return
-	 * @throws JobExecutionException 
-	 */
-	private boolean stageGenerateQueue() throws JobExecutionException
-	{
-		logger.debug("Queue Generation Start");
-		ScanProcessor processor = new QueueScanProcessor(st);
-		// set the column names for the data that the processor wants
-		List<String> dataKeys = new ArrayList<String>();
-		dataKeys.add("full_path");
-		
-		// load queue resume data
-		long lastQueueFileid = 0;
-		long queueOffset = 0;
-		try
-		{
-			lastQueueFileid = st.getLastQueueFileid();
-			queueOffset = st.getQueueOffset();
-			logger.debug("Queue Resume Offset: " + queueOffset + " File ID: " + lastQueueFileid);
-		} catch (InaccessibleDbException e)
-		{
-			logger.error("Unable to get queue resume data.", e);
-			throw new JobExecutionException(e);
-		}
 
-		// spawn the thread that scans all files to generate the queue
-		ResumableScanInfo info = new ResumableScanInfo("bblearn_cms_doc.xyf_urls", dataKeys, "file_id", lastQueueFileid, queueOffset);
-		ResumableScan scanner = new ResumableScan(info, processor);
-		
-		Thread genQueueThread = new Thread(scanner);
-		genQueueThread.start();
-		
-		// monitor the thread for errors and notify it if the job needs to stop
-		while (genQueueThread.isAlive())
+	/**
+	 * monitor the thread for errors and notify it if the job needs to stop
+	 * @param thread thread to monitor
+	 * @param scanner scanner running
+	 * @return true if thread is interrupted, false otherwise
+	 * @throws JobExecutionException
+     */
+	private boolean monitorThread(Thread thread, ResumableScan scanner) throws JobExecutionException {
+		while (thread.isAlive())
 		{
 			try
 			{
@@ -318,8 +248,8 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				}
 				if (syncStop())
 				{ // notify the job that we need to stop
-					genQueueThread.interrupt();
-					genQueueThread.join();
+					thread.interrupt();
+					thread.join();
 					return true;
 				}
 			} catch (InterruptedException e)
@@ -327,23 +257,59 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				logger.debug("Interrupt Exception", e);
 			}
 		}
-		logger.debug("Queue Generation End");
 		return false;
 	}
-	
+
+	/**
+	 * Generate the list of files to check for indexing.
+	 * Using the API to iterate through the content system turns out to be too memory consuming
+	 * so let's try reading the database directly.
+	 * @return if the job is ended by interruption
+	 * @throws JobExecutionException
+	 */
+	private boolean stageGenerateQueue() throws JobExecutionException
+	{
+		logger.debug("Queue Generation Start");
+		ScanProcessor processor = new QueueScanProcessor(st);
+		// set the column names for the data that the processor wants
+		List<String> dataKeys = new ArrayList<>();
+		dataKeys.add("full_path");
+
+		// load queue resume data
+		long lastQueueFileid;
+		long queueOffset;
+		lastQueueFileid = st.getLastQueueFileid();
+		queueOffset = st.getQueueOffset();
+		logger.debug("Queue Resume Offset: " + queueOffset + " File ID: " + lastQueueFileid);
+
+		// spawn the thread that scans all files to generate the queue
+		ResumableScanInfo info = new ResumableScanInfo("bblearn_cms_doc.xyf_urls", dataKeys, "file_id", lastQueueFileid, queueOffset);
+		ResumableScan scanner = new ResumableScan(info, processor);
+
+		Thread genQueueThread = new Thread(scanner);
+		genQueueThread.start();
+
+		boolean interrupted = monitorThread(genQueueThread, scanner);
+		if (!interrupted) {
+			logger.debug("Queue Generation End");
+		}
+
+		return interrupted;
+	}
+
 	private boolean stageAddNewFiles(IndexGenerator indexGen) throws JobExecutionException
 	{
 		logger.info("Check Metadata Start");
-		List<String> paths;
+		List<QueueItem> paths;
 		QueueTable queue = new QueueTable();
 		try
 		{
 			paths = queue.load();
-			ArrayList<CSFile> filesBatch = new ArrayList<CSFile>();
-			while (!paths.isEmpty())
+			ArrayList<CSFile> filesBatch = new ArrayList<>();
+			while (!paths.isEmpty() && !syncStop())
 			{
 				logger.debug("Copyright Alerts Indexing: " + paths.get(0));
-				for (String p : paths)
+				for (QueueItem p : paths)
 				{
 					CSContext ctx = CSContext.getContext();
 					// Give ourself permission to do anything in the Content
@@ -353,7 +319,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 					// require when you're not a superuser.
 					ctx.isSuperUser(true);
 					// Retrieve file entry
-					CSFile file = indexGen.getCSFileFromPath(p);
+					CSFile file = indexGen.getCSFileFromPath(p.getFilePath());
 					if (file == null)
 						continue; // skip, not a valid file path
 					filesBatch.add(file);
@@ -372,10 +338,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 				// load next batch of files
 				queue.pop();
 				paths = queue.load();
-				if (syncStop())
-				{
-					break;
-				}
 			}
 			if (!filesBatch.isEmpty())
 			{
@@ -398,72 +360,50 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		logger.info("Check Metadata Done");
 		return false;
 	}
-	
+
 	/**
 	 * Scans existing entries in the files database, remove those that have been tagged.
 	 * @return true if stopped by interrupt, false otherwise
-	 * @throws JobExecutionException 
+	 * @throws JobExecutionException
 	 */
 	private boolean stageUpdateIndex(IndexGenerator indexGen) throws JobExecutionException
 	{
 		logger.debug("Starting Update Stage.");
 		ScanProcessor processor = new FilesTableUpdateScanProcessor(indexGen, st);
 		// set the column names for the data that the processor wants
-		List<String> dataKeys = new ArrayList<String>();
+		List<String> dataKeys = new ArrayList<>();
 		dataKeys.add("filepath");
-		
+
 		// load queue resume data
-		long lastFilesPk1 = 0;
-		long filesOffset = 0;
-		try
-		{
-			lastFilesPk1 = st.getLastFilesPk1();
-			filesOffset = st.getFilesOffset();
-			logger.debug("Files Resume Offset: " + filesOffset + " File ID: " + lastFilesPk1);
-		} catch (InaccessibleDbException e)
-		{
-			logger.error("Unable to get queue resume data.", e);
-			throw new JobExecutionException(e);
-		}
+		long lastFilesPk1;
+		long filesOffset;
+		lastFilesPk1 = st.getLastFilesPk1();
+		filesOffset = st.getFilesOffset();
+		logger.debug("Files Resume Offset: " + filesOffset + " File ID: " + lastFilesPk1);
 
 		// spawn the thread that scans all files to generate the queue
 		ResumableScanInfo info = new ResumableScanInfo(FilesTable.TABLENAME, dataKeys, "pk1", lastFilesPk1, filesOffset);
 		ResumableScan scanner = new ResumableScan(info, processor);
-		
+
 		Thread genQueueThread = new Thread(scanner);
 		genQueueThread.start();
-		
+
 		// monitor the thread for errors and notify it if the job needs to stop
-		while (genQueueThread.isAlive())
-		{
-			try
-			{
-				Thread.sleep(1000); // check for error every second
-				if (scanner.hasError())
-				{
-					throw new JobExecutionException(scanner.getError());
-				}
-				if (syncStop())
-				{ // notify the job that we need to stop
-					genQueueThread.interrupt();
-					genQueueThread.join();
-					return true;
-				}
-			} catch (InterruptedException e)
-			{
-				logger.debug("Interrupt Exception", e);
-			}
+		boolean interrupted = monitorThread(genQueueThread, scanner);
+		if (!interrupted) {
+			logger.debug("Update Stage End");
 		}
-		return false;
+
+		return interrupted;
 	}
-	
+
 	@Override
 	public void interrupt() throws UnableToInterruptJobException
 	{
 		logger.debug("Index job interrupt.");
 
 		// inform execute that it should stop now
-		synchronized (stop)
+		synchronized (stopLock)
 		{
 			stop = true;
 		}
@@ -482,12 +422,12 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		{
 			logger.error("Unable to self interrupt.", e);
 		}
-		
+
 	}
-	
+
 	private boolean syncStop()
 	{
-		synchronized (stop)
+		synchronized (stopLock)
 		{
 			if (stop)
 			{
@@ -501,7 +441,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	@Override
 	public String getName()
 	{
-		// TODO Auto-generated method stub
 		return "CSIndexJobListener";
 	}
 	@Override

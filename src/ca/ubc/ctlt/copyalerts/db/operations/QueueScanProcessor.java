@@ -53,10 +53,9 @@ public class QueueScanProcessor extends ScanProcessor
 	 * - rownum: 1
 	 * - path: /courses/coursename/file
 	 * - fileid: 12
-	 * @throws InaccessibleDbException 
 	 */
 	@Override
-	public void scan(Map<String, String> result) throws InaccessibleDbException
+	public void scan(Map<String, String> result)
 	{
 		String path = result.get("full_path");
 		rownum = Long.parseLong(result.get("rownum"));
@@ -68,6 +67,9 @@ public class QueueScanProcessor extends ScanProcessor
 			!path.contains("xid-"))
 		{
 			paths.add(path);
+		} else {
+			logger.debug("Skipping " + path + " as it doesn't match patter " +
+					courseFilePattern + " or it contains xid-");
 		}
 		// store the current batch into the queue when we've got enough
 		if (paths.size() >= CSIndexJob.BATCHSIZE)

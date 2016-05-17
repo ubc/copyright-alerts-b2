@@ -120,6 +120,10 @@ public class HostsTable extends SimpleDAO<Host>
 		return "";
 	}
 
+	public boolean isLeader(String hostname) {
+		return getLeader().equals(hostname);
+	}
+
 	public Host getLeaderHost() {
 		return getHostByName(getLeader());
 	}

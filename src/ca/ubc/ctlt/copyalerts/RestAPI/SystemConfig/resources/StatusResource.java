@@ -24,7 +24,7 @@ import java.util.HashMap;
 public class StatusResource extends ServerResource
 {
 	private final static Logger logger = LoggerFactory.getLogger(StatusResource.class);
-	
+
 	private HostsTable hostTable = null;
 	private StatusTable statusTable = null;
 	private FilesTable fileTable = new FilesTable();
@@ -53,16 +53,8 @@ public class StatusResource extends ServerResource
 		{ // return the progress report through counts on the file and queue tables
 			Progress progress = new Progress();
 			Gson gson = new Gson();
-			try
-			{
-				progress.fileCount = fileTable.getCount();
-				progress.queueCount = queueTable.getCount();
-			} catch (InaccessibleDbException e)
-			{
-				logger.error(e.getMessage(), e);
-				getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
-				return null;
-			}
+			progress.fileCount = fileTable.getCount();
+			progress.queueCount = queueTable.getCount();
 			return new JsonRepresentation(gson.toJson(progress));
 		}
 		else if (action.equals("stop"))

@@ -161,4 +161,19 @@ public class Status extends AbstractIdentifiable {
     public void setConfig(String config) {
         this.config = config;
     }
+
+    @Override
+    public String toString() {
+        return "Status{" +
+                "status='" + status + '\'' +
+                ", stage='" + stage + '\'' +
+                ", queueOffset=" + queueOffset +
+                ", filesOffset=" + filesOffset +
+                ", lastQueueFileID=" + lastQueueFileID +
+                ", lastFilesPk1=" + lastFilesPk1 +
+                ", runstart=" + runstart +
+                ", runend=" + runend +
+                ", config='" + config + '\'' +
+                '}';
+    }
 }

@@ -1,5 +1,13 @@
 package ca.ubc.ctlt.copyalerts.RestAPI.AlertsModule.resources;
 
+import blackboard.data.user.User;
+import blackboard.persist.PersistenceException;
+import blackboard.platform.context.Context;
+import blackboard.platform.context.ContextManagerFactory;
+import ca.ubc.ctlt.copyalerts.JsonIntermediate.CourseFiles;
+import ca.ubc.ctlt.copyalerts.JsonIntermediate.FileList;
+import ca.ubc.ctlt.copyalerts.db.FilesTable;
+import com.google.gson.Gson;
 import org.restlet.data.Status;
 import org.restlet.ext.json.JsonRepresentation;
 import org.restlet.representation.Representation;
@@ -7,17 +15,6 @@ import org.restlet.resource.Get;
 import org.restlet.resource.ServerResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.gson.Gson;
-
-import ca.ubc.ctlt.copyalerts.JsonIntermediate.CourseFiles;
-import ca.ubc.ctlt.copyalerts.JsonIntermediate.FileList;
-import ca.ubc.ctlt.copyalerts.db.FilesTable;
-import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
-
-import blackboard.data.user.User;
-import blackboard.platform.context.Context;
-import blackboard.platform.context.ContextManagerFactory;
 
 public class FileListResource extends ServerResource
 {
@@ -71,8 +68,7 @@ public class FileListResource extends ServerResource
 				getResponse().setStatus(Status.SUCCESS_OK);
 				return new JsonRepresentation(gson.toJson(ret));
 			}
-		} catch (InaccessibleDbException e)
-		{
+		} catch (PersistenceException e) {
 			logger.error(e.getMessage(), e);
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
 		} 

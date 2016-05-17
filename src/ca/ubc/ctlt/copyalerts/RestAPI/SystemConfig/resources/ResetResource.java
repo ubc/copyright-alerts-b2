@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import blackboard.persist.PersistenceRuntimeException;
 import org.restlet.data.Status;
 import org.restlet.ext.json.JsonRepresentation;
 import org.restlet.resource.Get;
@@ -70,7 +71,7 @@ public class ResetResource extends ServerResource
 			{
 				hostTable.addHost(hostname);
 			}
-		} catch (InaccessibleDbException e)
+		} catch (PersistenceRuntimeException e)
 		{
 			logger.error(e.getMessage(), e);
 			getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);

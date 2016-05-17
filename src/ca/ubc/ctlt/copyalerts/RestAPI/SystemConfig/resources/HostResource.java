@@ -32,7 +32,7 @@ public class HostResource extends ServerResource
 		{
 			hostTable = new HostsTable();
 			statusTable = new StatusTable();
-		} catch (InaccessibleDbException e)
+		} catch (PersistenceRuntimeException e)
 		{
 			logger.error(e.getMessage(), e);
 			throw new ResourceException(e);

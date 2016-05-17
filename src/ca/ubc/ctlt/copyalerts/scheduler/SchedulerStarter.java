@@ -2,6 +2,8 @@ package ca.ubc.ctlt.copyalerts.scheduler;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
+
+import blackboard.persist.PersistenceRuntimeException;
 import org.quartz.SchedulerException;
 import blackboard.platform.vxi.service.VirtualSystemException;
 import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
@@ -29,9 +31,6 @@ public class SchedulerStarter extends HttpServlet
 				hostTable.addHost(hostname);
 			}
 		} catch (VirtualSystemException e)
-		{
-			throw new ServletException(e);
-		} catch (InaccessibleDbException e)
 		{
 			throw new ServletException(e);
 		}

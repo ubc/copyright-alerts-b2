@@ -1,19 +1,19 @@
 package ca.ubc.ctlt.copyalerts.db.operations;
 
+import blackboard.db.ConnectionManager;
+import blackboard.db.ConnectionNotAvailableException;
+import ca.ubc.ctlt.copyalerts.db.DbInit;
+import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
+import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import ca.ubc.ctlt.copyalerts.db.DbInit;
-import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
-import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
-import blackboard.db.ConnectionManager;
-import blackboard.db.ConnectionNotAvailableException;
 
 public class ResumableScan implements Runnable
 {
@@ -21,7 +21,7 @@ public class ResumableScan implements Runnable
 
 	private ScanProcessor processor;
 	private ResumableScanInfo info;
-	private Boolean errorLock = true;
+	private final Object errorLock = new Object();
 	private Exception error = null;
 
 	public ResumableScan(ResumableScanInfo info, ScanProcessor processor)
@@ -35,11 +35,10 @@ public class ResumableScan implements Runnable
 	 * Generate the list of files to check for indexing.
 	 * Using the API to iterate through the content system turns out to be too memory consuming
 	 * so let's try reading the database directly.
-	 * @return
 	 */
 	public void run()
 	{
-		ConnectionManager cm = DbInit.getConnectionManager();
+		ConnectionManager cm = DbInit.getConnectionManager(info.getTableName());
 		Connection conn = null;
 
 		try
@@ -47,16 +46,13 @@ public class ResumableScan implements Runnable
 			conn = cm.getConnection();
 			conn.setAutoCommit(false); // need to disable autocommit to enable
 										// fetching only a small number of rows at once necessary to keep memory usage low
-			
+
 			long lastQueueFileid = info.getRowIdVal();
-			long queueOffset = 0; 
+			long queueOffset = 0;
 			if (lastQueueFileid != 0)
 			{ // queue generation was interrupted, let's try to resume
 				// find out where the last file id we saw is at
-				// Example Query: SELECT * FROM (SELECT rownum, file_id FROM bblearn_cms_doc.xyf_urls ORDER BY file_id) WHERE file_id=123
-				String query =  "SELECT * FROM (SELECT rownum, "+ info.getRowIdKey() +
-								" FROM "+ info.getTableName() +" ORDER BY "+ info.getRowIdKey() +
-								") WHERE "+ info.getRowIdKey() +"=?";
+				String query = info.getQueueOffsetQuery(conn);
 				PreparedStatement stmt = conn.prepareStatement(query);
 				stmt.setLong(1, lastQueueFileid);
 
@@ -69,7 +65,7 @@ public class ResumableScan implements Runnable
 				}
 				else
 				{ // file was deleted! have to use the fall back option
-					// just using the stored offset means that we might miss some files, but hopefully this isn't a common occurrence 
+					// just using the stored offset means that we might miss some files, but hopefully this isn't a common occurrence
 					logger.debug("Can't find last processed file, blindly resuming from last offset.");
 					queueOffset = info.getRowOffset();
 				}
@@ -78,31 +74,30 @@ public class ResumableScan implements Runnable
 				logger.debug("Resume Scan Query Time: " + interval / 1000.0 + " seconds");
 				res.close();
 			}
-			
-			
-			String dataColumnNames = "";
-			for (String name : info.getDataColumnNames())
-			{
-				dataColumnNames += name + ", ";
-			}
-			String query = "";
-			// complex query for resume, simpler for generating a new queue
-			if (queueOffset > 0)
-			{ // resuming from an interrupted queue generation
-				// Example query: SELECT rn, full_path, file_id FROM 
-				// (SELECT full_path, file_id, ROW_NUMBER() OVER (ORDER BY file_id) rn FROM BBLEARN_CMS_DOC.xyf_urls) 
-				// WHERE rn > 123
-				query = "SELECT rn, "+ dataColumnNames + info.getRowIdKey() + " FROM " +
-						"(SELECT "+ dataColumnNames + info.getRowIdKey() +", ROW_NUMBER() OVER " +
-						"(ORDER BY "+ info.getRowIdKey() +") rn FROM "+ info.getTableName() +") " +
-						"WHERE rn > " + queueOffset;
-			}
-			else
-			{ // starting a new queue generation
-				query = "SELECT rownum, "+ dataColumnNames + info.getRowIdKey() + " FROM "+
-					info.getTableName() +" ORDER BY " + info.getRowIdKey();
-			}
-			PreparedStatement queryCompiled = conn.prepareStatement(query);
+
+//			String dataColumnNames = "";
+//			for (String name : info.getDataColumnNames())
+//			{
+//				dataColumnNames += name + ", ";
+//			}
+//			String query = "";
+//			// complex query for resume, simpler for generating a new queue
+//			if (queueOffset > 0)
+//			{ // resuming from an interrupted queue generation
+//				// Example query: SELECT rn, full_path, file_id FROM
+//				// (SELECT full_path, file_id, ROW_NUMBER() OVER (ORDER BY file_id) rn FROM BBLEARN_CMS_DOC.xyf_urls)
+//				// WHERE rn > 123
+//				query = "SELECT rn, "+ dataColumnNames + info.getRowIdKey() + " FROM " +
+//						"(SELECT "+ dataColumnNames + info.getRowIdKey() +", ROW_NUMBER() OVER " +
+//						"(ORDER BY "+ info.getRowIdKey() +") rn FROM "+ info.getTableName(conn) +") " +
+//						"WHERE rn > " + queueOffset;
+//			}
+//			else
+//			{ // starting a new queue generation
+//				query = "SELECT rownum, "+ dataColumnNames + info.getRowIdKey() + " FROM "+
+//					info.getTableName(conn) +" ORDER BY " + info.getRowIdKey();
+//			}
+			PreparedStatement queryCompiled = conn.prepareStatement(info.getQueueQuery(conn, queueOffset));
 			queryCompiled.setFetchSize(CSIndexJob.BATCHSIZE); // limit the number of rows we're pre-fetching
 
 			int count = 0;
@@ -113,7 +108,7 @@ public class ResumableScan implements Runnable
 			while (res.next())
 			{
 				// call the processor on each result
-				Map<String, String> result = new HashMap<String, String>();
+				Map<String, String> result = new HashMap<>();
 				// add the mandatory rownum to result
 				result.put("rownum", res.getString(1));
 				// add the mandatory row id  to result
@@ -124,7 +119,7 @@ public class ResumableScan implements Runnable
 					result.put(name, res.getString(name));
 				}
 				processor.scan(result);
-				
+
 				// Note: The interrupted flag is cleared by calling interrupted(), so must store it
 				isInterrupted = Thread.interrupted();
 				if (count >= CSIndexJob.BATCHSIZE && isInterrupted)
@@ -144,24 +139,21 @@ public class ResumableScan implements Runnable
 		{
 			logger.error(e.getMessage(), e);
 			setError(e);
-			return;
 		} catch (ConnectionNotAvailableException e)
 		{
 			logger.error(e.getMessage(), e);
 			setError(e);
-			return;
 		} catch (InaccessibleDbException e)
 		{
 			logger.error("Could not access database, stopping index job.", e);
 			setError(e);
-			return;
 		} finally
 		{
 			if (conn != null)
 				cm.releaseConnection(conn);
 		}
 	}
-	
+
 	public boolean hasError()
 	{
 		synchronized (errorLock)
@@ -169,7 +161,7 @@ public class ResumableScan implements Runnable
 			return error != null;
 		}
 	}
-	
+
 	public void setError(Exception e)
 	{
 		synchronized (errorLock)
@@ -177,7 +169,7 @@ public class ResumableScan implements Runnable
 			error = e;
 		}
 	}
-	
+
 	public Exception getError()
 	{
 		synchronized (errorLock)
