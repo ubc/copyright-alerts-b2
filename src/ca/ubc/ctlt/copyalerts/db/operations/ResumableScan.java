@@ -124,8 +124,7 @@ public class ResumableScan implements Runnable
 				isInterrupted = Thread.interrupted();
 				if (count >= CSIndexJob.BATCHSIZE && isInterrupted)
 				{
-					logger.debug("ResumableScan Interrupted.");
-					count = 0;
+					logger.debug("Resumable Scan Interrupted.");
 					break;
 				}
 				count++;
@@ -135,6 +134,7 @@ public class ResumableScan implements Runnable
 			res.close();
 			queryCompiled.close();
 			conn.commit(); // we're running only selects, but just in case
+			logger.info("Processed " + count + " files");
 		} catch (SQLException e)
 		{
 			logger.error(e.getMessage(), e);

@@ -126,8 +126,9 @@ public class FilesTable extends SimpleDAO<File>
 				insertQuery.addObject(f);
 			}
 		}
-		logger.debug("Skipped " +  skipped + " entries as userId and fileId already exists");
-
+		if (skipped != 0) {
+			logger.debug("Skipped " + skipped + " entries as userId and fileId already exists");
+		}
 		if (insertQuery.getObjectsToInsert().size() > 0) {
 			getDAOSupport().execute(insertQuery);
 		} else {

@@ -114,19 +114,19 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	}
 
 	private void setupTrigger(SavedConfiguration config) throws SchedulerException {
+		if (!config.isLimited()) {
+			return;
+		}
 		Scheduler sched = context.getScheduler();
 		Trigger trigger;
-		if (config.isLimited())
-		{
-			int minutes = (config.getHours() * 60) + config.getMinutes();
-			logger.info("Limit execution to " + minutes + " minutes.");
-			trigger = newTrigger()
-					.withIdentity("CSIndexJobStopTrigger", JOBGROUP)
-					.startAt(futureDate(minutes, IntervalUnit.MINUTE))
-					.build();
-			sched.scheduleJob(noopJob, trigger);
-			sched.getListenerManager().addTriggerListener(this, triggerGroupEquals(JOBGROUP));
-		}
+		int minutes = (config.getHours() * 60) + config.getMinutes();
+		logger.info("Limit execution to " + minutes + " minutes.");
+		trigger = newTrigger()
+				.withIdentity("CSIndexJobStopTrigger", JOBGROUP)
+				.startAt(futureDate(minutes, IntervalUnit.MINUTE))
+				.build();
+		sched.scheduleJob(noopJob, trigger);
+		sched.getListenerManager().addTriggerListener(this, triggerGroupEquals(JOBGROUP));
 	}
 
 	private void removeTrigger() {
@@ -261,15 +261,19 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	}
 
 	/**
-	 * Generate the list of files to check for indexing.
+	 * Generate the list of files to check for indexing. Basically scan all entries in
+	 * bblearn_cms_doc.xyf_urls for course files (starts with /courses) and store
+	 * them in queue table for further processing
+	 *
 	 * Using the API to iterate through the content system turns out to be too memory consuming
 	 * so let's try reading the database directly.
+	 *
 	 * @return if the job is ended by interruption
 	 * @throws JobExecutionException
 	 */
 	private boolean stageGenerateQueue() throws JobExecutionException
 	{
-		logger.debug("Starting Stage: Queue Generation");
+		logger.info("Starting Stage: Queue Generation");
 		ScanProcessor processor = new QueueScanProcessor(st);
 		// set the column names for the data that the processor wants
 		List<String> dataKeys = new ArrayList<>();
@@ -291,24 +295,36 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 
 		boolean interrupted = monitorThread(genQueueThread, scanner);
 		if (!interrupted) {
-			logger.debug("Ended Stage: Queue Generation");
+			logger.info("Ended Stage: Queue Generation");
 		}
 
 		return interrupted;
 	}
 
+	/**
+	 * Loads the entries from queue table and process them with index generator. The generator
+	 * loads the file meta (user_id, file_id, course) from content system and store them
+	 * into file table
+	 *
+	 * @param indexGen index generator
+	 * @return if the job is ended by interruption
+	 * @throws JobExecutionException
+     */
 	private boolean stageAddNewFiles(IndexGenerator indexGen) throws JobExecutionException
 	{
-		logger.debug("Starting Stage: Adding New Files (Check Metadata)");
+		logger.info("Starting Stage: Adding New Files with Metadata");
 		List<QueueItem> paths;
 		QueueTable queue = new QueueTable();
 		try
 		{
-			paths = queue.load();
 			ArrayList<CSFile> filesBatch = new ArrayList<>();
-			while (!paths.isEmpty() && !syncStop())
+			while (!syncStop())
 			{
-				logger.debug("Copyright Alerts Indexing: " + paths.get(0));
+				paths = queue.load();
+				if (paths.isEmpty()) {
+					break;
+				}
+				logger.debug("Loaded " + paths.size() + " paths from queue table");
 				for (QueueItem p : paths)
 				{
 					CSContext ctx = CSContext.getContext();
@@ -327,6 +343,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 					if (filesBatch.size() >= BATCHSIZE)
 					{
 						indexGen.process(filesBatch);
+						logger.debug("Processed " + filesBatch.size() + " files to file table");
 						filesBatch.clear();
 						if (syncStop())
 						{
@@ -335,13 +352,13 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 					}
 				}
 
-				// load next batch of files
+				// remove processed paths from queue and load next batch of paths
 				queue.pop();
-				paths = queue.load();
 			}
 			if (!filesBatch.isEmpty())
 			{
 				indexGen.process(filesBatch);
+				logger.debug("Processed " + filesBatch.size() + " files to file table");
 				filesBatch.clear();
 			}
 			if (syncStop())
@@ -357,7 +374,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			logger.error("Could not read from database.", e);
 			throw new JobExecutionException(e);
 		}
-		logger.debug("Ended Stage: Adding New Files (Check Metadata)");
+		logger.info("Ended Stage: Adding New Files with Metadata");
 		return false;
 	}
 
@@ -368,7 +385,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	 */
 	private boolean stageUpdateIndex(IndexGenerator indexGen) throws JobExecutionException
 	{
-		logger.debug("Starting Stage: Update Index");
+		logger.info("Starting Stage: Update Index");
 		ScanProcessor processor = new FilesTableUpdateScanProcessor(indexGen, st);
 		// set the column names for the data that the processor wants
 		List<String> dataKeys = new ArrayList<>();
@@ -391,7 +408,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		// monitor the thread for errors and notify it if the job needs to stop
 		boolean interrupted = monitorThread(genQueueThread, scanner);
 		if (!interrupted) {
-			logger.debug("Ended Stage: Update Index");
+			logger.info("Ended Stage: Update Index");
 		}
 
 		return interrupted;

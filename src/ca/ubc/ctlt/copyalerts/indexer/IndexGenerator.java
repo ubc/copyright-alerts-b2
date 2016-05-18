@@ -31,13 +31,13 @@ public class IndexGenerator
 	private ArrayList<String> attributes;
 	private FilesTable ft = new FilesTable();
 	private CSContext ctx = CSContext.getContext();
-	
+
 	public IndexGenerator(ArrayList<String> attributes)
 	{
 		this.attributes = attributes;
 		ctx.isSuperUser(true);
 	}
-	
+
 	public void process(List<CSFile> files) throws PersistenceException, InaccessibleDbException
 	{
 		Map<CSFile, Set<Id>> filesAndUsers = new HashMap<CSFile, Set<Id>>();
@@ -69,10 +69,11 @@ public class IndexGenerator
 				// G:SR:SYSTEM_ADMIN
 				// This is for a single user assigned permission to the file
 				// BB:U:_81_1
-				
+
 				// Since we only want Instructors and ISS role
 				if (pid.startsWith("G:CR"))
 				{
+					// TODO: possible cache course and instructors.
 					String[] pidArr = pid.split(":");
 					String courseName = pidArr[2];
 					Course course = CourseDbLoader.Default.getInstance().loadByCourseId(courseName);
@@ -87,7 +88,7 @@ public class IndexGenerator
 		}
 		ft.add(filesAndUsers);
 	}
-	
+
 	public boolean fileIsTagged(CSFile file)
 	{
 		CSEntryMetadata meta = file.getCSEntryMetadata();
@@ -103,10 +104,10 @@ public class IndexGenerator
 		}
 		return false;
 	}
-	
+
 	/**
 	 * Given a path, return the CSFile entry if the path is a valid file.
-	 * 
+	 *
 	 * @param path
 	 * @return CSFile if path is a valid file, null otherwise.
 	 */
@@ -126,11 +127,11 @@ public class IndexGenerator
 		CSFile file = (CSFile) entry;
 		return file;
 	}
-	
+
 	/**
 	 * Get a list of userids who are instructors in the given course.
 	 * @return
-	 * @throws PersistenceException 
+	 * @throws PersistenceException
 	 */
 	private ArrayList<Id> getInstructors(Id courseId) throws PersistenceException
 	{
@@ -142,7 +143,7 @@ public class IndexGenerator
 		}
 		return getUserWithRoleInCourse(courseId, role);
 	}
-	
+
 	/**
 	 * Get all user in the given course with the given role. Return as an array of Ids
 	 * @param courseId
@@ -160,5 +161,5 @@ public class IndexGenerator
 		}
 		return names;
 	}
-	
+
 }

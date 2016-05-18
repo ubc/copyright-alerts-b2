@@ -1,18 +1,16 @@
 package ca.ubc.ctlt.copyalerts.db.operations;
 
+import ca.ubc.ctlt.copyalerts.db.QueueTable;
+import ca.ubc.ctlt.copyalerts.db.StatusTable;
+import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import ca.ubc.ctlt.copyalerts.db.StatusTable;
-import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
-import ca.ubc.ctlt.copyalerts.db.QueueTable;
-import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
 
 public class QueueScanProcessor extends ScanProcessor
 {
@@ -33,10 +31,7 @@ public class QueueScanProcessor extends ScanProcessor
 	 */
 	private QueueTable queuetable = new QueueTable();
 	private StatusTable statusTable;
-	/**
-	 * Keeps track of how many files we've processed for this batch
-	 */
-	private int batchCount = 0;
+
 	/**
 	 * Keeps track of resume data for this scan.
 	 */
@@ -55,58 +50,50 @@ public class QueueScanProcessor extends ScanProcessor
 	 * - fileid: 12
 	 */
 	@Override
-	public void scan(Map<String, String> result)
-	{
+	public void scan(Map<String, String> result) {
 		String path = result.get("full_path");
 		rownum = Long.parseLong(result.get("rownum"));
 		file_id = Long.parseLong(result.get("file_id"));
 		// make sure that we only have course files and no xid- files
-		// it seems that xid- files are not listed in the xyf_urls table, 
+		// it seems that xid- files are not listed in the xyf_urls table,
 		// but better be safe with an explicit check
-		if (courseFileMatcher.reset(path).matches() &&
-			!path.contains("xid-"))
-		{
+		if (courseFileMatcher.reset(path).matches() && !path.contains("xid-")) {
 			paths.add(path);
 		} else {
 			logger.debug("Skipping " + path + " as it doesn't match patter " +
 					courseFilePattern + " or it contains xid-");
 		}
 		// store the current batch into the queue when we've got enough
-		if (paths.size() >= CSIndexJob.BATCHSIZE)
-		{
-			logger.debug("Added to queue: " + path);
-			queuetable.add(paths);
-			paths.clear(); // empty the current batch now that they're safely stored
+		if (paths.size() >= CSIndexJob.BATCHSIZE) {
+			save();
 		}
-		if (batchCount >= CSIndexJob.BATCHSIZE) 
-		{
-			statusTable.saveQueueResumeData(rownum, file_id);
-			batchCount = 0;
-		}
-		batchCount++;
-		
 	}
 
 	@Override
-	public void cleanup(boolean wasInterrupted) throws InaccessibleDbException
-	{
-		if (!paths.isEmpty())
-		{ // make sure the last incomplete batch isn't missed
-			queuetable.add(paths);
-			paths.clear(); // empty the current batch now that they're safely stored
+	public void cleanup(boolean wasInterrupted) {
+		if (!paths.isEmpty()) {
+			// make sure the last incomplete batch isn't missed
+			save();
 		}
-		if (wasInterrupted)
-		{ // save resume data since we weren't finished
-			logger.debug("Saving Resume Data - Offset: " + rownum + " File ID: " + file_id);
-			statusTable.saveQueueResumeData(rownum, file_id);
-		}
-		else
-		{ // make sure to reset queue resume data if we've gone a full run without problems
-			logger.debug("Reset Resume Data - Offset: " + rownum + " File ID: " + file_id);
+		if (!wasInterrupted) {
+			// make sure to reset queue resume data if we've gone a full run without problems
 			statusTable.saveQueueResumeData(0, 0);
+			logger.debug("Finished processing. Reset Resume Data - Offset: 0 (was " + rownum + ") File ID: 0 (was " + file_id + ")");
 		}
-		
 	}
-	
+
+	/**
+	 * Save all processed paths to queue table and save the status in case we need a resume in next run
+	 */
+	private void save() {
+		queuetable.add(paths);
+		logger.debug("Added " + paths.size() + " paths to queue." );
+		// empty the current batch now that they're safely stored
+		paths.clear();
+
+		// save resume data since we weren't finished
+		logger.debug("Saving Resume Data - Offset: " + rownum + " File ID: " + file_id);
+		statusTable.saveQueueResumeData(rownum, file_id);
+	}
 
 }
