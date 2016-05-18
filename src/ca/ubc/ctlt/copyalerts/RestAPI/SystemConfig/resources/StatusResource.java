@@ -39,7 +39,7 @@ public class StatusResource extends ServerResource
 			try
 			{
 				if (hostTable == null) hostTable = new HostsTable(); // initialize it if needed
-				if (statusTable == null) statusTable = new StatusTable(); // initialize it if needed
+				if (statusTable == null) statusTable = StatusTable.getInstance(); // initialize it if needed
 				hostTable.loadHosts();
 				return new JsonRepresentation(toStatusJson());
 			} catch (InaccessibleDbException e)

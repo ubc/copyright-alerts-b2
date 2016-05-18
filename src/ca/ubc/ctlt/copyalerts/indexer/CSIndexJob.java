@@ -64,7 +64,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			return;
 		}
 
-		st = new StatusTable();
+		st = StatusTable.getInstance();
 		started = new Timestamp((new Date()).getTime());
 
 		logger.info("Indexing start at " + started + " with " + st.toString());
@@ -269,7 +269,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	 */
 	private boolean stageGenerateQueue() throws JobExecutionException
 	{
-		logger.debug("Queue Generation Start");
+		logger.debug("Starting Stage: Queue Generation");
 		ScanProcessor processor = new QueueScanProcessor(st);
 		// set the column names for the data that the processor wants
 		List<String> dataKeys = new ArrayList<>();
@@ -291,7 +291,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 
 		boolean interrupted = monitorThread(genQueueThread, scanner);
 		if (!interrupted) {
-			logger.debug("Queue Generation End");
+			logger.debug("Ended Stage: Queue Generation");
 		}
 
 		return interrupted;
@@ -299,7 +299,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 
 	private boolean stageAddNewFiles(IndexGenerator indexGen) throws JobExecutionException
 	{
-		logger.info("Check Metadata Start");
+		logger.debug("Starting Stage: Adding New Files (Check Metadata)");
 		List<QueueItem> paths;
 		QueueTable queue = new QueueTable();
 		try
@@ -357,7 +357,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			logger.error("Could not read from database.", e);
 			throw new JobExecutionException(e);
 		}
-		logger.info("Check Metadata Done");
+		logger.debug("Ended Stage: Adding New Files (Check Metadata)");
 		return false;
 	}
 
@@ -368,7 +368,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 	 */
 	private boolean stageUpdateIndex(IndexGenerator indexGen) throws JobExecutionException
 	{
-		logger.debug("Starting Update Stage.");
+		logger.debug("Starting Stage: Update Index");
 		ScanProcessor processor = new FilesTableUpdateScanProcessor(indexGen, st);
 		// set the column names for the data that the processor wants
 		List<String> dataKeys = new ArrayList<>();
@@ -391,7 +391,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		// monitor the thread for errors and notify it if the job needs to stop
 		boolean interrupted = monitorThread(genQueueThread, scanner);
 		if (!interrupted) {
-			logger.debug("Update Stage End");
+			logger.debug("Ended Stage: Update Index");
 		}
 
 		return interrupted;

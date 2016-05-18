@@ -39,7 +39,7 @@ public class SavedConfiguration
 
 	private Properties prop = new Properties();
 	private Gson gson = new Gson();
-	private StatusTable statusTable;
+	private StatusTable statusTable = StatusTable.getInstance();
 
 	// allows easy serialization to json for schedule configurations
 	private ScheduleConfiguration config = new ScheduleConfiguration();
@@ -61,7 +61,7 @@ public class SavedConfiguration
 		{
 			prop.clear();
 			config.reset();
-			statusTable = new StatusTable();
+			statusTable.reset();
 			load();
 		} catch (IOException e)
 		{

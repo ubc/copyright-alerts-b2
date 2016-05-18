@@ -19,17 +19,26 @@ public class StatusTable extends SimpleDAO<Status>
     private static final DbObjectMap STATUS_EXT_MAP = AnnotationMappingFactory.getMap(Status.class);
 
     private final static Logger logger = LoggerFactory.getLogger(StatusTable.class);
+    private static StatusTable instance;
 
     private Status status;
 
-    public StatusTable()
+    public static StatusTable getInstance() {
+        if (instance == null) {
+            instance = new StatusTable();
+        }
+
+        return instance;
+    }
+
+    private StatusTable()
     {
         super(STATUS_EXT_MAP);
         List<Status> statusList = this.loadAll();
         if (statusList.size() == 0) {
-            this.status = new Status();
+            status = new Status();
             this.persist(status);
-            logger.info("No status data, created new one");
+            logger.info("No status data, created a new one");
         } else {
             this.status = statusList.get(0);
             logger.info("Status info loaded");
@@ -147,5 +156,14 @@ public class StatusTable extends SimpleDAO<Status>
 
     public Timestamp getStart() {
         return status.getStart();
+    }
+
+    public String toString() {
+        return status.toString();
+    }
+
+    public void reset() {
+        status.reset();
+        this.persist(status);
     }
 }

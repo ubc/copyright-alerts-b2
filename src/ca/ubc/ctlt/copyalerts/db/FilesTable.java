@@ -80,6 +80,7 @@ public class FilesTable extends SimpleDAO<File>
 	 */
 	public void add(Map<CSFile, Set<Id>> filesAndUsers) throws PersistenceException {
 		InsertBulkQuery insertQuery = new InsertBulkQuery(getDAOSupport().getMap());
+		int skipped = 0;
 		for (Entry<CSFile, Set<Id>> entry : filesAndUsers.entrySet())
 		{
 			CSFile file = entry.getKey();
@@ -113,7 +114,6 @@ public class FilesTable extends SimpleDAO<File>
 			));
 			List<File> files = getDAOSupport().loadList(query);
 
-			int skipped = 0;
 			for (Id userId : users) {
 				String userIdStr = userId.toExternalString();
 				// found duplicate, skip
@@ -125,8 +125,8 @@ public class FilesTable extends SimpleDAO<File>
 				File f = new File(userIdStr, courses.getCourseTitle(courseName), file.getFullPath(), fileId);
 				insertQuery.addObject(f);
 			}
-			logger.debug("Skipped " +  skipped + " entries as userId and fileId already exists");
 		}
+		logger.debug("Skipped " +  skipped + " entries as userId and fileId already exists");
 
 		if (insertQuery.getObjectsToInsert().size() > 0) {
 			getDAOSupport().execute(insertQuery);

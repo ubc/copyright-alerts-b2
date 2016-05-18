@@ -1,10 +1,10 @@
 package ca.ubc.ctlt.copyalerts.RestAPI.SystemConfig.resources;
 
-import java.io.IOException;
-
 import blackboard.persist.PersistenceRuntimeException;
+import ca.ubc.ctlt.copyalerts.JsonIntermediate.HostOptions;
 import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
-import ca.ubc.ctlt.copyalerts.db.StatusTable;
+import ca.ubc.ctlt.copyalerts.db.HostsTable;
+import com.google.gson.Gson;
 import org.restlet.data.Status;
 import org.restlet.ext.json.JsonRepresentation;
 import org.restlet.resource.Get;
@@ -14,31 +14,25 @@ import org.restlet.resource.ServerResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-
-import ca.ubc.ctlt.copyalerts.JsonIntermediate.HostOptions;
-import ca.ubc.ctlt.copyalerts.db.HostsTable;
-import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
+import java.io.IOException;
 
 public class HostResource extends ServerResource
 {
 	private final static Logger logger = LoggerFactory.getLogger(HostResource.class);
 	private HostsTable hostTable = null;
-	private StatusTable statusTable = null;
 	@Override
 	protected void doInit() throws ResourceException
 	{
 		try
 		{
 			hostTable = new HostsTable();
-			statusTable = new StatusTable();
 		} catch (PersistenceRuntimeException e)
 		{
 			logger.error(e.getMessage(), e);
 			throw new ResourceException(e);
 		}
 	}
-	
+
 	@Get("json")
 	public JsonRepresentation getHosts()
 	{
@@ -53,10 +47,10 @@ public class HostResource extends ServerResource
 		}
 		return new JsonRepresentation(toOptionsJson());
 	}
-	
+
 	@Post("json")
 	public JsonRepresentation saveHostLeader(JsonRepresentation data)
-	{			
+	{
     	try
 		{
 			String json = data.getText();

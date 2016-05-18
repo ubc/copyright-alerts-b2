@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-class ConfigUpdateJob implements Job
+public class ConfigUpdateJob implements Job
 {
 	private final static Logger logger = LoggerFactory.getLogger(ConfigUpdateJob.class);
 

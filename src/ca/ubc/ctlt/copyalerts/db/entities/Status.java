@@ -64,12 +64,19 @@ public class Status extends AbstractIdentifiable {
     private String config;
 
     public Status() {
+        reset();
+    }
+
+    public void reset() {
         this.status = STATUS_STOPPED;
         this.stage = STATUS_STAGE_QUEUE;
         this.queueOffset = 0;
         this.filesOffset = 0;
         this.lastQueueFileID = 0;
         this.lastFilesPk1 = 0;
+        this.runstart = Calendar.getInstance();
+        this.runend = Calendar.getInstance();
+        this.config = "";
     }
 
     public String getStatus() {
@@ -171,8 +178,8 @@ public class Status extends AbstractIdentifiable {
                 ", filesOffset=" + filesOffset +
                 ", lastQueueFileID=" + lastQueueFileID +
                 ", lastFilesPk1=" + lastFilesPk1 +
-                ", runstart=" + runstart +
-                ", runend=" + runend +
+                ", runstart=" + runstart.getTime() +
+                ", runend=" + runend.getTime() +
                 ", config='" + config + '\'' +
                 '}';
     }

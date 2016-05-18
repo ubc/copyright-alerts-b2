@@ -119,12 +119,12 @@ public class ResumableScanInfo
 				// Postgres and Oracle can use the same query
 			case "Oracle":
 				// Example query: SELECT rn, full_path, file_id FROM
-				// (SELECT full_path, file_id, ROW_NUMBER() OVER (ORDER BY file_id) rn FROM BBLEARN_CMS_DOC.xyf_urls)
+				// (SELECT full_path, file_id, ROW_NUMBER() OVER (ORDER BY file_id) as rn FROM BBLEARN_CMS_DOC.xyf_urls)
 				// WHERE rn > 123
 				query.append("SELECT rn, ").append(getDataColumnNameString()).append(getRowIdKey()).append(" ");
 				query.append("FROM ");
 				query.append("  (SELECT ").append(getDataColumnNameString()).append(getRowIdKey()).append(", ROW_NUMBER() OVER ");
-				query.append("  (ORDER BY ").append(getRowIdKey()).append(") rn FROM ").append(getTableName(conn)).append(") a");
+				query.append("  (ORDER BY ").append(getRowIdKey()).append(") rn FROM ").append(getTableName(conn)).append(") a ");
 				query.append("WHERE rn > ").append(queueOffset);
 				break;
 			default:
