@@ -79,6 +79,10 @@ public class FilesTable extends SimpleDAO<File>
 	 * @throws PersistenceException
 	 */
 	public void add(Map<CSFile, Set<Id>> filesAndUsers) throws PersistenceException {
+		if (filesAndUsers.isEmpty()) {
+			return;
+		}
+
 		InsertBulkQuery insertQuery = new InsertBulkQuery(getDAOSupport().getMap());
 		int skipped = 0;
 		for (Entry<CSFile, Set<Id>> entry : filesAndUsers.entrySet())
@@ -254,12 +258,12 @@ public class FilesTable extends SimpleDAO<File>
 	 * Given a list of primary keys, remove all files with those primary keys from the table.
 	 * @param filesToRemove list of fileIds to remove
 	 */
-	public void deleteFilesByPk1(Set<Long> filesToRemove)
+	public void deleteFilesByPk1(Set<Id> filesToRemove)
 	{
 		logger.debug("Batch Deleting Files From Index.");
 		DeleteQuery query = new DeleteQuery(this.getDAOSupport().getMap());
 		Criteria criteria = query.getCriteria();
-		criteria.add(criteria.in("id", filesToRemove));
+		criteria.add(criteria.in("id", filesToRemove.toArray()));
 		this.getDAOSupport().delete(query);
 //		Connection conn = null;
 //		String deleteQuery = "DELETE FROM "+ TABLENAME +" WHERE pk1=?";

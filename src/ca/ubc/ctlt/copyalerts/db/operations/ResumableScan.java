@@ -2,8 +2,8 @@ package ca.ubc.ctlt.copyalerts.db.operations;
 
 import blackboard.db.ConnectionManager;
 import blackboard.db.ConnectionNotAvailableException;
+import blackboard.persist.PersistenceException;
 import ca.ubc.ctlt.copyalerts.db.DbInit;
-import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
 import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,9 +143,9 @@ public class ResumableScan implements Runnable
 		{
 			logger.error(e.getMessage(), e);
 			setError(e);
-		} catch (InaccessibleDbException e)
+		} catch (PersistenceException e)
 		{
-			logger.error("Could not access database, stopping index job.", e);
+			logger.error("Database error, stopping index job.", e);
 			setError(e);
 		} finally
 		{

@@ -1,25 +1,28 @@
 package ca.ubc.ctlt.copyalerts.db.operations;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
+import blackboard.cms.filesystem.CSFile;
+import blackboard.data.course.Course;
+import blackboard.persist.Id;
+import blackboard.persist.PersistenceException;
+import blackboard.persist.course.CourseDbLoader;
+import ca.ubc.ctlt.copyalerts.db.FilesTable;
+import ca.ubc.ctlt.copyalerts.db.StatusTable;
+import ca.ubc.ctlt.copyalerts.db.entities.File;
+import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
+import ca.ubc.ctlt.copyalerts.indexer.IndexGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import blackboard.cms.filesystem.CSFile;
-
-import ca.ubc.ctlt.copyalerts.db.FilesTable;
-import ca.ubc.ctlt.copyalerts.db.StatusTable;
-import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
-import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
-import ca.ubc.ctlt.copyalerts.indexer.IndexGenerator;
+import java.util.Calendar;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class FilesTableUpdateScanProcessor extends ScanProcessor
 {
 	private final static Logger logger = LoggerFactory.getLogger(FilesTableUpdateScanProcessor.class);
 
-	private Set<Long> filesToRemove = new HashSet<>();
+	private Set<Id> filesToRemove = new HashSet<>();
 	private long rownum;
 	private long file_pk1;
 	private IndexGenerator indexGen;
@@ -34,16 +37,24 @@ public class FilesTableUpdateScanProcessor extends ScanProcessor
 
 
 	@Override
-	public void scan(Map<String, String> result) throws InaccessibleDbException {
+	public void scan(Map<String, String> result) throws PersistenceException {
 		String path = result.get("filepath");
 		rownum = Long.parseLong(result.get("rownum"));
 		file_pk1 = Long.parseLong(result.get("pk1"));
+		Id pk1 = Id.generateId(File.DATA_TYPE, file_pk1);
 
-		// check to see if this file has been tagged since we last checked
-		CSFile file = indexGen.getCSFileFromPath(path);
+		// check if the course is still available
+		Course course = getCourseByPath(path);
+		if (course == null || !course.getIsAvailable() ||
+				(course.getEndDate() != null && course.getEndDate().before(Calendar.getInstance()))) {
+			filesToRemove.add(pk1);
+		} else {
+			// check to see if this file has been tagged since we last checked
+			CSFile file = indexGen.getCSFileFromPath(path);
 
-		if (indexGen.fileIsTagged(file)) {
-			filesToRemove.add(file_pk1);
+			if (indexGen.fileIsTagged(file)) {
+				filesToRemove.add(pk1);
+			}
 		}
 
 		// store the current batch into the queue when we've got enough
@@ -53,7 +64,7 @@ public class FilesTableUpdateScanProcessor extends ScanProcessor
 	}
 
 	@Override
-	public void cleanup(boolean wasInterrupted) throws InaccessibleDbException
+	public void cleanup(boolean wasInterrupted)
 	{
 		if (!filesToRemove.isEmpty()) {
 			// make sure the last incomplete batch isn't missed
@@ -77,5 +88,16 @@ public class FilesTableUpdateScanProcessor extends ScanProcessor
 		// save resume data since we weren't finished
 		logger.debug("Saving Resume Data - Offset: " + rownum + " File ID: " + file_pk1);
 		statustable.saveFileResumeData(rownum, file_pk1);
+	}
+
+	public static Course getCourseByPath(String path) throws PersistenceException {
+		// path has to be a course path
+		if (!path.startsWith("/courses/")) {
+			return null;
+		}
+
+		String courseStr = path.split("/")[2];
+
+		return CourseDbLoader.Default.getInstance().loadByCourseId(courseStr);
 	}
 }

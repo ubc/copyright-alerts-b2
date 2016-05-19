@@ -342,8 +342,8 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 					// Retrieve metadata
 					if (filesBatch.size() >= BATCHSIZE)
 					{
-						indexGen.process(filesBatch);
-						logger.debug("Processed " + filesBatch.size() + " files to file table");
+						int num = indexGen.process(filesBatch);
+						logger.debug("Processed " + num + " files to file table, skipped " + (filesBatch.size() - num) + " files");
 						filesBatch.clear();
 						if (syncStop())
 						{
@@ -368,10 +368,6 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		} catch (PersistenceException e)
 		{
 			logger.error("Could not save to database.", e);
-			throw new JobExecutionException(e);
-		} catch (InaccessibleDbException e)
-		{
-			logger.error("Could not read from database.", e);
 			throw new JobExecutionException(e);
 		}
 		logger.info("Ended Stage: Adding New Files with Metadata");

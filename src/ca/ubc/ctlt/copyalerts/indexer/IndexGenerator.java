@@ -1,28 +1,17 @@
 package ca.ubc.ctlt.copyalerts.indexer;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import ca.ubc.ctlt.copyalerts.db.FilesTable;
-import ca.ubc.ctlt.copyalerts.db.InaccessibleDbException;
-import blackboard.cms.filesystem.CSAccessControlEntry;
-import blackboard.cms.filesystem.CSContext;
-import blackboard.cms.filesystem.CSEntry;
-import blackboard.cms.filesystem.CSEntryMetadata;
-import blackboard.cms.filesystem.CSFile;
+import blackboard.cms.filesystem.*;
 import blackboard.data.course.Course;
 import blackboard.data.course.CourseMembership;
 import blackboard.persist.Id;
 import blackboard.persist.PersistenceException;
 import blackboard.persist.course.CourseDbLoader;
 import blackboard.persist.course.CourseMembershipDbLoader;
+import ca.ubc.ctlt.copyalerts.db.FilesTable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.*;
 
 public class IndexGenerator
 {
@@ -38,9 +27,15 @@ public class IndexGenerator
 		ctx.isSuperUser(true);
 	}
 
-	public void process(List<CSFile> files) throws PersistenceException, InaccessibleDbException
+	/**
+	 * Process the files to file table with additional file info
+	 * @param files list of files
+	 * @return number of files are actually added to the table
+	 * @throws PersistenceException
+     */
+	int process(List<CSFile> files) throws PersistenceException
 	{
-		Map<CSFile, Set<Id>> filesAndUsers = new HashMap<CSFile, Set<Id>>();
+		Map<CSFile, Set<Id>> filesAndUsers = new HashMap<>();
 		for (CSFile file : files)
 		{
 			if (fileIsTagged(file))
@@ -54,7 +49,7 @@ public class IndexGenerator
 			// is shared by two or more courses taught by the same instructor, and so we
 			// grab the instructors for both courses, ending up with the same instructor
 			// twice.
-			HashSet<Id> names = new HashSet<Id>();
+			HashSet<Id> names = new HashSet<>();
 			for (CSAccessControlEntry e : accesses)
 			{
 				if (!e.canWrite())
@@ -73,10 +68,14 @@ public class IndexGenerator
 				// Since we only want Instructors and ISS role
 				if (pid.startsWith("G:CR"))
 				{
-					// TODO: possible cache course and instructors.
 					String[] pidArr = pid.split(":");
 					String courseName = pidArr[2];
 					Course course = CourseDbLoader.Default.getInstance().loadByCourseId(courseName);
+					// we only add files that are in active course and the course is not ended yet
+					Calendar endDate = course.getEndDate();
+					if ((endDate != null && endDate.before(Calendar.getInstance())) || !course.getIsAvailable()) {
+						continue;
+					}
 					// We only want Instructor users for now
 					if (pid.matches(".+(?i)instructor.*"))
 					{
@@ -84,9 +83,13 @@ public class IndexGenerator
 					}
 				}
 			}
-			filesAndUsers.put(file, names);
+			if (!names.isEmpty()) {
+				filesAndUsers.put(file, names);
+			}
 		}
 		ft.add(filesAndUsers);
+
+		return filesAndUsers.size();
 	}
 
 	public boolean fileIsTagged(CSFile file)
@@ -108,7 +111,7 @@ public class IndexGenerator
 	/**
 	 * Given a path, return the CSFile entry if the path is a valid file.
 	 *
-	 * @param path
+	 * @param path file path
 	 * @return CSFile if path is a valid file, null otherwise.
 	 */
 	public CSFile getCSFileFromPath(String path)
@@ -124,13 +127,12 @@ public class IndexGenerator
 			logger.info("Skipping directory, Path: " + path);
 			return null;
 		}
-		CSFile file = (CSFile) entry;
-		return file;
+		return (CSFile) entry;
 	}
 
 	/**
 	 * Get a list of userids who are instructors in the given course.
-	 * @return
+	 * @return list of user ids
 	 * @throws PersistenceException
 	 */
 	private ArrayList<Id> getInstructors(Id courseId) throws PersistenceException
@@ -146,14 +148,14 @@ public class IndexGenerator
 
 	/**
 	 * Get all user in the given course with the given role. Return as an array of Ids
-	 * @param courseId
-	 * @param role
-	 * @return
+	 * @param courseId course id
+	 * @param role course membership role
+	 * @return list of user ids
 	 * @throws PersistenceException
 	 */
 	private ArrayList<Id> getUserWithRoleInCourse(Id courseId, CourseMembership.Role role) throws PersistenceException
 	{
-		ArrayList<Id> names = new ArrayList<Id>();
+		ArrayList<Id> names = new ArrayList<>();
 		List<CourseMembership> memberships = CourseMembershipDbLoader.Default.getInstance().loadByCourseIdAndRole(courseId, role);
 		for (CourseMembership membership : memberships)
 		{
