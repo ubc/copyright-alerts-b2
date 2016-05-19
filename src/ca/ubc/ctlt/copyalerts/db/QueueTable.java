@@ -8,16 +8,12 @@ import blackboard.persist.impl.mapping.DbObjectMap;
 import blackboard.persist.impl.mapping.annotation.AnnotationMappingFactory;
 import ca.ubc.ctlt.copyalerts.db.entities.QueueItem;
 import ca.ubc.ctlt.copyalerts.indexer.CSIndexJob;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class QueueTable extends SimpleDAO<QueueItem>
 {
 	private static final DbObjectMap QUEUE_EXT_MAP = AnnotationMappingFactory.getMap(QueueItem.class);
-
-	private final static Logger logger = LoggerFactory.getLogger(QueueTable.class);
 
 	public QueueTable()
 	{

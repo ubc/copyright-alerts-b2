@@ -8,9 +8,10 @@ import blackboard.persist.impl.mapping.annotation.Table;
 import java.sql.Timestamp;
 import java.util.Calendar;
 
-@Table("ubc_ctlt_ca_status")
+@Table(Status.TABLE_NAME)
 public class Status extends AbstractIdentifiable {
     public static final DataType DATA_TYPE = new DataType(Status.class);
+    public static final String TABLE_NAME = "ubc_ctlt_ca_status";
 
     // all the possible values for the "status" field
     public final static String STATUS_RUNNING = "running";

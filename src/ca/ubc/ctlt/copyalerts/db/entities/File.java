@@ -5,9 +5,10 @@ import blackboard.persist.DataType;
 import blackboard.persist.impl.mapping.annotation.Column;
 import blackboard.persist.impl.mapping.annotation.Table;
 
-@Table("ubc_ctlt_ca_files")
+@Table(File.TABLE_NAME)
 public class File extends AbstractIdentifiable {
     public static final DataType DATA_TYPE = new DataType(File.class);
+    public final static String TABLE_NAME = "ubc_ctlt_ca_files";
 
     @Column({"userid"})
     private String userId;

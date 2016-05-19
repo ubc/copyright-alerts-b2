@@ -5,7 +5,10 @@ import blackboard.cms.filesystem.CSFile;
 import blackboard.persist.PersistenceException;
 import ca.ubc.ctlt.copyalerts.configuration.HostResolver;
 import ca.ubc.ctlt.copyalerts.configuration.SavedConfiguration;
-import ca.ubc.ctlt.copyalerts.db.*;
+import ca.ubc.ctlt.copyalerts.db.HostsTable;
+import ca.ubc.ctlt.copyalerts.db.QueueTable;
+import ca.ubc.ctlt.copyalerts.db.StatusTable;
+import ca.ubc.ctlt.copyalerts.db.entities.File;
 import ca.ubc.ctlt.copyalerts.db.entities.QueueItem;
 import ca.ubc.ctlt.copyalerts.db.entities.Status;
 import ca.ubc.ctlt.copyalerts.db.operations.*;
@@ -395,7 +398,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 		logger.debug("Files Resume Offset: " + filesOffset + " File ID: " + lastFilesPk1);
 
 		// spawn the thread that scans all files to generate the queue
-		ResumableScanInfo info = new ResumableScanInfo(FilesTable.TABLENAME, dataKeys, "pk1", lastFilesPk1, filesOffset);
+		ResumableScanInfo info = new ResumableScanInfo(File.TABLE_NAME, dataKeys, "pk1", lastFilesPk1, filesOffset);
 		ResumableScan scanner = new ResumableScan(info, processor);
 
 		Thread genQueueThread = new Thread(scanner);

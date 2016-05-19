@@ -5,6 +5,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import blackboard.persist.PersistenceRuntimeException;
+import ca.ubc.ctlt.copyalerts.db.FilesTable;
+import ca.ubc.ctlt.copyalerts.db.QueueTable;
+import ca.ubc.ctlt.copyalerts.db.entities.File;
+import ca.ubc.ctlt.copyalerts.db.entities.Host;
+import ca.ubc.ctlt.copyalerts.db.entities.QueueItem;
 import org.restlet.data.Status;
 import org.restlet.ext.json.JsonRepresentation;
 import org.restlet.resource.Get;
@@ -28,7 +33,7 @@ public class ResetResource extends ServerResource
 	@Get("json")
 	public JsonRepresentation resetDatabase()
 	{
-		String[] tables = {"ubc_ctlt_ca_files", "ubc_ctlt_ca_hosts", "ubc_ctlt_ca_queue", "ubc_ctlt_ca_status"};
+		String[] tables = {File.TABLE_NAME, Host.TABLE_NAME, QueueItem.TABLE_NAME};
 		// delete all entries from all our custom tables
 		ConnectionManager cm = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = null;
@@ -38,7 +43,7 @@ public class ResetResource extends ServerResource
 			conn = cm.getConnection();
 			for (String table : tables)
 			{
-				String query = "delete from " + table;
+				String query = "DELETE FROM " + table;
 				stmt = conn.createStatement();
 				stmt.executeUpdate(query);
 			}

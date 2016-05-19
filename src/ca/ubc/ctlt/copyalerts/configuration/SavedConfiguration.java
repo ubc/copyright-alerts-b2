@@ -47,7 +47,12 @@ public class SavedConfiguration
 
 	private SavedConfiguration()
 	{
-		reset();
+		try {
+			load();
+		} catch (IOException e) {
+			logger.error(e.getMessage(), e);
+			throw new RuntimeException(e);
+		}
 	}
 
 	public static SavedConfiguration getInstance()
@@ -127,8 +132,7 @@ public class SavedConfiguration
 	 */
 	public String toJson()
 	{
-		config.syncstatus = new SyncStatus();
-		return gson.toJson(config);
+		return toJson(new SyncStatus());
 	}
 
 	/**

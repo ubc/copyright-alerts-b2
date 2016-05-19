@@ -5,9 +5,10 @@ import blackboard.persist.DataType;
 import blackboard.persist.impl.mapping.annotation.Column;
 import blackboard.persist.impl.mapping.annotation.Table;
 
-@Table("ubc_ctlt_ca_hosts")
+@Table(Host.TABLE_NAME)
 public class Host extends AbstractIdentifiable {
     public static final DataType DATA_TYPE = new DataType(Host.class);
+    public static final String TABLE_NAME = "ubc_ctlt_ca_hosts";
 
     @Column({"host"})
     private String host;

@@ -26,7 +26,6 @@ public class FilesTable extends SimpleDAO<File>
 
 	private final static Logger logger = LoggerFactory.getLogger(FilesTable.class);
 
-	public final static String TABLENAME = "ubc_ctlt_ca_files";
 	private final static int ENTRYPERPAGE = 25;
 
 	// store mapping of course names to course title, names are id like, title is human readable
