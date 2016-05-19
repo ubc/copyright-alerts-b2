@@ -24,7 +24,7 @@
             been uploaded on your behalf), for which you have not entered copyright
             information. You can review the list of files by expanding the drop-down
             icon or clicking on the course name. To update the copyright status
-            attribution in bulk, click on the “view” link next to the course.  For
+            attribution in bulk, click on the “Add attribution” link next to the course.  For
             assistance with updating copyright status attribution, please contact
             your
             <a href="http://wiki.ubc.ca/Documentation:LTHub/Faculty_Support_Copyright_Alert" target="_blank">
@@ -51,22 +51,21 @@
     </div>
 	<div ng-repeat="(cid, course) in courseFiles.courses">
 		<h4 class="moduleTitle">
-			<a ng-click="course.show=!course.show" href="" >
+			<a href="/bbcswebdav/courses/{{course.name}}">
 				{{course.title}}
+			</a>
+			<a class="side-controls" ng-click="course.show=!course.show" href="" >
 				<span>({{course.numFiles}})</span>
 				<img alt="Show files for {{course.title}}" ng-show="!course.show"
 					src="/images/ci/ng/cm_arrow_down.gif" />
 				<img alt="Hide files for {{course.title}}" ng-show="course.show"
 					src="/images/ci/ng/cm_arrow_up.gif" />
-				<a class="side-controls" href="/bbcswebdav/courses/{{course.name}}">
-					(view)
-				</a>
 			</a>
 		</h4>
 		<ul ng-show="course.show">
 			<li ng-repeat="file in course.files">
-			<a class="main-link" href="/webapps/ubc-metadata-BBLEARN//metadata/list?file0={{file.encodedPath}}">{{file.name}}</a>
-			<a class="side-controls" href="/bbcswebdav{{file.rawPath}}">(view)</a>
+			<a class="main-link" href="/bbcswebdav{{file.rawPath}}">{{file.name}}</a>
+			<a class="side-controls" href="/webapps/ubc-metadata-BBLEARN//metadata/list?file0={{file.encodedPath}}">(Add Attribution)</a>
 			</li>
 			<li ng-if="course.numPages > 1" class="rumble inventory_paging">
 				<a class="pagelink" title="First Page" href="" ng-click="getPage(course, 1);" ng-hide="course.page == 1">
@@ -75,7 +74,7 @@
 				<a class="pagelink" title="Previous Page" href="" ng-click="getPage(course, course.page - 1);" ng-hide="course.page == 1">
 					<img src="/images/ci/ng/small_previous.gif" alt="Previous Page">
 				</a>
-				Page {{course.page}} of {{course.numPages}} 
+				Page {{course.page}} of {{course.numPages}}
 				<a class="pagelink" title="Next Page" href="" ng-click="getPage(course, course.page + 1);" ng-hide="course.page == course.numPages">
 					<img src="/images/ci/ng/small_next.gif" alt="Next Page">
 				</a>
@@ -169,36 +168,36 @@
 (function() {
 // Need a separate function to start angularjs cause Blackboard's javascript
 // loader delays loading libraries until the entire page has been loaded.
-function startAngular() 
+function startAngular()
 {
 	// to prevent an exception when angular first loads, we don't declare
 	// an ng-app until we're sure angular + extensions have all been loaded
 	$("ubc_ctlt_ca_angular_div").setAttribute('ng-app', 'CopyAlertsModule');
 	var services = angular.module('CopyAlertsModuleServices', ['ngResource']);
 	var apiUrlPrefix = '/webapps/ubc-copyright-alerts-BBLEARN/alertsmodule';
-	services.factory('Files', 
+	services.factory('Files',
 		function($resource)
 		{
 			return $resource('/webapps/ubc-copyright-alerts-BBLEARN/alertsmodule/files');
 		}
 	);
-	services.factory('CourseFiles', 
+	services.factory('CourseFiles',
 		function($resource)
 		{
 			return $resource('/webapps/ubc-copyright-alerts-BBLEARN/alertsmodule/files/:courseid/:page');
 		}
 	);
-	services.factory('Status', 
-		function($resource) 
+	services.factory('Status',
+		function($resource)
 		{
 			return $resource('/webapps/ubc-copyright-alerts-BBLEARN/alertsmodule/status');
 		}
 	);
-	var copyAlertsModule = angular.module('CopyAlertsModule', 
+	var copyAlertsModule = angular.module('CopyAlertsModule',
 			['CopyAlertsModuleServices']);
 	copyAlertsModule.controller(
 		"FileListCtrl",
-		function FileListCtrl($scope, Files, Status, CourseFiles) 
+		function FileListCtrl($scope, Files, Status, CourseFiles)
 		{
 			$scope.courseFiles = Files.get(
 				function(val)
@@ -213,7 +212,7 @@ function startAngular()
 					}
 
 					if (count > 0)
-					{ 
+					{
 						$('ubc_ctlt_ca_app').removeClassName('hideInitially');
 					}
 				}
@@ -231,7 +230,7 @@ function startAngular()
 			);
 			$scope.getPage = function(course, desiredPage)
 			{
-				if (desiredPage < 1 || 
+				if (desiredPage < 1 ||
 					desiredPage > course.numPages ||
 					desiredPage == course.page)
 				{ // invalid page request, ignore
@@ -239,7 +238,7 @@ function startAngular()
 				}
 				CourseFiles.get(
 					{courseid: course.courseId, page: desiredPage},
-					function(c) 
+					function(c)
 					{
 						c.show = true;
 						$scope.courseFiles.courses[c.courseId] = c;
@@ -258,10 +257,10 @@ function startAngular()
 
 // lets you pre-set arguments in a javascript function, for passing around
 // functions like a variable
-function partial(func /*, 0..n args */) 
+function partial(func /*, 0..n args */)
 {
 	var args = Array.prototype.slice.call(arguments, 1);
-	return function() 
+	return function()
 	{
 		var allArguments = args.concat(Array.prototype.slice.call(arguments));
 		return func.apply(this, allArguments);
@@ -269,7 +268,7 @@ function partial(func /*, 0..n args */)
 }
 
 // load a library dynamically, execute a call back function once done
-function loadFile(url, onloadcb) 
+function loadFile(url, onloadcb)
 {
 	var head = document.getElementById('ubc_ctlt_ca_angular_div');
 	var script = document.createElement('script');
@@ -293,31 +292,31 @@ function libLoader(libs, after)
 	}
 	else
 	{ // load the library and then move on
-		if ('after' in lib) 
+		if ('after' in lib)
 			loadFile(lib.url, partial(libLoader, libs, lib.after));
-		else 
+		else
 			loadFile(lib.url, partial(libLoader, libs, null));
 	}
 }
 // load AngularJS and associated extensions
 libLoader([
 	{
-	"loaded": function() { return typeof angular != 'undefined'}, 
+	"loaded": function() { return typeof angular != 'undefined'},
 	"url": "//ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular.js"
 	},
 	{
-	"loaded": function() { 
-			try { angular.module("ngResource"); } 
-			catch(e) { return false; } 
-			return true; 
-		}, 
+	"loaded": function() {
+			try { angular.module("ngResource"); }
+			catch(e) { return false; }
+			return true;
+		},
 	"url": "//ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular-resource.js",
 	"after": partial(startAngular)
 	}
 ]);
 // end anonymous function wrapper
 })();
-	
+
 </script>
 </bbNG:jsBlock>
 </bbNG:includedPage>
