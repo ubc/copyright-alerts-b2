@@ -28,8 +28,8 @@ class DeleteTopQuery extends DeleteQuery {
                 break;
             case "Oracle":
                 // Oracle "DELETE FROM "+ TABLENAME +" WHERE pk1 IN (SELECT pk1 FROM (SELECT * FROM "+ TABLENAME +" ORDER BY pk1) WHERE rownum <= "+ num +")";
-                subSql.append("SELECT pk1 FROM (SELECT * FROM ").append(this._map.getTableName()).append(" ORDER BY pk1 ");
-                subSql.append("WHERE rownum <= ?)");
+                subSql.append("SELECT pk1 FROM (SELECT * FROM ").append(this._map.getTableName()).append(" ORDER BY pk1) ");
+                subSql.append("WHERE rownum <= ?");
                 break;
             default:
                 throw new RuntimeException("Unsupported database " + conn.getMetaData().getDatabaseProductName());
