@@ -5,49 +5,37 @@
 <div id="ubc_ctlt_ca_angular_div">
 <div id="ubc_ctlt_ca_app" class="hideInitially" ng-controller="FileListCtrl">
 	<p>
-        When you upload files into Connect, you have the option to fill out a
-        copyright status form, which confirms the copyright permissions you
-        are relying upon. For example, if you are uploading your own work,
-        you can designate that you own the copyright in that work. If you’ve
-        taken a short excerpt from a text, you can designate that you are
-        exercising fair dealing.
-    </p><br />
+        You have not provided copyright information for the files listed below.
+    </p>
+
     <p>
-		This information is a useful memory-aid and reference for you and your
-        department, and will assist you and the University should you and the
-        University be challenged by a copyright holder.
-        <a ng-click="showDetail=!showDetail" href="">...More</a>
-    </p><br />
-    <div ng-show="showDetail">
-        <p>
-            Below, you will see the number of files you have uploaded (or have
-            been uploaded on your behalf), for which you have not entered copyright
-            information. You can review the list of files by expanding the drop-down
-            icon or clicking on the course name. To update the copyright status
-            attribution in bulk, click on the “Add attribution” link next to the course.  For
-            assistance with updating copyright status attribution, please contact
-            your
-            <a href="http://wiki.ubc.ca/Documentation:LTHub/Faculty_Support_Copyright_Alert" target="_blank">
-                local support
-            </a>.
-        </p><br />
-        <p>
-            Please note – when you are uploading copies of copyrighted materials
-            (articles, papers, pages from textbooks etc.), consider using LOCR –
-            the Library Online Course Reserves.  Materials requested through LOCR
-            are processed by the Library’s Copyright Office, who will take care
-            of the copyright status of materials on your behalf, including paying
-            for transactional licences if necessary.
-        </p><br />
-        <p>
-            Click <a href="http://services.library.ubc.ca/borrowing-services/course-reserves/" target="_blank">here</a>
-            for more information about LOCR.
-        </p><br />
-        <p>
-            If you have any questions or concerns about copyright or LOCR please
-            contact the
-            <a href="http://copyright.ubc.ca/help-and-resources/vancouver-contacts/" target="_blank">Copyright Office</a>.
-        </p>
+        Please add the copyright information for each file by expanding the
+        drop-down icon and clicking on the Add Attribution links. To update
+        the files in bulk, click on the course name link.  See "<a href="http://lthub.ubc.ca/guides/connect/set-copyright/" target="_blank">
+        support documentation</a>. For assistance, contact your <a href="http://lthub.ubc.ca/support/copyright-privacy/#help" target="_blank">
+        local support</a>.
+    </p>
+
+    <p>
+        You are responsible for your course materials, including documenting
+        your copyright compliance. Doing so ensures that you and the University
+        are ready, should a copyright holder take issue with how you’ve used
+        their material.
+    </p>
+
+    <p>
+        Save Time: Use the Library Online Course Reserves (LOCR) system as a
+        shortcut to uploading copies of copyrighted materials. Materials
+        requested through LOCR are processed by UBC’s Copyright Office, who
+        reviews the copyright status of materials on your behalf, including
+        paying for transactional licenses as needed.
+    </p>
+
+    <p>
+        For questions about copyright or LOCR, please contact UBC’s
+        <a href="http://copyright.ubc.ca/help-and-resources/vancouver-contacts/" target="_blank">
+        Copyright Office</a>.
+    </p>
     </div>
 	<div ng-repeat="(cid, course) in courseFiles.courses">
 		<h4 class="moduleTitle">
