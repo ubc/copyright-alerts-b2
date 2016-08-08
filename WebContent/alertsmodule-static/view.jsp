@@ -3,89 +3,76 @@
 
 <bbNG:includedPage ctxId="ctx">
 <div id="ubc_ctlt_ca_angular_div">
-<div id="ubc_ctlt_ca_app" class="hideInitially" ng-controller="FileListCtrl">
-	<p>
-        When you upload files into Connect, you have the option to fill out a
-        copyright status form, which confirms the copyright permissions you
-        are relying upon. For example, if you are uploading your own work,
-        you can designate that you own the copyright in that work. If you’ve
-        taken a short excerpt from a text, you can designate that you are
-        exercising fair dealing.
-    </p><br />
-    <p>
-		This information is a useful memory-aid and reference for you and your
-        department, and will assist you and the University should you and the
-        University be challenged by a copyright holder.
-        <a ng-click="showDetail=!showDetail" href="">...More</a>
-    </p><br />
-    <div ng-show="showDetail">
-        <p>
-            Below, you will see the number of files you have uploaded (or have
-            been uploaded on your behalf), for which you have not entered copyright
-            information. You can review the list of files by expanding the drop-down
-            icon or clicking on the course name. To update the copyright status
-            attribution in bulk, click on the “Add attribution” link next to the course.  For
-            assistance with updating copyright status attribution, please contact
-            your
-            <a href="http://wiki.ubc.ca/Documentation:LTHub/Faculty_Support_Copyright_Alert" target="_blank">
-                local support
-            </a>.
-        </p><br />
-        <p>
-            Please note – when you are uploading copies of copyrighted materials
-            (articles, papers, pages from textbooks etc.), consider using LOCR –
-            the Library Online Course Reserves.  Materials requested through LOCR
-            are processed by the Library’s Copyright Office, who will take care
-            of the copyright status of materials on your behalf, including paying
-            for transactional licences if necessary.
-        </p><br />
-        <p>
-            Click <a href="http://services.library.ubc.ca/borrowing-services/course-reserves/" target="_blank">here</a>
-            for more information about LOCR.
-        </p><br />
-        <p>
-            If you have any questions or concerns about copyright or LOCR please
-            contact the
-            <a href="http://copyright.ubc.ca/help-and-resources/vancouver-contacts/" target="_blank">Copyright Office</a>.
-        </p>
-    </div>
-	<div ng-repeat="(cid, course) in courseFiles.courses">
-		<h4 class="moduleTitle">
-			<a href="/bbcswebdav/courses/{{course.name}}">
-				{{course.title}}
-			</a>
-			<a class="side-controls" ng-click="course.show=!course.show" href="" >
-				<span>({{course.numFiles}})</span>
-				<img alt="Show files for {{course.title}}" ng-show="!course.show"
-					src="/images/ci/ng/cm_arrow_down.gif" />
-				<img alt="Hide files for {{course.title}}" ng-show="course.show"
-					src="/images/ci/ng/cm_arrow_up.gif" />
-			</a>
-		</h4>
-		<ul ng-show="course.show">
-			<li ng-repeat="file in course.files">
-			<a class="main-link" href="/bbcswebdav{{file.rawPath}}">{{file.name}}</a>
-			<a class="side-controls" href="/webapps/ubc-metadata-BBLEARN//metadata/list?file0={{file.encodedPath}}">(Add Attribution)</a>
-			</li>
-			<li ng-if="course.numPages > 1" class="rumble inventory_paging">
-				<a class="pagelink" title="First Page" href="" ng-click="getPage(course, 1);" ng-hide="course.page == 1">
-					<img src="/images/ci/ng/small_rewind.gif" alt="First Page">
+	<div id="ubc_ctlt_ca_app" class="hideInitially" ng-controller="FileListCtrl">
+		<p>
+			You have not provided copyright information for the files listed below.
+		</p>
+		<br/>
+		<p>
+			Please add the copyright information for each file by expanding the
+			drop-down icon and clicking on the Add Attribution links. To update
+			the files in bulk, click on the course name link.  See <a href="http://lthub.ubc.ca/guides/connect/set-copyright/" target="_blank">
+			support documentation</a>. For assistance, contact your <a href="http://lthub.ubc.ca/support/copyright-privacy/#help" target="_blank">
+			local support</a>.
+		</p>
+		<br/>
+		<p>
+			You are responsible for your course materials, including documenting
+			your copyright compliance. Doing so ensures that you and the University
+			are ready, should a copyright holder take issue with how you’ve used
+			their material.
+		</p>
+		<br/>
+		<p>
+			Save Time: Use the Library Online Course Reserves (LOCR) system as a
+			shortcut to uploading copies of copyrighted materials. Materials
+			requested through LOCR are processed by UBC’s Copyright Office, who
+			reviews the copyright status of materials on your behalf, including
+			paying for transactional licenses as needed.
+		</p>
+		<br/>
+		<p>
+			For questions about copyright or LOCR, please contact UBC’s
+			<a href="http://copyright.ubc.ca/help-and-resources/vancouver-contacts/" target="_blank">
+			Copyright Office</a>.
+		</p>
+		<div ng-repeat="(cid, course) in courseFiles.courses">
+			<h4 class="moduleTitle">
+				<a href="/bbcswebdav/courses/{{course.name}}">
+					{{course.title}}
 				</a>
-				<a class="pagelink" title="Previous Page" href="" ng-click="getPage(course, course.page - 1);" ng-hide="course.page == 1">
-					<img src="/images/ci/ng/small_previous.gif" alt="Previous Page">
+				<a class="side-controls" ng-click="course.show=!course.show" href="" >
+					<span>({{course.numFiles}})</span>
+					<img alt="Show files for {{course.title}}" ng-show="!course.show"
+						src="/images/ci/ng/cm_arrow_down.gif" />
+					<img alt="Hide files for {{course.title}}" ng-show="course.show"
+						src="/images/ci/ng/cm_arrow_up.gif" />
 				</a>
-				Page {{course.page}} of {{course.numPages}}
-				<a class="pagelink" title="Next Page" href="" ng-click="getPage(course, course.page + 1);" ng-hide="course.page == course.numPages">
-					<img src="/images/ci/ng/small_next.gif" alt="Next Page">
-				</a>
-				<a class="pagelink" title="Last Page" href="" ng-click="getPage(course, course.numPages);" ng-hide="course.page == course.numPages">
-					<img src="/images/ci/ng/small_ffwd.gif" alt="Last Page">
-				</a>
-			</li>
-		</ul>
+			</h4>
+			<ul ng-show="course.show">
+				<li ng-repeat="file in course.files">
+				<a class="main-link" href="/bbcswebdav{{file.rawPath}}">{{file.name}}</a>
+				<a class="side-controls" href="/webapps/ubc-metadata-BBLEARN//metadata/list?file0={{file.encodedPath}}">(Add Attribution)</a>
+				</li>
+				<li ng-if="course.numPages > 1" class="rumble inventory_paging">
+					<a class="pagelink" title="First Page" href="" ng-click="getPage(course, 1);" ng-hide="course.page == 1">
+						<img src="/images/ci/ng/small_rewind.gif" alt="First Page">
+					</a>
+					<a class="pagelink" title="Previous Page" href="" ng-click="getPage(course, course.page - 1);" ng-hide="course.page == 1">
+						<img src="/images/ci/ng/small_previous.gif" alt="Previous Page">
+					</a>
+					Page {{course.page}} of {{course.numPages}}
+					<a class="pagelink" title="Next Page" href="" ng-click="getPage(course, course.page + 1);" ng-hide="course.page == course.numPages">
+						<img src="/images/ci/ng/small_next.gif" alt="Next Page">
+					</a>
+					<a class="pagelink" title="Last Page" href="" ng-click="getPage(course, course.numPages);" ng-hide="course.page == course.numPages">
+						<img src="/images/ci/ng/small_ffwd.gif" alt="Last Page">
+					</a>
+				</li>
+			</ul>
+		</div>
 	</div>
 	<p class='update'>Updated: {{lastupdate}}</p>
-</div>
 </div>
 
 <!-- Style at bottom or else IE8 won't apply it -->
