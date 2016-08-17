@@ -39,7 +39,7 @@ public class SavedConfiguration
 
 	private Properties prop = new Properties();
 	private Gson gson = new Gson();
-	private StatusTable statusTable = StatusTable.getInstance();
+	private StatusTable statusTable = new StatusTable();
 
 	// allows easy serialization to json for schedule configurations
 	private ScheduleConfiguration config = new ScheduleConfiguration();
@@ -81,6 +81,7 @@ public class SavedConfiguration
 	 */
 	public void load() throws IOException
 	{
+	    statusTable.loadStatus();
 		String configString = statusTable.loadConfig();
 		if (configString == null) configString = "";
 		StringReader input = new StringReader(configString);

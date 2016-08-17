@@ -67,7 +67,7 @@ public class CSIndexJob implements InterruptableJob, TriggerListener
 			return;
 		}
 
-		st = StatusTable.getInstance();
+		st = new StatusTable();
 		started = new Timestamp((new Date()).getTime());
 
 		logger.info("Indexing start at " + started + " with " + st.toString());

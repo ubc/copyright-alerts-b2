@@ -19,21 +19,16 @@ public class StatusTable extends SimpleDAO<Status>
     private static final DbObjectMap STATUS_EXT_MAP = AnnotationMappingFactory.getMap(Status.class);
 
     private final static Logger logger = LoggerFactory.getLogger(StatusTable.class);
-    private static StatusTable instance;
 
     private Status status;
 
-    public static StatusTable getInstance() {
-        if (instance == null) {
-            instance = new StatusTable();
-        }
-
-        return instance;
-    }
-
-    private StatusTable()
+    public StatusTable()
     {
         super(STATUS_EXT_MAP);
+        loadStatus();
+    }
+
+    public void loadStatus() {
         List<Status> statusList = this.loadAll();
         if (statusList.size() == 0) {
             status = new Status();

@@ -25,8 +25,6 @@ public class StatusResource extends ServerResource
 {
 	private final static Logger logger = LoggerFactory.getLogger(StatusResource.class);
 
-	private HostsTable hostTable = null;
-	private StatusTable statusTable = null;
 	private FilesTable fileTable = new FilesTable();
 	private QueueTable queueTable = new QueueTable();
 
@@ -38,10 +36,10 @@ public class StatusResource extends ServerResource
 		{ // return the current execution status
 			try
 			{
-				if (hostTable == null) hostTable = new HostsTable(); // initialize it if needed
-				if (statusTable == null) statusTable = StatusTable.getInstance(); // initialize it if needed
+				HostsTable hostTable = new HostsTable(); // initialize it if needed
+				StatusTable statusTable = new StatusTable(); // initialize it if needed
 				hostTable.loadHosts();
-				return new JsonRepresentation(toStatusJson());
+				return new JsonRepresentation(toStatusJson(hostTable.getLeader(), statusTable));
 			} catch (InaccessibleDbException e)
 			{
 				logger.error(e.getMessage(), e);
@@ -77,9 +75,9 @@ public class StatusResource extends ServerResource
 		}
 	}
 
-	public String toStatusJson() throws InaccessibleDbException
+	public String toStatusJson(String leader, StatusTable statusTable) throws InaccessibleDbException
 	{
-		String hostname = hostTable.getLeader();
+		String hostname = leader;
 		String status = ca.ubc.ctlt.copyalerts.db.entities.Status.STATUS_STOPPED;
 		Timestamp start = new Timestamp(0);
 		Timestamp end = new Timestamp(0);

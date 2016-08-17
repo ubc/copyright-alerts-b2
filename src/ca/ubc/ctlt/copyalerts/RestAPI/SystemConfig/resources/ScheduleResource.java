@@ -23,6 +23,11 @@ public class ScheduleResource extends ServerResource
 	protected void doInit() throws ResourceException
 	{
 		config = SavedConfiguration.getInstance();
+		try {
+			config.load();
+		} catch (IOException e) {
+			throw new ResourceException(new Status(500), e.getMessage());
+		}
 		super.doInit();
 	}
 
