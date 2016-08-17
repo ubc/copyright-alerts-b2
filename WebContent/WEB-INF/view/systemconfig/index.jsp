@@ -74,6 +74,7 @@ jQuery.noConflict();
 			<label>Run alert generation on:
 				<select ng-model="host.leader" ng-options="opt for opt in host.options"></select>
 			</label>
+			<br />It may take up to 60 mins for all hosts to report themselves after the database is reset.
 			<div class="savesection">
 				<input class='save' type="button" ng-click="saveSchedule()" value="Save Schedule" />
 				<span class="savemsg saving" ng-show='saving == "saving"'>Saving...</span>
@@ -112,7 +113,7 @@ jQuery.noConflict();
 			</form>
 			<p ng-show="resetdbconfirm">
 				Do you really want to reset the database?<br />
-				<a ng-click="resetdb(); resetdbconfirm=false;" href="">Yes</a> / 
+				<a ng-click="resetdb(); resetdbconfirm=false;" href="">Yes</a> /
 				<a ng-click="resetdbconfirm=false;" href="">No</a>
 			</p>
 			<p>

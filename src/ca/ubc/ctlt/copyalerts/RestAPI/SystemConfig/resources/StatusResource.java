@@ -78,20 +78,11 @@ public class StatusResource extends ServerResource
 	public String toStatusJson(String leader, StatusTable statusTable) throws InaccessibleDbException
 	{
 		String hostname = leader;
-		String status = ca.ubc.ctlt.copyalerts.db.entities.Status.STATUS_STOPPED;
-		Timestamp start = new Timestamp(0);
-		Timestamp end = new Timestamp(0);
-		String stage = ca.ubc.ctlt.copyalerts.db.entities.Status.STATUS_STAGE_QUEUE;
 
-		// note that there's no order guarantee from just select rownum statements, so have to use the order by subquery
-		// to impose a repeatable order on the return results
-		if (!hostname.isEmpty())
-		{
-			status = statusTable.getStatus();
-			start = statusTable.getStart();
-			end = statusTable.getEnd();
-			stage = statusTable.getStage();
-		}
+		String status = statusTable.getStatus();
+		Timestamp start = statusTable.getStart();
+		Timestamp end = statusTable.getEnd();
+		String stage = statusTable.getStage();
 
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss a");
 		HashMap<String, String> ret = new HashMap<String, String>();
