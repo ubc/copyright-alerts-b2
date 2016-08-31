@@ -300,7 +300,7 @@ public class FilesTable extends SimpleDAO<File>
 	{
 		DeleteQuery query = new DeleteQuery(this.getDAOSupport().getMap());
 		Criteria criteria = query.getCriteria();
-		criteria.add(criteria.equal("filepath", path));
+		criteria.add(criteria.equal("filePath", path));
 		this.getDAOSupport().delete(query);
 //		Connection conn = null;
 //		String query = "delete from "+ TABLENAME + " where filepath = ?";
