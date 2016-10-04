@@ -39,7 +39,7 @@
 			</p>
 			<div ng-repeat="(cid, course) in courseFiles.courses">
 				<h4 class="moduleTitle">
-					<a href="/bbcswebdav/courses/{{course.name}}">
+					<a href="/webapps/ubc-metadata-BBLEARN//metadata/list?limitTagged=true&file0=/courses/{{course.name}}" target="_blank">
 						{{course.title}}
 					</a>
 					<a class="side-controls" ng-click="course.show=!course.show" href="" >
