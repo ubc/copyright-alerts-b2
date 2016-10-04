@@ -49,10 +49,10 @@ public class FilesTableUpdateScanProcessor extends ScanProcessor
 				(course.getEndDate() != null && course.getEndDate().before(Calendar.getInstance()))) {
 			filesToRemove.add(pk1);
 		} else {
-			// check to see if this file has been tagged since we last checked
+			// check to see if this file has been removed or tagged since we last checked
 			CSFile file = indexGen.getCSFileFromPath(path);
 
-			if (indexGen.fileIsTagged(file)) {
+			if (null == file || indexGen.fileIsTagged(file)) {
 				filesToRemove.add(pk1);
 			}
 		}
