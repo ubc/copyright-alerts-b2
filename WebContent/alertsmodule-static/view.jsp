@@ -12,9 +12,8 @@
 			<p>
 				Please add the copyright information for each file by expanding the
 				drop-down icon and clicking on the Add Attribution links. To update
-				the files in bulk, click on the course name link.  See <a href="http://lthub.ubc.ca/guides/connect/set-copyright/" target="_blank">
-				support documentation</a>. For assistance, contact your <a href="http://lthub.ubc.ca/support/copyright-privacy/#help" target="_blank">
-				local support</a>.
+				the files in bulk, click on the course name link. See <a href="http://lthub.ubc.ca/guides/connect/set-copyright/" target="_blank">
+				support documentation</a>.
 			</p>
 			<br/>
 			<p>
@@ -35,7 +34,8 @@
 			<p>
 				For questions about copyright or LOCR, please contact UBC’s
 				<a href="http://copyright.ubc.ca/help-and-resources/vancouver-contacts/" target="_blank">
-				Copyright Office</a>.
+				Copyright Office</a>. For assistance with adding metadata to files, contact your <a href="http://lthub.ubc.ca/support/copyright-privacy/#help" target="_blank">
+				local support</a>.
 			</p>
 			<div ng-repeat="(cid, course) in courseFiles.courses">
 				<h4 class="moduleTitle">
