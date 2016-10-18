@@ -90,7 +90,7 @@ public class FilesTableUpdateScanProcessor extends ScanProcessor
 		statustable.saveFileResumeData(rownum, file_pk1);
 	}
 
-	public static Course getCourseByPath(String path) throws PersistenceException {
+	public static Course getCourseByPath(String path) {
 		// path has to be a course path
 		if (!path.startsWith("/courses/")) {
 			return null;
@@ -98,6 +98,14 @@ public class FilesTableUpdateScanProcessor extends ScanProcessor
 
 		String courseStr = path.split("/")[2];
 
-		return CourseDbLoader.Default.getInstance().loadByCourseId(courseStr);
+		Course course = null;
+
+		try {
+			course = CourseDbLoader.Default.getInstance().loadByCourseId(courseStr);
+		} catch (PersistenceException e) {
+			logger.info("Could not find course " + courseStr);
+		}
+
+		return course;
 	}
 }
